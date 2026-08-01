@@ -1,0 +1,34 @@
+{
+  "name": "pulse-platform",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "test:coverage": "turbo run test:coverage",
+    "test:integration": "turbo run test:integration",
+    "test:e2e": "turbo run test:e2e",
+    "typecheck": "turbo run typecheck",
+    "db:migrate:dev": "cd packages/prisma && npx prisma migrate dev",
+    "db:migrate:deploy": "cd packages/prisma && npx prisma migrate deploy",
+    "db:generate": "cd packages/prisma && npx prisma generate",
+    "db:seed": "cd packages/prisma && npx prisma db seed",
+    "db:studio": "cd packages/prisma && npx prisma studio",
+    "db:reset": "cd packages/prisma && npx prisma migrate reset --force",
+    "setup-local": "bash scripts/setup-local.sh",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "@types/express-rate-limit": "^6.0.2",
+    "rate-limit-redis": "^6.0.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

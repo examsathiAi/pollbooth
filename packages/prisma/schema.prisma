@@ -1,0 +1,563 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USERS & IDENTITY
+// ============================================
+model User {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  phone_hash      String    @unique
+  phone_number    String?   @db.VarChar(20)
+  username        String?   @unique @db.VarChar(50)
+  avatar_url      String?
+  city            String?   @db.VarChar(100)
+  state           String?   @db.VarChar(100)
+  city_tier       String?   @db.VarChar(20)
+  is_active       Boolean   @default(true)
+  is_banned       Boolean   @default(false)
+  ban_reason      String?
+  referral_code   String?   @unique @db.VarChar(20)
+  referred_by     String?   @db.Uuid
+  last_active_at  DateTime? @db.Timestamp(6)
+  created_at      DateTime  @default(now()) @db.Timestamp(6)
+  updated_at      DateTime  @updatedAt @db.Timestamp(6)
+  deleted_at      DateTime? @db.Timestamp(6)
+
+  // Relations
+  profile               Profile?
+  votes                 Vote[]
+  opinions              Opinion[]
+  opinion_reactions     OpinionReaction[]
+  moderation_status     UserModerationStatus?
+  badges                UserBadge[]
+  survey_suggestions    SurveySuggestion[]
+  survey_consents       SurveyConsent[]
+  earnings              UserEarning[]
+  guest_votes           GuestVote[]
+  notifications         Notification[]
+  user_poll_assignments UserPollAssignment[]
+  user_engagements      UserEngagement[]
+  audit_logs            AuditLog[]
+
+  @@index([phone_hash])
+  @@index([is_active])
+  @@index([is_banned])
+  @@index([created_at])
+  @@index([city])
+  @@index([state])
+  @@map("users")
+}
+
+model Profile {
+  user_id               String    @id @db.Uuid
+  age_bracket           String?   @db.VarChar(20)
+  gender                String?   @db.VarChar(20)
+  education             String?   @db.VarChar(50)
+  income_bracket        String?   @db.VarChar(50)
+  employment            String?   @db.VarChar(50)
+  vehicle               String?   @db.VarChar(50)
+  diet                  String?   @db.VarChar(50)
+  streaming_platforms   String[]
+  shopping_pref         String?   @db.VarChar(50)
+  completed_percentage  Int       @default(0)
+  updated_at            DateTime  @updatedAt @db.Timestamp(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+// ============================================
+// POLLS
+// ============================================
+model Poll {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  question        String    @db.Text
+  options         String[]
+  category        String    @db.VarChar(50)
+  sub_category    String?   @db.VarChar(50)
+  sponsor_id      String?   @db.Uuid
+  is_commercial   Boolean   @default(false)
+  is_active       Boolean   @default(true)
+  status          String    @default("DRAFT") @db.VarChar(20)
+  start_date      DateTime? @db.Timestamp(6)
+  end_date        DateTime? @db.Timestamp(6)
+  target_filters  Json?
+  estimated_reach Int?
+  methodology     Json?
+  created_by      String?   @db.Uuid
+  created_at      DateTime  @default(now()) @db.Timestamp(6)
+  updated_at      DateTime  @updatedAt @db.Timestamp(6)
+
+  // Relations
+  votes                 Vote[]
+  opinions              Opinion[]
+  guest_votes           GuestVote[]
+  user_poll_assignments UserPollAssignment[]
+  ad_placements         AdPlacement[]
+  user_engagements      UserEngagement[]
+
+  @@index([category])
+  @@index([is_active])
+  @@index([status])
+  @@index([is_commercial])
+  @@index([created_at])
+  @@index([start_date, end_date])
+  @@map("polls")
+}
+
+model UserPollAssignment {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  poll_id    String    @db.Uuid
+  assigned_at DateTime @default(now()) @db.Timestamp(6)
+  expires_at DateTime? @db.Timestamp(6)
+  is_seen    Boolean   @default(false)
+  is_voted   Boolean   @default(false)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  poll Poll @relation(fields: [poll_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, poll_id])
+  @@index([user_id, expires_at])
+  @@index([poll_id])
+  @@index([is_seen])
+  @@map("user_poll_assignments")
+}
+
+// ============================================
+// VOTES
+// ============================================
+model Vote {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String   @db.Uuid
+  poll_id      String   @db.Uuid
+  option_index Int
+  voted_at     DateTime @default(now()) @db.Timestamp(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  poll Poll @relation(fields: [poll_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, poll_id])
+  @@index([poll_id])
+  @@index([voted_at])
+  @@map("votes")
+}
+
+model GuestVote {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id      String    @db.VarChar(255)
+  poll_id         String    @db.Uuid
+  option_index    Int
+  voted_at        DateTime  @default(now()) @db.Timestamp(6)
+  ip_hash         String?   @db.VarChar(255)
+  user_agent      String?
+  converted_user_id String? @db.Uuid
+  converted_at    DateTime? @db.Timestamp(6)
+
+  user User? @relation(fields: [converted_user_id], references: [id])
+  poll Poll  @relation(fields: [poll_id], references: [id], onDelete: Cascade)
+
+  @@index([session_id])
+  @@index([poll_id])
+  @@index([converted_user_id])
+  @@index([voted_at])
+  @@map("guest_votes")
+}
+
+// ============================================
+// OPINIONS & REACTIONS
+// ============================================
+model Opinion {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id           String   @db.Uuid
+  poll_id           String   @db.Uuid
+  content           String   @db.VarChar(280)
+  agree_count       Int      @default(0)
+  disagree_count    Int      @default(0)
+  is_hidden         Boolean  @default(false)
+  moderation_status String   @default("PENDING") @db.VarChar(20)
+  edited_at         DateTime? @db.Timestamp(6)
+  created_at        DateTime @default(now()) @db.Timestamp(6)
+  updated_at        DateTime @updatedAt @db.Timestamp(6)
+
+  user      User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  poll      Poll              @relation(fields: [poll_id], references: [id], onDelete: Cascade)
+  reactions OpinionReaction[]
+  reports   Report[]
+
+  @@unique([user_id, poll_id])
+  @@index([poll_id, agree_count])
+  @@index([poll_id, created_at])
+  @@index([moderation_status, created_at])
+  @@index([is_hidden])
+  @@map("opinions")
+}
+
+model OpinionReaction {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  opinion_id    String   @db.Uuid
+  user_id       String   @db.Uuid
+  reaction_type String   @db.VarChar(20)
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+
+  opinion Opinion @relation(fields: [opinion_id], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([opinion_id, user_id])
+  @@index([opinion_id])
+  @@index([user_id])
+  @@map("opinion_reactions")
+}
+
+// ============================================
+// MODERATION
+// ============================================
+model UserModerationStatus {
+  user_id               String    @id @db.Uuid
+  warning_count         Int       @default(0)
+  last_warning_at       DateTime? @db.Timestamp(6)
+  comment_banned_until  DateTime? @db.Timestamp(6)
+  is_permanently_banned Boolean   @default(false)
+  ban_reason            String?
+  updated_at            DateTime  @updatedAt @db.Timestamp(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("user_moderation_status")
+}
+
+model ModerationAction {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String    @db.Uuid
+  opinion_id  String?   @db.Uuid
+  action_type String    @db.VarChar(50)
+  reason      String?
+  triggered_by String  @db.VarChar(50)
+  created_at  DateTime  @default(now()) @db.Timestamp(6)
+  expires_at  DateTime? @db.Timestamp(6)
+
+  @@index([user_id])
+  @@index([opinion_id])
+  @@index([created_at])
+  @@map("moderation_actions")
+}
+
+model Report {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  opinion_id String   @db.Uuid
+  reporter_id String  @db.Uuid
+  reason     String?
+  status     String   @default("PENDING") @db.VarChar(20)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  reviewed_at DateTime? @db.Timestamp(6)
+
+  opinion Opinion @relation(fields: [opinion_id], references: [id], onDelete: Cascade)
+
+  @@index([opinion_id])
+  @@index([status])
+  @@index([created_at])
+  @@map("reports")
+}
+
+// ============================================
+// BADGES
+// ============================================
+model Badge {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code           String   @unique @db.VarChar(50)
+  name           String   @db.VarChar(100)
+  description    String?
+  icon_url       String?
+  criteria_type  String   @db.VarChar(50)
+  criteria_value Int?
+  is_active      Boolean  @default(true)
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+
+  user_badges UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String   @db.Uuid
+  badge_id     String   @db.Uuid
+  earned_at    DateTime @default(now()) @db.Timestamp(6)
+  shared_count Int      @default(0)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badge_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, badge_id])
+  @@index([user_id])
+  @@map("user_badges")
+}
+
+// ============================================
+// CIVIC & SURVEY SUGGESTIONS
+// ============================================
+model SurveySuggestion {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String    @db.Uuid
+  category      String    @db.VarChar(50)
+  question_text String    @db.VarChar(200)
+  context       String?
+  target_region String?   @db.VarChar(100)
+  status        String    @default("PENDING") @db.VarChar(20)
+  admin_notes   String?
+  created_at    DateTime  @default(now()) @db.Timestamp(6)
+  reviewed_at   DateTime? @db.Timestamp(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([user_id])
+  @@index([created_at])
+  @@map("survey_suggestions")
+}
+
+model CivicIssue {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String    @db.Uuid
+  title       String    @db.VarChar(200)
+  description String?
+  city        String    @db.VarChar(100)
+  state       String    @db.VarChar(100)
+  category    String    @db.VarChar(50)
+  status      String    @default("PENDING") @db.VarChar(20)
+  poll_id     String?   @db.Uuid
+  created_at  DateTime  @default(now()) @db.Timestamp(6)
+  reviewed_at DateTime? @db.Timestamp(6)
+
+  @@index([status])
+  @@index([city])
+  @@index([state])
+  @@index([created_at])
+  @@map("civic_issues")
+}
+
+// ============================================
+// PAID SURVEYS
+// ============================================
+model PartnerSurvey {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  partner_name          String   @db.VarChar(100)
+  partner_logo          String?
+  survey_title          String
+  survey_description    String?
+  target_criteria       Json?
+  incentive_amount      Int
+  pulse_referral_fee    Int
+  survey_url            String
+  callback_url          String
+  sample_size_needed    Int
+  sample_size_completed Int      @default(0)
+  is_active             Boolean  @default(true)
+  is_medical            Boolean  @default(false)
+  start_date            DateTime? @db.Timestamp(6)
+  end_date              DateTime? @db.Timestamp(6)
+  created_at            DateTime @default(now()) @db.Timestamp(6)
+
+  consents SurveyConsent[]
+
+  @@index([is_active])
+  @@index([is_medical])
+  @@map("partner_surveys")
+}
+
+model SurveyConsent {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String    @db.Uuid
+  survey_id      String    @db.Uuid
+  partner_name   String    @db.VarChar(100)
+  consented_at   DateTime  @default(now()) @db.Timestamp(6)
+  data_shared    Json?
+  ip_address     String?   @db.VarChar(45)
+  user_agent     String?
+  is_completed   Boolean   @default(false)
+  completed_at   DateTime? @db.Timestamp(6)
+  is_active      Boolean   @default(true)
+  revoked_at     DateTime? @db.Timestamp(6)
+
+  user   User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  survey PartnerSurvey @relation(fields: [survey_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([survey_id])
+  @@index([is_active])
+  @@map("survey_consents")
+}
+
+// ============================================
+// EARNINGS & PAYMENTS
+// ============================================
+model UserEarning {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  source_type String  @db.VarChar(50)
+  source_id  String?  @db.Uuid
+  amount     Int
+  status     String   @default("PENDING") @db.VarChar(20)
+  metadata   Json?
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @updatedAt @db.Timestamp(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([status])
+  @@index([created_at])
+  @@map("user_earnings")
+}
+
+model Subscription {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String    @db.Uuid
+  tier          String    @db.VarChar(20)
+  status        String    @default("ACTIVE") @db.VarChar(20)
+  razorpay_subscription_id String? @db.VarChar(100)
+  started_at    DateTime  @default(now()) @db.Timestamp(6)
+  expires_at    DateTime? @db.Timestamp(6)
+  cancelled_at  DateTime? @db.Timestamp(6)
+  created_at    DateTime  @default(now()) @db.Timestamp(6)
+  updated_at    DateTime  @updatedAt @db.Timestamp(6)
+
+  @@index([user_id])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+// ============================================
+// ADS
+// ============================================
+model AdPlacement {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  poll_id     String?   @db.Uuid
+  ad_type     String    @db.VarChar(50)
+  client_name String?   @db.VarChar(100)
+  start_date  DateTime? @db.Timestamp(6)
+  end_date    DateTime? @db.Timestamp(6)
+  impressions Int       @default(0)
+  clicks      Int       @default(0)
+  amount_paid Int?
+  is_active   Boolean   @default(true)
+  created_at  DateTime  @default(now()) @db.Timestamp(6)
+
+  poll Poll? @relation(fields: [poll_id], references: [id])
+
+  @@index([is_active])
+  @@index([poll_id])
+  @@map("ad_placements")
+}
+
+// ============================================
+// DIGESTS & NOTIFICATIONS
+// ============================================
+model DailyDigest {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  date         DateTime @db.Date
+  title        String   @db.VarChar(200)
+  content      Json?
+  is_published Boolean  @default(false)
+  published_at DateTime? @db.Timestamp(6)
+  created_at   DateTime @default(now()) @db.Timestamp(6)
+
+  @@unique([date])
+  @@map("daily_digests")
+}
+
+model Notification {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  type       String    @db.VarChar(50)
+  title      String    @db.VarChar(200)
+  body       String    @db.Text
+  data       Json?
+  is_read    Boolean   @default(false)
+  sent_at    DateTime? @db.Timestamp(6)
+  read_at    DateTime? @db.Timestamp(6)
+  created_at DateTime  @default(now()) @db.Timestamp(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, is_read])
+  @@index([created_at])
+  @@map("notifications")
+}
+
+// ============================================
+// ENGAGEMENT & ANALYTICS
+// ============================================
+model UserEngagement {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  poll_id    String?  @db.Uuid
+  action     String   @db.VarChar(50)
+  category   String?  @db.VarChar(50)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+
+  user User? @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  poll Poll? @relation(fields: [poll_id], references: [id])
+
+  @@index([user_id, created_at])
+  @@index([poll_id])
+  @@index([action])
+  @@map("user_engagements")
+}
+
+model VoteStreak {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id         String    @db.Uuid
+  current_streak  Int       @default(0)
+  longest_streak  Int       @default(0)
+  last_vote_date  DateTime? @db.Date
+  recovery_used   Boolean   @default(false)
+  created_at      DateTime  @default(now()) @db.Timestamp(6)
+  updated_at      DateTime  @updatedAt @db.Timestamp(6)
+
+  @@unique([user_id])
+  @@map("vote_streaks")
+}
+
+// ============================================
+// AUDIT LOGS (DPDP Compliance)
+// ============================================
+model AuditLog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String?  @db.Uuid
+  action      String   @db.VarChar(100)
+  entity_type String   @db.VarChar(50)
+  entity_id   String?  @db.Uuid
+  ip_address  String?  @db.VarChar(45)
+  user_agent  String?
+  metadata    Json?
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+
+  user User? @relation(fields: [user_id], references: [id])
+
+  @@index([user_id, created_at])
+  @@index([action, created_at])
+  @@index([entity_type, entity_id])
+  @@map("audit_logs")
+}
+
+// ============================================
+// BLOCK LIST
+// ============================================
+model UserBlock {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  blocker_id String   @db.Uuid
+  blocked_id String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamp(6)
+
+  @@unique([blocker_id, blocked_id])
+  @@index([blocker_id])
+  @@map("user_blocks")
+}

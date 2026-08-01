@@ -1,0 +1,10 @@
+node_modules/
+dist/
+build/
+.next/
+.turbo/
+*.lock
+pnpm-lock.yaml
+package-lock.json
+.git/
+coverage/

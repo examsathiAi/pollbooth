@@ -1,0 +1,22 @@
+# PULSE MONOREPO AI GENERATION RULES
+
+## Core Principles (NON-NEGOTIABLE)
+1. NEVER alter existing architecture patterns, UI formats, or layouts found in the existing 78 files.
+2. Carry forward ALL features while adding new ones. Do not drop existing functionality when editing or regenerating code.
+3. ALWAYS use TypeScript strict mode.
+4. NEVER introduce raw SQL; use Prisma Client (`@pulse/prisma`) exclusively.
+5. Base all feature logic strictly on `pulse.txt`.
+
+## Backend Pattern Rules (API)
+- Controllers MUST use Express Router, Zod validation pipes (`validateBody`, `validateParams`), rate limiters (`rateLimiter.*`), and standard guards (`authGuard`, `adminGuard`).
+- Services MUST log via `winston` (`logger.info`), interact with `@pulse/prisma`, and throw standard Errors handled by `error.filter.ts`.
+
+## Frontend Pattern Rules (Web / Admin / Mobile)
+- Next.js 14 App Router / React components MUST use Tailwind CSS, Lucide icons, and Axios (`@/lib/api`).
+- State management MUST use Zustand.
+- Do NOT alter UI color palettes or card formats established in `apps/web/src/components/feed/PollCard.tsx`.
+- Flutter mobile code MUST match the defined widget structures.
+
+## Execution Verification
+No rushing, no guessing, no blind patching. Operate on facts only.
+After creating or editing any files, ALWAYS run `pnpm typecheck` and `pnpm build` in the terminal to ensure zero compilation or syntax errors before marking a task complete.
