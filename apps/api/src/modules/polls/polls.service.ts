@@ -6,6 +6,14 @@ const prisma = new PrismaClient();
 
 export class PollsService {
   async createPoll(adminId: string, input: CreatePollInput) {
+    if (input.category === "POLITICS") {
+      const region = typeof (input.target_filters as any)?.region === "string" ? (input.target_filters as any).region : "ALL";
+      const isBlackoutActive = await this.isElectionBlackoutActive(region);
+      if (isBlackoutActive) {
+        throw new Error("Political polls are disabled during the active election blackout period for this region.");
+      }
+    }
+
     const poll = await prisma.poll.create({
       data: {
         question: input.question,
@@ -112,6 +120,7 @@ export class PollsService {
 
   async getPolls(query: { category?: string; status: string; page: number; limit: number }) {
     const where: any = {};
+    const region = typeof (query as any).region === "string" && (query as any).region ? (query as any).region : "ALL";
 
     if (query.category && query.category !== "ALL") {
       where.category = query.category;
@@ -119,6 +128,13 @@ export class PollsService {
 
     if (query.status !== "ALL") {
       where.status = query.status;
+    }
+
+    const isBlackoutActive = await this.isElectionBlackoutActive(region);
+    if (isBlackoutActive) {
+      if (!query.category || query.category === "ALL" || query.category === "POLITICS") {
+        where.category = { not: "POLITICS" };
+      }
     }
 
     const [polls, total] = await Promise.all([
@@ -159,6 +175,19 @@ export class PollsService {
       where: { id: pollId },
       data: { status: "ARCHIVED", is_active: false },
     });
+  }
+
+  private async isElectionBlackoutActive(region: string): Promise<boolean> {
+    const now = new Date();
+    const blackout = await prisma.electionBlackout.findFirst({
+      where: {
+        active: true,
+        blackout_starts: { lte: now },
+        polling_date: { gte: now },
+        OR: [{ region }, { region: "ALL" }],
+      },
+    });
+    return !!blackout;
   }
 
   private async calculateEstimatedReach(filters: any): Promise<number> {

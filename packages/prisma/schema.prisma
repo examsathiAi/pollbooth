@@ -112,6 +112,17 @@ model Poll {
   @@map("polls")
 }
 
+model ElectionBlackout {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  region          String
+  polling_date    DateTime
+  blackout_starts DateTime
+  active          Boolean  @default(true)
+  created_at      DateTime @default(now())
+
+  @@map("election_blackouts")
+}
+
 model UserPollAssignment {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id    String    @db.Uuid
