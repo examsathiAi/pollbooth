@@ -19,6 +19,7 @@ interface PollCardProps {
     has_voted?: boolean;
     results?: Array<{ option: string; index: number; count: number; percentage: number }>;
     user_vote_index?: number | null;
+    is_commercial?: boolean;
   };
 }
 
@@ -105,6 +106,11 @@ export function PollCard({ poll }: PollCardProps) {
         <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-medium text-slate-100">
           {cohort}
         </span>
+        {poll.is_commercial && (
+          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-700">
+            Sponsored
+          </span>
+        )}
       </div>
 
       <h2 className="mb-3 text-[17px] font-semibold leading-6 text-slate-900">{poll.question}</h2>

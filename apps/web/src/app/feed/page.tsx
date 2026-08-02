@@ -18,7 +18,8 @@ const TABS = [
 
 export default function FeedPage() {
   const { user, isLoading: authLoading } = useAuth();
-  const [polls, setPolls] = useState<any[]>([]);
+  const [organicPolls, setOrganicPolls] = useState<any[]>([]);
+  const [sponsoredPolls, setSponsoredPolls] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("for-you");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -33,7 +34,8 @@ export default function FeedPage() {
     try {
       const endpoint = activeTab === "trending" ? "/feed/trending" : "/feed";
       const res = await api.get(endpoint);
-      setPolls(res.data.polls || []);
+      setOrganicPolls(res.data.organic || []);
+      setSponsoredPolls(res.data.sponsored || []);
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to load feed");
     } finally {
@@ -88,16 +90,30 @@ export default function FeedPage() {
           </div>
         ) : error ? (
           <div className="p-4 text-center text-red-500">{error}</div>
-        ) : polls.length === 0 ? (
+        ) : organicPolls.length === 0 && sponsoredPolls.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             <p className="text-lg font-medium">No polls yet</p>
             <p className="text-sm mt-1">Check back soon for new questions!</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {polls.map((poll) => (
-              <PollCard key={poll.id} poll={poll} />
-            ))}
+            {organicPolls.length > 0 && (
+              <div>
+                {organicPolls.map((poll) => (
+                  <PollCard key={poll.id} poll={poll} />
+                ))}
+              </div>
+            )}
+            {sponsoredPolls.length > 0 && (
+              <div className="border-t border-amber-100 bg-amber-50/60">
+                <div className="px-4 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-amber-700">
+                  Sponsored
+                </div>
+                {sponsoredPolls.map((poll) => (
+                  <PollCard key={poll.id} poll={poll} />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </main>

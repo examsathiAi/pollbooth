@@ -4,6 +4,24 @@ import { logger } from "../../common/interceptors/logger";
 const prisma = new PrismaClient();
 
 export class FeedService {
+  private mapPollSummary(poll: any, hasVoted: boolean = false) {
+    return {
+      id: poll.id,
+      question: poll.question,
+      options: poll.options,
+      category: poll.category,
+      is_commercial: poll.is_commercial ?? false,
+      total_votes: poll._count?.votes ?? 0,
+      total_opinions: poll._count?.opinions ?? 0,
+      has_voted: hasVoted,
+      created_at: poll.created_at,
+    };
+  }
+
+  private dedupePolls(polls: any[]) {
+    return Array.from(new Map(polls.map((poll) => [poll.id, poll])).values());
+  }
+
   async getForYouFeed(userId: string, page: number, limit: number) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -14,7 +32,6 @@ export class FeedService {
       throw new Error("User not found");
     }
 
-    // Get assigned polls (targeted to user)
     const assignedPolls = await prisma.userPollAssignment.findMany({
       where: {
         user_id: userId,
@@ -32,14 +49,15 @@ export class FeedService {
       take: limit,
     });
 
-    // Get trending polls (by vote velocity in last 24h)
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const assignedIds = assignedPolls.map((a) => a.poll_id);
+    const assignedOrganicPolls = assignedPolls.filter((a) => !a.poll.is_commercial).map((a) => a.poll);
+    const assignedSponsoredPolls = assignedPolls.filter((a) => a.poll.is_commercial).map((a) => a.poll);
 
-    const trendingPolls = await prisma.poll.findMany({
+    const organicTrendingPolls = await prisma.poll.findMany({
       where: {
         is_active: true,
         status: "ACTIVE",
+        is_commercial: false,
         id: { notIn: assignedIds.length > 0 ? assignedIds : undefined },
       },
       include: {
@@ -49,18 +67,32 @@ export class FeedService {
       take: Math.floor(limit / 2),
     });
 
-    // Get local polls
-    const localPolls = user.city
+    const sponsoredTrendingPolls = await prisma.poll.findMany({
+      where: {
+        is_active: true,
+        status: "ACTIVE",
+        is_commercial: true,
+        id: { notIn: assignedIds.length > 0 ? assignedIds : undefined },
+      },
+      include: {
+        _count: { select: { votes: true, opinions: true } },
+      },
+      orderBy: { created_at: "desc" },
+      take: Math.max(2, Math.floor(limit / 4)),
+    });
+
+    const organicLocalPolls = user.city
       ? await prisma.poll.findMany({
           where: {
             is_active: true,
             status: "ACTIVE",
+            is_commercial: false,
             target_filters: {
               path: ["cities"],
               array_contains: user.city,
             },
             id: {
-              notIn: assignedIds.length > 0 ? [...assignedIds, ...trendingPolls.map((p) => p.id)] : undefined,
+              notIn: assignedIds.length > 0 ? [...assignedIds, ...organicTrendingPolls.map((p) => p.id)] : undefined,
             },
           },
           include: {
@@ -70,18 +102,32 @@ export class FeedService {
         })
       : [];
 
-    // Combine and deduplicate
-    const allPolls = [
-      ...assignedPolls.map((a) => a.poll),
-      ...trendingPolls,
-      ...localPolls,
-    ];
+    const sponsoredLocalPolls = user.city
+      ? await prisma.poll.findMany({
+          where: {
+            is_active: true,
+            status: "ACTIVE",
+            is_commercial: true,
+            target_filters: {
+              path: ["cities"],
+              array_contains: user.city,
+            },
+            id: {
+              notIn: assignedIds.length > 0 ? [...assignedIds, ...sponsoredTrendingPolls.map((p) => p.id)] : undefined,
+            },
+          },
+          include: {
+            _count: { select: { votes: true, opinions: true } },
+          },
+          take: 2,
+        })
+      : [];
 
-    const uniquePolls = Array.from(new Map(allPolls.map((p) => [p.id, p])).values());
+    const organicPolls = this.dedupePolls([...assignedOrganicPolls, ...organicTrendingPolls, ...organicLocalPolls]);
+    const sponsoredPolls = this.dedupePolls([...assignedSponsoredPolls, ...sponsoredTrendingPolls, ...sponsoredLocalPolls]);
 
-    // Check user votes
-    const uniqueIds = uniquePolls.map((p) => p.id);
-    const userVotes = uniqueIds.length > 0 
+    const uniqueIds = [...organicPolls, ...sponsoredPolls].map((p) => p.id);
+    const userVotes = uniqueIds.length > 0
       ? await prisma.vote.findMany({
           where: {
             user_id: userId,
@@ -92,46 +138,42 @@ export class FeedService {
     const votedPollIds = new Set(userVotes.map((v) => v.poll_id));
 
     return {
-      polls: uniquePolls.map((poll) => ({
-        id: poll.id,
-        question: poll.question,
-        options: poll.options,
-        category: poll.category,
-        total_votes: poll._count.votes,
-        total_opinions: poll._count.opinions,
-        has_voted: votedPollIds.has(poll.id),
-        created_at: poll.created_at,
-      })),
+      organic: organicPolls.map((poll) => this.mapPollSummary(poll, votedPollIds.has(poll.id))),
+      sponsored: sponsoredPolls.map((poll) => this.mapPollSummary(poll, votedPollIds.has(poll.id))),
       pagination: {
         page,
         limit,
-        total: uniquePolls.length,
+        total: organicPolls.length + sponsoredPolls.length,
       },
     };
   }
 
   async getTrendingFeed(page: number, limit: number) {
-    const polls = await prisma.poll.findMany({
-      where: { is_active: true, status: "ACTIVE" },
-      include: {
-        _count: { select: { votes: true, opinions: true } },
-      },
-      orderBy: { created_at: "desc" },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const [organicPolls, sponsoredPolls] = await Promise.all([
+      prisma.poll.findMany({
+        where: { is_active: true, status: "ACTIVE", is_commercial: false },
+        include: {
+          _count: { select: { votes: true, opinions: true } },
+        },
+        orderBy: { created_at: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.poll.findMany({
+        where: { is_active: true, status: "ACTIVE", is_commercial: true },
+        include: {
+          _count: { select: { votes: true, opinions: true } },
+        },
+        orderBy: { created_at: "desc" },
+        skip: (page - 1) * Math.max(2, Math.floor(limit / 4)),
+        take: Math.max(2, Math.floor(limit / 4)),
+      }),
+    ]);
 
     return {
-      polls: polls.map((poll) => ({
-        id: poll.id,
-        question: poll.question,
-        options: poll.options,
-        category: poll.category,
-        total_votes: poll._count.votes,
-        total_opinions: poll._count.opinions,
-        created_at: poll.created_at,
-      })),
-      pagination: { page, limit, total: polls.length },
+      organic: organicPolls.map((poll) => this.mapPollSummary(poll)),
+      sponsored: sponsoredPolls.map((poll) => this.mapPollSummary(poll)),
+      pagination: { page, limit, total: organicPolls.length + sponsoredPolls.length },
     };
   }
 
@@ -153,31 +195,41 @@ export class FeedService {
       orConditions.push({ target_filters: { path: ["states"], array_contains: user.state } });
     }
 
-    const polls = await prisma.poll.findMany({
-      where: {
-        is_active: true,
-        status: "ACTIVE",
-        OR: orConditions,
-      },
-      include: {
-        _count: { select: { votes: true, opinions: true } },
-      },
-      orderBy: { created_at: "desc" },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const [organicPolls, sponsoredPolls] = await Promise.all([
+      prisma.poll.findMany({
+        where: {
+          is_active: true,
+          status: "ACTIVE",
+          is_commercial: false,
+          OR: orConditions,
+        },
+        include: {
+          _count: { select: { votes: true, opinions: true } },
+        },
+        orderBy: { created_at: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.poll.findMany({
+        where: {
+          is_active: true,
+          status: "ACTIVE",
+          is_commercial: true,
+          OR: orConditions,
+        },
+        include: {
+          _count: { select: { votes: true, opinions: true } },
+        },
+        orderBy: { created_at: "desc" },
+        skip: (page - 1) * Math.max(2, Math.floor(limit / 4)),
+        take: Math.max(2, Math.floor(limit / 4)),
+      }),
+    ]);
 
     return {
-      polls: polls.map((poll) => ({
-        id: poll.id,
-        question: poll.question,
-        options: poll.options,
-        category: poll.category,
-        total_votes: poll._count.votes,
-        total_opinions: poll._count.opinions,
-        created_at: poll.created_at,
-      })),
-      pagination: { page, limit, total: polls.length },
+      organic: organicPolls.map((poll) => this.mapPollSummary(poll)),
+      sponsored: sponsoredPolls.map((poll) => this.mapPollSummary(poll)),
+      pagination: { page, limit, total: organicPolls.length + sponsoredPolls.length },
     };
   }
 
@@ -213,6 +265,7 @@ export class FeedService {
       id: poll.id,
       question: poll.question,
       category: poll.category,
+      is_commercial: poll.is_commercial ?? false,
       total_votes: poll._count.votes,
     }));
 
@@ -258,6 +311,7 @@ export class FeedService {
       id: p.id,
       question: p.question,
       options: p.options,
+      is_commercial: p.is_commercial ?? false,
       total_votes: p._count.votes,
       total_opinions: p._count.opinions,
     }));

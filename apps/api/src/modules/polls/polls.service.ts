@@ -101,6 +101,7 @@ export class PollsService {
 
     return {
       ...poll,
+      is_commercial: poll.is_commercial ?? false,
       total_votes: totalVotes,
       total_opinions: poll._count.opinions,
       results,
@@ -157,6 +158,7 @@ export class PollsService {
         options: poll.options,
         category: poll.category,
         status: poll.status,
+        is_commercial: poll.is_commercial ?? false,
         total_votes: poll._count.votes,
         total_opinions: poll._count.opinions,
         created_at: poll.created_at,
