@@ -4,9 +4,10 @@ import { logger } from "../common/interceptors/logger";
 import { redis } from "../config/redis";
 
 const prisma = new PrismaClient();
+const digestRedisConnection = { ...(redis as Record<string, unknown>), maxRetriesPerRequest: null };
 
 export const digestQueue = new Queue("digest", {
-  connection: redis as any,
+  connection: digestRedisConnection as any,
 });
 
 let digestWorker: Worker | null = null;
@@ -136,7 +137,7 @@ export async function registerDigestWorker() {
     "digest",
     async (job) => runDigestWorker(job),
     {
-      connection: redis as any,
+      connection: digestRedisConnection as any,
       concurrency: 1,
     }
   );

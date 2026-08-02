@@ -4,9 +4,10 @@ import { logger } from "../common/interceptors/logger";
 import { redis } from "../config/redis";
 
 const prisma = new PrismaClient();
+const cleanupRedisConnection = { ...(redis as Record<string, unknown>), maxRetriesPerRequest: null };
 
 export const cleanupQueue = new Queue("cleanup", {
-  connection: redis as any,
+  connection: cleanupRedisConnection as any,
 });
 
 let cleanupWorker: Worker | null = null;
@@ -75,7 +76,7 @@ export async function registerCleanupWorker() {
     "cleanup",
     async (job) => runCleanupWorker(job),
     {
-      connection: redis as any,
+      connection: cleanupRedisConnection as any,
       concurrency: 1,
     }
   );

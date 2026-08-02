@@ -5,9 +5,10 @@ import { redis } from "../config/redis";
 import { config } from "../config";
 
 const prisma = new PrismaClient();
+const notificationRedisConnection = { ...(redis as Record<string, unknown>), maxRetriesPerRequest: null };
 
 export const notificationQueue = new Queue("notification", {
-  connection: redis as any,
+  connection: notificationRedisConnection as any,
 });
 
 let notificationWorker: Worker | null = null;
@@ -68,7 +69,7 @@ export async function registerNotificationWorker() {
     "notification",
     async (job) => runNotificationWorker(job),
     {
-      connection: redis as any,
+      connection: notificationRedisConnection as any,
       concurrency: 1,
     }
   );

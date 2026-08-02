@@ -5,9 +5,10 @@ import { redis } from "../config/redis";
 import { config } from "../config";
 
 const prisma = new PrismaClient();
+const moderationRedisConnection = { ...(redis as Record<string, unknown>), maxRetriesPerRequest: null };
 
 export const moderationQueue = new Queue("moderation", {
-  connection: redis as any,
+  connection: moderationRedisConnection as any,
 });
 
 let moderationWorker: Worker | null = null;
@@ -109,7 +110,7 @@ export async function registerModerationWorker() {
     "moderation",
     async (job) => runModerationWorker(job),
     {
-      connection: redis as any,
+      connection: moderationRedisConnection as any,
       concurrency: 1,
     }
   );
