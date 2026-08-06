@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authGuard } from "../../common/guards/auth.guard";
+import { rateLimiter } from "../../common/interceptors/rate-limiter";
 import { validateBody } from "../../common/pipes/validation.pipe";
 import { usersService } from "./users.service";
 import { UpdateProfileSchema } from "./users.types";
@@ -15,7 +16,7 @@ router.get("/profile", authGuard, async (req, res, next) => {
   }
 });
 
-router.patch("/profile", authGuard, validateBody(UpdateProfileSchema), async (req, res, next) => {
+router.patch("/profile", authGuard, rateLimiter.api, validateBody(UpdateProfileSchema), async (req, res, next) => {
   try {
     const profile = await usersService.updateProfile(req.user!.id, req.body);
     res.json(profile);

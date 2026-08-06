@@ -10,11 +10,19 @@ datasource db {
 // ============================================
 // USERS & IDENTITY
 // ============================================
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
 model User {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   phone_hash      String    @unique
   phone_number    String?   @db.VarChar(20)
   username        String?   @unique @db.VarChar(50)
+  role            UserRole  @default(USER)
   avatar_url      String?
   city            String?   @db.VarChar(100)
   state           String?   @db.VarChar(100)
@@ -43,6 +51,7 @@ model User {
   notifications         Notification[]
   user_poll_assignments UserPollAssignment[]
   user_engagements      UserEngagement[]
+  poll_predictions       PollPrediction[]
   audit_logs            AuditLog[]
 
   @@index([phone_hash])
@@ -77,23 +86,36 @@ model Profile {
 // POLLS
 // ============================================
 model Poll {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  question        String    @db.Text
-  options         String[]
-  category        String    @db.VarChar(50)
-  sub_category    String?   @db.VarChar(50)
-  sponsor_id      String?   @db.Uuid
-  is_commercial   Boolean   @default(false)
-  is_active       Boolean   @default(true)
-  status          String    @default("DRAFT") @db.VarChar(20)
-  start_date      DateTime? @db.Timestamp(6)
-  end_date        DateTime? @db.Timestamp(6)
-  target_filters  Json?
-  estimated_reach Int?
-  methodology     Json?
-  created_by      String?   @db.Uuid
-  created_at      DateTime  @default(now()) @db.Timestamp(6)
-  updated_at      DateTime  @updatedAt @db.Timestamp(6)
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  question            String    @db.Text
+  options             String[]
+  category            String    @db.VarChar(50)
+  sub_category        String?   @db.VarChar(50)
+  sponsor_id          String?   @db.Uuid
+  is_commercial       Boolean   @default(false)
+  is_active           Boolean   @default(true)
+  status              String    @default("DRAFT") @db.VarChar(20)
+  start_date          DateTime? @db.Timestamp(6)
+  end_date            DateTime? @db.Timestamp(6)
+  target_filters      Json?
+  estimated_reach     Int?
+  methodology         Json?
+  seo_title           String?   @db.VarChar(60)
+  meta_description    String?   @db.VarChar(160)
+  slug                String?   @unique @db.VarChar(100)
+  keywords            String[]
+  hashtags            String[]
+  facebook_caption    String?   @db.Text
+  instagram_caption   String?   @db.Text
+  x_caption           String?   @db.Text
+  whatsapp_share_text String?   @db.Text
+  ai_summary          String?   @db.Text
+  faq                 Json?
+  og_title            String?   @db.VarChar(60)
+  og_description      String?   @db.Text
+  created_by          String?   @db.Uuid
+  created_at          DateTime  @default(now()) @db.Timestamp(6)
+  updated_at          DateTime  @updatedAt @db.Timestamp(6)
 
   // Relations
   votes                 Vote[]
@@ -102,6 +124,8 @@ model Poll {
   user_poll_assignments UserPollAssignment[]
   ad_placements         AdPlacement[]
   user_engagements      UserEngagement[]
+  poll_predictions      PollPrediction[]
+  topics                Topic[]
 
   @@index([category])
   @@index([is_active])
@@ -110,6 +134,38 @@ model Poll {
   @@index([created_at])
   @@index([start_date, end_date])
   @@map("polls")
+}
+
+model PollPrediction {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id             String   @db.Uuid
+  poll_id             String   @db.Uuid
+  predicted_percentage Int     @db.Integer
+  created_at          DateTime @default(now()) @db.Timestamp(6)
+  updated_at          DateTime @updatedAt @db.Timestamp(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  poll Poll @relation(fields: [poll_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, poll_id])
+  @@index([poll_id])
+  @@index([user_id])
+  @@map("poll_predictions")
+}
+
+model Topic {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String    @db.VarChar(100)
+  slug            String    @unique @db.VarChar(100)
+  description     String?   @db.Text
+  parent_category String?   @db.VarChar(50)
+  created_at      DateTime  @default(now()) @db.Timestamp(6)
+
+  polls Poll[]
+
+  @@index([slug])
+  @@index([parent_category])
+  @@map("topics")
 }
 
 model ElectionBlackout {

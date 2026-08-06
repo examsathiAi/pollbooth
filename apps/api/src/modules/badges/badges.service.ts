@@ -30,6 +30,24 @@ export class BadgesService {
     return badges;
   }
 
+  async getMeBadges(userId: string) {
+    const [earned, catalog] = await Promise.all([
+      this.getUserBadges(userId),
+      this.getAllBadges(),
+    ]);
+
+    return {
+      earned,
+      catalog: catalog.map((badge) => ({
+        id: badge.id,
+        code: badge.code,
+        name: badge.name,
+        description: badge.description,
+        icon_url: badge.icon_url,
+      })),
+    };
+  }
+
   async shareBadge(userId: string, badgeId: string) {
     const userBadge = await prisma.userBadge.findFirst({
       where: { user_id: userId, badge_id: badgeId },

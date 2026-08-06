@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { logger } from "../../common/interceptors/logger";
+import { notificationsService } from "../notifications/notifications.service";
 import type { CreateOpinionInput, ReactOpinionInput } from "./opinions.types";
 
 const prisma = new PrismaClient();
@@ -63,7 +64,8 @@ export class OpinionsService {
         user_id: userId,
         poll_id: pollId,
         content: input.content,
-        moderation_status: "PENDING",
+        moderation_status: "APPROVED",
+        is_hidden: false,
       },
     });
 
@@ -107,7 +109,7 @@ export class OpinionsService {
         where: {
           poll_id: pollId,
           is_hidden: false,
-          moderation_status: { not: "REJECTED" },
+          moderation_status: { notIn: ["REJECTED", "FLAGGED"] },
           user_id: { notIn: blockedUserIds },
         },
         orderBy,
@@ -116,6 +118,8 @@ export class OpinionsService {
         include: {
           user: {
             select: {
+              username: true,
+              phone_number: true,
               city: true,
               state: true,
               profile: {
@@ -135,7 +139,7 @@ export class OpinionsService {
         where: {
           poll_id: pollId,
           is_hidden: false,
-          moderation_status: { not: "REJECTED" },
+          moderation_status: { notIn: ["REJECTED", "FLAGGED"] },
           user_id: { notIn: blockedUserIds },
         },
       }),
@@ -163,6 +167,8 @@ export class OpinionsService {
         edited_at: op.edited_at,
         demographic_hint: this.buildDemographicHint(op.user),
         user_reaction: userReactions.get(op.id) || null,
+        user_display_name: op.user?.username || op.user?.phone_number || "Pulse user",
+        user_city: op.user?.city || null,
       })),
       pagination: {
         page,
@@ -244,14 +250,37 @@ export class OpinionsService {
     // Check for agree-count milestones and send notification
     const updatedOpinion = await prisma.opinion.findUnique({
       where: { id: opinionId },
-      select: { agree_count: true, user_id: true },
+      select: { agree_count: true, user_id: true, poll_id: true },
     });
 
+    if (updatedOpinion && updatedOpinion.user_id !== userId) {
+      const actor = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { username: true, phone_number: true },
+      });
+      const actorName = actor?.username || actor?.phone_number || "Someone";
+      const reactionTitle = input.reaction_type === "AGREE"
+        ? "Someone agreed with your opinion"
+        : "Someone disagreed with your opinion";
+      const reactionBody = input.reaction_type === "AGREE"
+        ? `${actorName} agreed with your opinion.`
+        : `${actorName} disagreed with your opinion.`;
+      await notificationsService.createNotification(updatedOpinion.user_id, "OPINION_REACTION", reactionTitle, reactionBody, {
+        opinion_id: opinionId,
+        poll_id: updatedOpinion.poll_id,
+        reaction_type: input.reaction_type,
+        actor_user_id: userId,
+      });
+    }
+
     if (updatedOpinion && input.reaction_type === "AGREE") {
-      const milestones = [50, 100, 500, 1000, 5000];
+      const milestones = [10, 50, 100];
       if (milestones.includes(updatedOpinion.agree_count)) {
-        // Queue notification for milestone
-        await this.queueMilestoneNotification(updatedOpinion.user_id, opinionId, updatedOpinion.agree_count);
+        await notificationsService.createNotification(updatedOpinion.user_id, "MILESTONE", "Your opinion hit a milestone", `Your opinion crossed ${updatedOpinion.agree_count} agrees.`, {
+          opinion_id: opinionId,
+          poll_id: updatedOpinion.poll_id,
+          agree_count: updatedOpinion.agree_count,
+        });
       }
     }
 

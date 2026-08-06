@@ -5,7 +5,7 @@ import { redis } from "../config/redis";
 import { config } from "../config";
 
 const prisma = new PrismaClient();
-const moderationRedisConnection = { ...(redis as Record<string, unknown>), maxRetriesPerRequest: null };
+const moderationRedisConnection = { ...(redis as unknown as Record<string, unknown>), maxRetriesPerRequest: null };
 
 export const moderationQueue = new Queue("moderation", {
   connection: moderationRedisConnection as any,
@@ -24,7 +24,7 @@ export async function enqueueModerationSweep() {
   );
 }
 
-export async function runModerationWorker(job?: Job) {
+export async function runModerationWorker(_job?: Job) {
   const now = new Date();
   const slaThreshold = new Date(now.getTime() - (config.moderationSlaHours || 24) * 60 * 60 * 1000);
 

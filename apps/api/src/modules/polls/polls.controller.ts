@@ -1,9 +1,11 @@
 import { Router } from "express";
 import { authGuard } from "../../common/guards/auth.guard";
-import { adminGuard } from "../../common/guards/roles.guard";
+import { rateLimiter } from "../../common/interceptors/rate-limiter";
+import { roleGuard } from "../../common/guards/roles.guard";
+import { logger } from "../../common/interceptors/logger";
 import { validateBody, validateParams, validateQuery } from "../../common/pipes/validation.pipe";
 import { pollsService } from "./polls.service";
-import { CreatePollSchema, PollIdSchema, PollQuerySchema } from "./polls.types";
+import { CreatePollSchema, PollIdSchema, PollQuerySchema, PredictPollSchema } from "./polls.types";
 
 const router = Router();
 
@@ -12,6 +14,33 @@ router.get("/", validateQuery(PollQuerySchema), async (req, res, next) => {
   try {
     const result = await pollsService.getPolls(req.query as any);
     res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/review", authGuard, roleGuard("ADMIN"), validateQuery(PollQuerySchema), async (req, res, next) => {
+  try {
+    const result = await pollsService.getPendingPolls(req.query as any);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/feed", validateQuery(PollQuerySchema), async (req, res, next) => {
+  try {
+    const result = await pollsService.getPolls(req.query as any);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/estimated-reach", async (req, res, next) => {
+  try {
+    const result = await pollsService.getEstimatedReach(req.query as any);
+    res.json({ estimated_reach: result });
   } catch (err) {
     next(err);
   }
@@ -27,17 +56,51 @@ router.get("/:id", validateParams(PollIdSchema), async (req, res, next) => {
   }
 });
 
-// Admin routes
-router.post("/", authGuard, adminGuard, validateBody(CreatePollSchema), async (req, res, next) => {
+router.post("/:id/predict", authGuard, validateParams(PollIdSchema), validateBody(PredictPollSchema), async (req, res, next) => {
   try {
-    const result = await pollsService.createPoll(req.user!.id, req.body);
-    res.status(201).json(result);
+    const result = await pollsService.savePrediction(req.user!.id, req.params.id, req.body);
+    res.json(result);
   } catch (err) {
     next(err);
   }
 });
 
-router.post("/:id/publish", authGuard, adminGuard, validateParams(PollIdSchema), async (req, res, next) => {
+// Admin routes
+router.post("/", authGuard, roleGuard("ADMIN"), validateBody(CreatePollSchema), async (req, res, next) => {
+  try {
+    const result = await pollsService.createPoll(req.user!.id, req.body);
+    res.status(201).json(result);
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : typeof err === "string" ? err : "Unknown poll creation error";
+    const errorDetails = err instanceof Error ? err.stack : undefined;
+    logger.error("Poll creation failed", {
+      error: errorMessage,
+      details: errorDetails,
+      requestId: (req as any).requestId,
+    });
+    next(err);
+  }
+});
+
+router.post("/:id/approve", authGuard, roleGuard("ADMIN"), rateLimiter.adminAction, validateParams(PollIdSchema), async (req, res, next) => {
+  try {
+    const result = await pollsService.approvePoll(req.params.id);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/:id/reject", authGuard, roleGuard("ADMIN"), rateLimiter.adminAction, validateParams(PollIdSchema), async (req, res, next) => {
+  try {
+    const result = await pollsService.rejectPoll(req.params.id);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/:id/publish", authGuard, roleGuard("ADMIN"), rateLimiter.adminAction, validateParams(PollIdSchema), async (req, res, next) => {
   try {
     const result = await pollsService.publishPoll(req.params.id);
     res.json(result);
@@ -46,7 +109,7 @@ router.post("/:id/publish", authGuard, adminGuard, validateParams(PollIdSchema),
   }
 });
 
-router.patch("/:id/archive", authGuard, adminGuard, validateParams(PollIdSchema), async (req, res, next) => {
+router.patch("/:id/archive", authGuard, roleGuard("ADMIN"), validateParams(PollIdSchema), async (req, res, next) => {
   try {
     const result = await pollsService.archivePoll(req.params.id);
     res.json(result);

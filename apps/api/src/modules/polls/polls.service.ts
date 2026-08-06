@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { logger } from "../../common/interceptors/logger";
+import { topicsService } from "../topics/topics.service";
 import type { CreatePollInput } from "./polls.types";
 
 const prisma = new PrismaClient();
@@ -14,6 +15,9 @@ export class PollsService {
       }
     }
 
+    const status = input.status ?? (input.is_active === true ? "ACTIVE" : "DRAFT");
+    const isActive = status === "ACTIVE";
+
     const poll = await prisma.poll.create({
       data: {
         question: input.question,
@@ -26,9 +30,44 @@ export class PollsService {
         is_commercial: input.is_commercial,
         sponsor_id: input.sponsor_id,
         created_by: adminId,
-        status: "DRAFT",
+        status,
+        is_active: isActive,
+        seo_title: input.seo_title,
+        meta_description: input.meta_description,
+        slug: input.slug ?? this.createSlug(input.question),
+        keywords: input.keywords ?? [],
+        hashtags: input.hashtags ?? [],
+        facebook_caption: input.facebook_caption,
+        instagram_caption: input.instagram_caption,
+        x_caption: input.x_caption,
+        whatsapp_share_text: input.whatsapp_share_text,
+        ai_summary: input.ai_summary,
+        faq: input.faq ?? [],
+        og_title: input.og_title,
+        og_description: input.og_description,
       },
     });
+
+    if (input.topic_names && input.topic_names.length > 0) {
+      const topicNames = Array.from(new Set(input.topic_names.filter(Boolean)));
+      const topicRecords = await Promise.all(topicNames.map(async (name) => {
+        const normalizedName = name.trim();
+        const existing = await topicsService.getTopicByName(normalizedName);
+        if (existing) {
+          return existing;
+        }
+        return topicsService.createTopic({ name: normalizedName, slug: this.createSlug(normalizedName) });
+      }));
+
+      await prisma.poll.update({
+        where: { id: poll.id },
+        data: {
+          topics: {
+            connect: topicRecords.map((topic) => ({ id: topic.id })),
+          },
+        },
+      });
+    }
 
     // Calculate estimated reach
     const estimatedReach = await this.calculateEstimatedReach(input.target_filters);
@@ -38,18 +77,67 @@ export class PollsService {
       data: { estimated_reach: estimatedReach },
     });
 
-    // Auto-assign to matching users if active
-    if (poll.status === "ACTIVE") {
-      await this.assignPollToUsers(poll.id, input.target_filters);
-    }
-
     return { ...poll, estimated_reach: estimatedReach };
+  }
+
+  private createSlug(value: string) {
+    return value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")
+      .slice(0, 100);
+  }
+
+  async getPendingPolls(query: { page: number; limit: number }) {
+    const [polls, total] = await Promise.all([
+      prisma.poll.findMany({
+        where: { status: { in: ["DRAFT", "PENDING_REVIEW"] }, is_active: false },
+        orderBy: { created_at: "desc" },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+      prisma.poll.count({ where: { status: { in: ["DRAFT", "PENDING_REVIEW"] }, is_active: false } }),
+    ]);
+
+    return {
+      polls: polls.map((poll) => ({
+        id: poll.id,
+        question: poll.question,
+        category: poll.category,
+        status: poll.status,
+        created_at: poll.created_at,
+      })),
+      pagination: {
+        page: query.page,
+        limit: query.limit,
+        total,
+        total_pages: Math.ceil(total / query.limit),
+      },
+    };
+  }
+
+  async approvePoll(pollId: string) {
+    const poll = await prisma.poll.update({
+      where: { id: pollId },
+      data: { status: "ACTIVE", is_active: true, start_date: new Date() },
+    });
+
+    await this.assignPollToUsers(poll.id, poll.target_filters as any);
+    return poll;
+  }
+
+  async rejectPoll(pollId: string) {
+    return prisma.poll.update({
+      where: { id: pollId },
+      data: { status: "REJECTED", is_active: false },
+    });
   }
 
   async publishPoll(pollId: string) {
     const poll = await prisma.poll.update({
       where: { id: pollId },
-      data: { status: "ACTIVE", start_date: new Date() },
+      data: { status: "ACTIVE", is_active: true, start_date: new Date() },
     });
 
     await this.assignPollToUsers(poll.id, poll.target_filters as any);
@@ -90,11 +178,15 @@ export class PollsService {
     // Check if user has voted
     let userVote = null;
     let userOpinion = null;
+    let userPrediction = null;
     if (userId) {
       userVote = await prisma.vote.findUnique({
         where: { user_id_poll_id: { user_id: userId, poll_id: pollId } },
       });
       userOpinion = await prisma.opinion.findUnique({
+        where: { user_id_poll_id: { user_id: userId, poll_id: pollId } },
+      });
+      userPrediction = await prisma.pollPrediction.findUnique({
         where: { user_id_poll_id: { user_id: userId, poll_id: pollId } },
       });
     }
@@ -116,10 +208,38 @@ export class PollsService {
             disagree_count: userOpinion.disagree_count,
           }
         : null,
+      user_prediction: userPrediction ? userPrediction.predicted_percentage : null,
     };
   }
 
-  async getPolls(query: { category?: string; status: string; page: number; limit: number }) {
+  async savePrediction(userId: string, pollId: string, input: { predicted_percentage: number }) {
+    const poll = await prisma.poll.findUnique({ where: { id: pollId }, select: { id: true, status: true, is_active: true } });
+    if (!poll || !poll.is_active || poll.status !== "ACTIVE") {
+      throw new Error("Prediction is only available for active polls");
+    }
+
+    const existing = await prisma.pollPrediction.findUnique({ where: { user_id_poll_id: { user_id: userId, poll_id: pollId } } });
+    if (existing) {
+      return prisma.pollPrediction.update({
+        where: { id: existing.id },
+        data: { predicted_percentage: input.predicted_percentage },
+      });
+    }
+
+    return prisma.pollPrediction.create({
+      data: {
+        user_id: userId,
+        poll_id: pollId,
+        predicted_percentage: input.predicted_percentage,
+      },
+    });
+  }
+
+  async getEstimatedReach(filters: any) {
+    return this.calculateEstimatedReach(filters);
+  }
+
+  async getPolls(query: { category?: string; status: string; page: number; limit: number; search?: string }) {
     const where: any = {};
     const region = typeof (query as any).region === "string" && (query as any).region ? (query as any).region : "ALL";
 
@@ -127,9 +247,19 @@ export class PollsService {
       where.category = query.category;
     }
 
+    if (typeof query.search === "string" && query.search.trim()) {
+      where.question = {
+        contains: query.search.trim(),
+        mode: "insensitive",
+      };
+    }
+
     if (query.status !== "ALL") {
       where.status = query.status;
     }
+
+    where.is_active = true;
+    where.status = "ACTIVE";
 
     const isBlackoutActive = await this.isElectionBlackoutActive(region);
     if (isBlackoutActive) {

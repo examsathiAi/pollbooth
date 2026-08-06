@@ -4,7 +4,7 @@ import { logger } from "../common/interceptors/logger";
 import { redis } from "../config/redis";
 
 const prisma = new PrismaClient();
-const digestRedisConnection = { ...(redis as Record<string, unknown>), maxRetriesPerRequest: null };
+const digestRedisConnection = { ...(redis as unknown as Record<string, unknown>), maxRetriesPerRequest: null };
 
 export const digestQueue = new Queue("digest", {
   connection: digestRedisConnection as any,

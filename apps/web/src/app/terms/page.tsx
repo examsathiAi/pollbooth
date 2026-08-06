@@ -24,8 +24,14 @@ export default function TermsPage() {
         <p className="mt-3 text-sm leading-7">Referral credits and rewards are issued at the discretion of Pulse and may be subject to verification, fair-use review, and compliance checks. Misuse may result in reward reversal or account restrictions.</p>
       </section>
 
-      <div className="text-sm text-slate-500">
+      <section className="rounded-[28px] border border-slate-200 p-6">
+        <h2 className="text-xl font-semibold text-slate-900">Dispute and grievance</h2>
+        <p className="mt-3 text-sm leading-7">If you have a legal concern, abuse report, or data request, use the grievance page so we can respond quickly and transparently.</p>
+      </section>
+
+      <div className="text-sm text-slate-500 flex flex-col gap-2">
         <Link href="/privacy" className="font-medium text-blue-600">View privacy policy</Link>
+        <Link href="/grievance" className="font-medium text-blue-600">Grievance officer and data request</Link>
       </div>
     </main>
   );

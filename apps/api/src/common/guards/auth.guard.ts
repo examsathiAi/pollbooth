@@ -3,14 +3,7 @@ import jwt from "jsonwebtoken";
 import { config } from "../../config";
 import { prisma } from "../../config/database";
 
-export interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    phone_hash: string;
-    username?: string | null;
-    is_banned: boolean;
-  };
-}
+export interface AuthenticatedRequest extends Request {}
 
 export async function authGuard(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   try {
@@ -28,7 +21,7 @@ export async function authGuard(req: AuthenticatedRequest, res: Response, next: 
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, phone_hash: true, username: true, is_banned: true, is_active: true },
+      select: { id: true, phone_hash: true, username: true, role: true, is_banned: true, is_active: true },
     });
 
     if (!user || !user.is_active) {

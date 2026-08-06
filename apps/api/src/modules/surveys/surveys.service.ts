@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import type { CreateSurveySuggestionInput } from "./surveys.types";
+import { notificationsService } from "../notifications/notifications.service";
 
 const prisma = new PrismaClient();
 
@@ -15,6 +16,14 @@ export class SurveysService {
         status: "PENDING",
       },
     });
+
+    await notificationsService.createNotification(
+      userId,
+      "SUGGESTION_RECEIVED",
+      "Suggestion received",
+      "Thanks for your idea — we’ve received your poll suggestion and will notify you when the team reviews it.",
+      { suggestion_id: suggestion.id, category: suggestion.category }
+    );
 
     return suggestion;
   }
@@ -74,6 +83,14 @@ export class SurveysService {
       data: { status: "APPROVED", reviewed_at: new Date() },
     });
 
+    await notificationsService.createNotification(
+      suggestion.user_id,
+      "SUGGESTION_APPROVED",
+      "Your poll suggestion is live",
+      "Great news! Your suggested poll has been approved and is now live for voting.",
+      { suggestion_id: suggestion.id, poll_id: poll.id, category: suggestion.category }
+    );
+
     // Award Community Curator badge
     await this.awardCommunityCurator(suggestion.user_id);
 
@@ -81,10 +98,25 @@ export class SurveysService {
   }
 
   async rejectSuggestion(suggestionId: string, adminNotes?: string) {
-    return prisma.surveySuggestion.update({
+    const suggestion = await prisma.surveySuggestion.findUnique({ where: { id: suggestionId } });
+    if (!suggestion) {
+      throw new Error("Suggestion not found");
+    }
+
+    const result = await prisma.surveySuggestion.update({
       where: { id: suggestionId },
       data: { status: "REJECTED", admin_notes: adminNotes, reviewed_at: new Date() },
     });
+
+    await notificationsService.createNotification(
+      suggestion.user_id,
+      "SUGGESTION_REJECTED",
+      "Suggestion review finished",
+      `Your poll suggestion was reviewed${adminNotes ? `: ${adminNotes}` : "."} We appreciate your input and welcome more ideas.`,
+      { suggestion_id: suggestion.id, category: suggestion.category }
+    );
+
+    return result;
   }
 
   private buildTargetFilters(region?: string | null, userId?: string | null): any {

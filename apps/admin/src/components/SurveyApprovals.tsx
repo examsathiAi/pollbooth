@@ -23,6 +23,8 @@ interface SurveyListResponse {
 export function SurveyApprovals() {
   const [items, setItems] = useState<SurveySuggestion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -30,6 +32,9 @@ export function SurveyApprovals() {
       try {
         const res = await api.get<SurveyListResponse>("/api/v1/surveys/suggestions", { params: { status: "PENDING", page: 1, limit: 8 } });
         setItems(res.data.suggestions);
+        setError(null);
+      } catch (err: any) {
+        setError(err.response?.status === 401 ? "Please log in as an admin" : err.response?.data?.message || "Failed to load survey approvals.");
       } finally {
         setLoading(false);
       }
@@ -39,6 +44,7 @@ export function SurveyApprovals() {
 
   const convertToPoll = async (suggestion: SurveySuggestion) => {
     try {
+      setMessage(null);
       await api.post("/api/v1/polls", {
         question: suggestion.question_text,
         options: ["Yes", "No", "Need more context"],
@@ -48,8 +54,9 @@ export function SurveyApprovals() {
         is_active: true,
       });
       setItems((current) => current.filter((item) => item.id !== suggestion.id));
-    } catch (err) {
-      console.error(err);
+      setMessage("Suggestion converted into a review-ready poll.");
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to convert suggestion.");
     }
   };
 
@@ -64,6 +71,9 @@ export function SurveyApprovals() {
           <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-cyan-400" /> Review pipeline</div>
         </div>
       </div>
+
+      {message ? <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">{message}</div> : null}
+      {error ? <div className="mb-4 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">{error}</div> : null}
 
       {loading ? (
         <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-8 text-center text-sm text-slate-400">Loading suggestions…</div>

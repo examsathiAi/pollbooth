@@ -4,7 +4,7 @@ import { logger } from "../common/interceptors/logger";
 import { redis } from "../config/redis";
 
 const prisma = new PrismaClient();
-const cleanupRedisConnection = { ...(redis as Record<string, unknown>), maxRetriesPerRequest: null };
+const cleanupRedisConnection = { ...(redis as unknown as Record<string, unknown>), maxRetriesPerRequest: null };
 
 export const cleanupQueue = new Queue("cleanup", {
   connection: cleanupRedisConnection as any,
@@ -23,10 +23,11 @@ export async function enqueueCleanupJob() {
   );
 }
 
-export async function runCleanupWorker(job?: Job) {
+export async function runCleanupWorker(_job?: Job) {
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+  const oneEightyDaysAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
 
   const softDeletedUsers = await prisma.user.findMany({
     where: {
@@ -56,9 +57,16 @@ export async function runCleanupWorker(job?: Job) {
     });
   }
 
+  const auditLogsPurged = await prisma.auditLog.deleteMany({
+    where: {
+      created_at: { lt: oneEightyDaysAgo },
+    },
+  });
+
   logger.info("Cleanup worker completed", {
     purgedUserCount: softDeletedUsers.length,
     expiredGuestVoteCount: guestVotesToDelete.length,
+    purgedAuditLogCount: auditLogsPurged.count,
   });
 
   return {

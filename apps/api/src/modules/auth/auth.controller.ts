@@ -17,7 +17,10 @@ router.post("/otp/send", rateLimiter.otp, validateBody(SendOtpSchema), async (re
 
 router.post("/otp/verify", validateBody(VerifyOtpSchema), async (req, res, next) => {
   try {
-    const result = await authService.verifyOtp(req.body);
+    const result = await authService.verifyOtp(req.body, {
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"] as string | undefined,
+    });
     res.status(200).json(result);
   } catch (err) {
     next(err);

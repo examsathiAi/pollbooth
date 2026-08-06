@@ -26,6 +26,15 @@ router.get("/trending", async (req, res, next) => {
   }
 });
 
+router.get("/stats", async (req, res, next) => {
+  try {
+    const result = await feedService.getPlatformStats();
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/local", authGuard, async (req, res, next) => {
   try {
     const page = Number(req.query.page) || 1;

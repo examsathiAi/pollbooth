@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, ShieldAlert, UserX } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -23,27 +23,34 @@ export function ModerationQueue() {
   const [items, setItems] = useState<OpinionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("ALL");
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
-  const loadQueue = async (nextStatus = status) => {
+  const loadQueue = useCallback(async (nextStatus = status) => {
     setLoading(true);
     try {
       const res = await api.get<QueueResponse>(`/api/v1/moderation/queue`, { params: { status: nextStatus, page: 1, limit: 10 } });
       setItems(res.data.opinions);
+      setError(null);
+    } catch (err: any) {
+      setError(err.response?.status === 401 ? "Please log in as an admin" : err.response?.data?.message || "Failed to load moderation queue.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [status]);
 
   useEffect(() => {
-    loadQueue(status);
-  }, []);
+    void loadQueue(status);
+  }, [loadQueue, status]);
 
   const handleAction = async (id: string, action: "APPROVE" | "REJECT" | "WARN_USER") => {
     try {
+      setMessage(null);
       await api.post(`/api/v1/moderation/${id}/moderate`, { action, reason: `${action} from admin dashboard` });
       setItems((current) => current.filter((item) => item.id !== id));
-    } catch (err) {
-      console.error(err);
+      setMessage(`Action ${action.toLowerCase()} completed.`);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to process moderation action.");
     }
   };
 
@@ -60,6 +67,9 @@ export function ModerationQueue() {
           {summary.flagged} flagged · {summary.reports} reports
         </div>
       </div>
+
+      {message ? <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">{message}</div> : null}
+      {error ? <div className="mb-4 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">{error}</div> : null}
 
       <div className="mb-4 flex gap-2">
         {(["ALL", "FLAGGED", "REJECTED", "APPROVED"] as const).map((value) => (

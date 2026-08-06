@@ -1,6 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { redis } from "../../config/redis";
+import { prisma as prismaClient } from "../../config/database";
 
-const prisma = new PrismaClient();
+const prisma = prismaClient;
 
 export class AdminService {
   async getDashboardStats() {
@@ -93,6 +94,64 @@ export class AdminService {
       category: c.category,
       count: c._count.category,
     }));
+  }
+
+  async getRoleUsers() {
+    const users = await prisma.user.findMany({
+      where: { role: { not: "USER" } },
+      select: { id: true, username: true, role: true, phone_number: true },
+      orderBy: { created_at: "desc" },
+    });
+
+    return {
+      users: users.map((user) => ({
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        email: user.phone_number,
+      })),
+    };
+  }
+
+  async updateUserRole(userId: string, role?: string) {
+    const validRoles = ["USER", "MODERATOR", "ADMIN", "SUPER_ADMIN"] as const;
+    const normalizedRole = role && validRoles.includes(role as (typeof validRoles)[number]) ? role : "USER";
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { role: normalizedRole as any },
+      select: { id: true, role: true, username: true },
+    });
+
+    return { user };
+  }
+
+  async getPlatformHealth() {
+    const [users, polls, activePolls, pendingModeration] = await Promise.all([
+      prisma.user.count(),
+      prisma.poll.count(),
+      prisma.poll.count({ where: { is_active: true, status: "ACTIVE" } }),
+      prisma.opinion.count({ where: { is_hidden: true, moderation_status: "FLAGGED" } }),
+    ]);
+
+    const startedAt = Date.now();
+    await redis.ping();
+    const latency = Date.now() - startedAt;
+
+    return {
+      timestamp: new Date().toISOString(),
+      services: {
+        api: { status: "ok", latency_ms: 0 },
+        database: { status: "ok", latency_ms: 0 },
+        workers: { status: "ok", latency_ms: latency },
+      },
+      counts: {
+        users,
+        polls,
+        active_polls: activePolls,
+        pending_moderation: pendingModeration,
+      },
+    };
   }
 }
 

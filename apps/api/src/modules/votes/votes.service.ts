@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import { logger } from "../../common/interceptors/logger";
 import { redis } from "../../config/redis";
+import { notificationsService } from "../notifications/notifications.service";
+import { badgesService } from "../badges/badges.service";
 import type { VoteInput, GuestVoteInput } from "./votes.types";
 
 const prisma = new PrismaClient();
@@ -10,7 +12,7 @@ export class VotesService {
     // Check if poll is active
     const poll = await prisma.poll.findUnique({
       where: { id: pollId },
-      select: { is_active: true, status: true, options: true },
+      select: { is_active: true, status: true, options: true, question: true },
     });
 
     if (!poll || !poll.is_active || poll.status !== "ACTIVE") {
@@ -57,11 +59,16 @@ export class VotesService {
     // Update streak
     await this.updateVoteStreak(userId);
 
-    // Check for First Vote badge
-    const totalVotes = await prisma.vote.count({ where: { user_id: userId } });
-    if (totalVotes === 1) {
-      await this.awardBadgeIfNotExists(userId, "FIRST_VOTE");
+    const pollVoteCount = await prisma.vote.count({ where: { poll_id: pollId } });
+    if ([25, 50, 100].includes(pollVoteCount)) {
+      await notificationsService.createNotification(userId, "POLL_TRENDING", "Your vote is part of a rising poll", `Your vote on “${poll.question}” helped this poll reach ${pollVoteCount} votes.`, {
+        poll_id: pollId,
+        vote_count: pollVoteCount,
+      });
     }
+
+    // Check for First Vote and streak-based badges on real activity
+    await badgesService.evaluateBadges(userId);
 
     // Store private reason if provided
     if (input.reason) {
@@ -69,7 +76,130 @@ export class VotesService {
     }
 
     logger.info("Vote recorded", { userId, pollId, optionIndex: input.option_index });
-    return vote;
+    return {
+      ...vote,
+      user_vote_index: input.option_index,
+    };
+  }
+
+  async getUserStreak(userId: string) {
+    const votes = await prisma.vote.findMany({
+      where: { user_id: userId },
+      orderBy: { voted_at: "desc" },
+      select: { voted_at: true },
+    });
+
+    if (votes.length === 0) {
+      return { current_streak: 0, last_vote_date: null };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let streak = 0;
+    let current = new Date(today);
+
+    for (const vote of votes) {
+      const voteDate = new Date(vote.voted_at);
+      voteDate.setHours(0, 0, 0, 0);
+      const diffDays = Math.round((current.getTime() - voteDate.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays === 0) {
+        streak += 1;
+        current = voteDate;
+        break;
+      }
+      if (diffDays === 1) {
+        streak += 1;
+        current = voteDate;
+        break;
+      }
+      if (diffDays > 1) {
+        break;
+      }
+    }
+
+    return {
+      current_streak: streak,
+      last_vote_date: votes[0].voted_at,
+    };
+  }
+
+  async getWeeklySummary(userId: string) {
+    const start = new Date();
+    start.setDate(start.getDate() - 7);
+    start.setHours(0, 0, 0, 0);
+
+    const [votes, opinions, reactions] = await Promise.all([
+      prisma.vote.count({ where: { user_id: userId, voted_at: { gte: start } } }),
+      prisma.opinion.count({ where: { user_id: userId, created_at: { gte: start } } }),
+      prisma.opinionReaction.findMany({
+        where: { user: { id: userId } },
+        include: { opinion: true },
+      }),
+    ]);
+
+    const agreeCount = reactions.filter((reaction) => reaction.reaction_type === "AGREE" && reaction.opinion?.created_at && reaction.opinion.created_at >= start).length;
+
+    return {
+      polls_voted: votes,
+      opinions_shared: opinions,
+      total_agrees_received: agreeCount,
+      period_start: start.toISOString(),
+    };
+  }
+
+  async getCohortComparison(userId: string, pollId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
+    });
+
+    const userVote = await prisma.vote.findUnique({
+      where: { user_id_poll_id: { user_id: userId, poll_id: pollId } },
+    });
+
+    if (!userVote) {
+      throw new Error("You must vote to see cohort comparison");
+    }
+
+    const profileWhere: any = {};
+    if (user?.profile?.age_bracket) {
+      profileWhere.age_bracket = user.profile.age_bracket;
+    }
+    if (user?.profile?.gender) {
+      profileWhere.gender = user.profile.gender;
+    }
+
+    const cohortWhere: any = {
+      poll_id: pollId,
+      user: {
+        city: user?.city || undefined,
+        profile: Object.keys(profileWhere).length > 0 ? profileWhere : undefined,
+      },
+    };
+
+    if (!cohortWhere.user.city) delete cohortWhere.user.city;
+    if (!cohortWhere.user.profile) delete cohortWhere.user.profile;
+
+    const cohortVotes = await prisma.vote.groupBy({
+      by: ["option_index"],
+      where: cohortWhere,
+      _count: { option_index: true },
+    });
+
+    const totalCohortVotes = cohortVotes.reduce((sum, v) => sum + v._count.option_index, 0);
+
+    return {
+      user_vote_index: userVote.option_index,
+      cohort_total_votes: totalCohortVotes,
+      cohort_breakdown: cohortVotes.map((v) => ({
+        option_index: v.option_index,
+        count: v._count.option_index,
+        percentage: totalCohortVotes > 0 ? Math.round((v._count.option_index / totalCohortVotes) * 100) : 0,
+      })),
+      is_majority: totalCohortVotes > 0
+        ? cohortVotes.some((v) => v.option_index === userVote.option_index && v._count.option_index === Math.max(...cohortVotes.map((c) => c._count.option_index)))
+        : null,
+    };
   }
 
   async guestVote(pollId: string, input: GuestVoteInput, ip?: string) {

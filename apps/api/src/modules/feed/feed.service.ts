@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import { logger } from "../../common/interceptors/logger";
 
 const prisma = new PrismaClient();
 
@@ -174,6 +173,28 @@ export class FeedService {
       organic: organicPolls.map((poll) => this.mapPollSummary(poll)),
       sponsored: sponsoredPolls.map((poll) => this.mapPollSummary(poll)),
       pagination: { page, limit, total: organicPolls.length + sponsoredPolls.length },
+    };
+  }
+
+  async getPlatformStats() {
+    const [totalUsers, totalPolls, totalVotes, votesLastHour] = await Promise.all([
+      prisma.user.count(),
+      prisma.poll.count(),
+      prisma.vote.count(),
+      prisma.vote.count({
+        where: { voted_at: { gte: new Date(Date.now() - 60 * 60 * 1000) } },
+      }),
+    ]);
+
+    return {
+      totals: {
+        users: totalUsers,
+        polls: totalPolls,
+        votes: totalVotes,
+      },
+      recent_activity: {
+        votes_last_hour: votesLastHour,
+      },
     };
   }
 

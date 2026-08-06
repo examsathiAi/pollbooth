@@ -21,9 +21,10 @@ interface PollCardProps {
     user_vote_index?: number | null;
     is_commercial?: boolean;
   };
+  onVoteComplete?: (index: number) => void;
 }
 
-export function PollCard({ poll }: PollCardProps) {
+export function PollCard({ poll, onVoteComplete }: PollCardProps) {
   const { user } = useAuth();
   const [hasVoted, setHasVoted] = useState(poll.has_voted || false);
   const [results, setResults] = useState(poll.results || []);
@@ -32,12 +33,19 @@ export function PollCard({ poll }: PollCardProps) {
   const [showOpinions, setShowOpinions] = useState(false);
   const [showGate, setShowGate] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [discussionText, setDiscussionText] = useState("");
+  const [discussionStatus, setDiscussionStatus] = useState<string | null>(null);
   const [cohort, setCohort] = useState("Mumbai");
+  const [gateMessage, setGateMessage] = useState<string | null>(null);
 
   const voteLabel = useMemo(() => {
     if (userVoteIndex === null) return null;
     return userVoteIndex === 0 ? "Agree" : "Disagree";
   }, [userVoteIndex]);
+
+  useEffect(() => {
+    setHasVoted(Boolean(poll.has_voted));
+  }, [poll.has_voted]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -54,18 +62,42 @@ export function PollCard({ poll }: PollCardProps) {
       return;
     }
     setIsVoting(true);
+    setGateMessage(null);
     try {
-      await api.post(`/api/v1/polls/${poll.id}/vote`, { option_index: index });
+      await api.post(`/api/v1/votes/${poll.id}/vote`, { option_index: index });
+      const [pollRes] = await Promise.all([
+        api.get(`/api/v1/polls/${poll.id}`),
+      ]);
       setHasVoted(true);
       setUserVoteIndex(index);
       setFeedback(index === 0 ? "Agree noted" : "Disagree noted");
-      setShowGate(true);
-      const res = await api.get(`/api/v1/polls/${poll.id}`);
-      setResults(res.data.results);
+      onVoteComplete?.(index);
+      setResults(pollRes.data.results || []);
+      const gateRes = await api.get(`/api/v1/users/profile/gate/${poll.category}`);
+      if (gateRes.data.required) {
+        setShowGate(true);
+        setGateMessage("We need one quick profile detail to keep your vote relevant.");
+      }
     } catch (err: any) {
       alert(err.response?.data?.message || "Failed to vote");
     } finally {
       setIsVoting(false);
+    }
+  };
+
+  const handleDiscussionPost = async () => {
+    if (!user) {
+      window.location.href = `/auth/login?redirect=/poll/${poll.id}`;
+      return;
+    }
+    if (!discussionText.trim()) return;
+    try {
+      await api.post(`/api/v1/opinions/${poll.id}/opinion`, { content: discussionText.trim() });
+      setDiscussionText("");
+      setDiscussionStatus("Your take is now live in the discussion.");
+      setShowOpinions(true);
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to post opinion");
     }
   };
 
@@ -120,6 +152,9 @@ export function PollCard({ poll }: PollCardProps) {
           <Sparkles className="h-4 w-4" /> {feedback}
         </div>
       )}
+      {gateMessage && (
+        <div className="mb-3 rounded-2xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm text-cyan-700">{gateMessage}</div>
+      )}
 
       {!hasVoted ? (
         <div className="space-y-2">
@@ -136,20 +171,28 @@ export function PollCard({ poll }: PollCardProps) {
         </div>
       ) : (
         <div className="space-y-3">
-          {results.map((r) => {
+          {results.map((r, idx) => {
             const isUserChoice = r.index === userVoteIndex;
+            const toneClasses = [
+              "from-blue-500 to-cyan-500",
+              "from-emerald-500 to-lime-500",
+              "from-amber-500 to-orange-500",
+              "from-violet-500 to-fuchsia-500",
+              "from-rose-500 to-pink-500",
+            ];
+            const barClass = toneClasses[idx % toneClasses.length];
             return (
               <div key={r.index}>
-                <div className="mb-1 flex items-center justify-between text-sm">
+                <div className="mb-1 flex items-center justify-between text-sm gap-2">
                   <span className={isUserChoice ? "font-semibold text-blue-700" : "text-slate-700"}>
                     {r.option} {isUserChoice ? "(You)" : ""}
                   </span>
-                  <span className="font-semibold text-slate-700">{r.percentage}%</span>
+                  <span className="font-semibold text-slate-700">{r.percentage}% • {r.count.toLocaleString()} votes</span>
                 </div>
                 <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
                   <div
-                    className={`h-full rounded-full transition-all duration-700 ease-out ${isUserChoice ? "bg-blue-600" : "bg-slate-300"}`}
-                    style={{ width: `${Math.max(r.percentage, 8)}%` }}
+                    className={`h-full rounded-full bg-gradient-to-r transition-all duration-700 ease-out ${barClass} ${isUserChoice ? "shadow-[0_0_0_2px_rgba(37,99,235,0.12)]" : ""}`}
+                    style={{ width: `${Math.max(r.percentage, 4)}%` }}
                   />
                 </div>
               </div>
@@ -170,24 +213,40 @@ export function PollCard({ poll }: PollCardProps) {
           <MessageCircle className="h-4 w-4" />
           {showOpinions ? "Hide" : "Open"} opinions
         </button>
-        <div className="flex items-center gap-2 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-500 shadow-sm">
-          <ThumbsUp className="h-3.5 w-3.5 text-blue-600" /> {voteLabel || "Tap to react"}
-        </div>
       </div>
 
       {showOpinions && (
         <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
           <div className="mb-2 flex items-center justify-between">
-            <span className="font-semibold text-slate-800">Live opinion drawer</span>
-            <span className="text-xs text-slate-400">Swipe-ready</span>
+            <span className="font-semibold text-slate-800">Discussion</span>
+            <span className="text-xs text-slate-400">Real voices, no replies</span>
           </div>
-          <p className="leading-6">This section can host the growing conversation around this poll while keeping the experience touch-friendly and fast.</p>
+          <textarea
+            value={discussionText}
+            onChange={(event) => setDiscussionText(event.target.value)}
+            rows={3}
+            maxLength={280}
+            placeholder="Share why you voted or what you think about this issue..."
+            className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400"
+          />
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <span className="text-xs text-slate-400">{discussionText.length}/280</span>
+            <button onClick={handleDiscussionPost} className="rounded-full bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white">Post</button>
+          </div>
+          {discussionStatus ? <p className="mt-2 text-xs text-emerald-600">{discussionStatus}</p> : null}
         </div>
       )}
 
       {hasVoted && (
         <div className="mt-3">
-          <ShareCardGenerator title={`${poll.question}`} subtitle={`${poll.total_votes?.toLocaleString()} voices • ${cohort} cohort`} />
+          <ShareCardGenerator
+            title={poll.question}
+            headline={poll.results?.[0] ? `${poll.results[0].option} leads with ${poll.results[0].percentage}%` : "Latest poll result"}
+            subtitle={`${poll.total_votes?.toLocaleString()} votes • ${cohort} cohort`}
+            voteCount={poll.total_votes}
+            resultData={poll.results?.map((result) => ({ label: result.option, value: result.percentage }))}
+            shareUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/poll/${poll.id}`}
+          />
         </div>
       )}
 

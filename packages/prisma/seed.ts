@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -24,6 +25,51 @@ async function main() {
       update: {},
       create: badge,
     });
+  }
+
+  const adminPhone = "+911234567890";
+  const adminPhoneHash = await bcrypt.hash(adminPhone.trim().toLowerCase(), 12);
+
+  const existingAdmin = await prisma.user.findFirst({
+    where: {
+      OR: [{ phone_hash: adminPhoneHash }, { phone_number: adminPhone }],
+    },
+  });
+
+  if (existingAdmin) {
+    await prisma.user.update({
+      where: { id: existingAdmin.id },
+      data: {
+        phone_hash: adminPhoneHash,
+        phone_number: adminPhone,
+        username: "pulse_admin",
+        role: "SUPER_ADMIN",
+        is_active: true,
+      },
+    });
+  } else {
+    const existingUsername = await prisma.user.findUnique({ where: { username: "pulse_admin" } });
+    if (existingUsername) {
+      await prisma.user.update({
+        where: { id: existingUsername.id },
+        data: {
+          phone_hash: adminPhoneHash,
+          phone_number: adminPhone,
+          role: "SUPER_ADMIN",
+          is_active: true,
+        },
+      });
+    } else {
+      await prisma.user.create({
+        data: {
+          phone_hash: adminPhoneHash,
+          phone_number: adminPhone,
+          username: "pulse_admin",
+          role: "SUPER_ADMIN",
+          is_active: true,
+        },
+      });
+    }
   }
 
   console.log("Seed completed successfully");

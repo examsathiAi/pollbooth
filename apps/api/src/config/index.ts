@@ -1,10 +1,11 @@
+import path from "path";
 import dotenv from "dotenv";
 import { z } from "zod";
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "staging", "production", "test"]).default("development"),
+  NODE_ENV: z.enum(["development", "staging", "production", "test"]),
   PORT: z.string().default("3001"),
   API_URL: z.string().default("http://localhost:3001"),
   WEB_URL: z.string().default("http://localhost:3000"),
@@ -30,6 +31,7 @@ const envSchema = z.object({
   ADMOB_APP_ID: z.string().optional(),
   RATE_LIMIT_WINDOW_MS: z.string().default("60000"),
   RATE_LIMIT_MAX_REQUESTS: z.string().default("100"),
+  CORS_ALLOWED_ORIGINS: z.string().optional(),
   ENABLE_WHATSAPP_NOTIFICATIONS: z.string().default("false"),
   ENABLE_ADS: z.string().default("false"),
   ENABLE_PRO_SUBSCRIPTION: z.string().default("false"),
@@ -41,12 +43,19 @@ const envSchema = z.object({
   SENTRY_DSN: z.string().optional(),
   MIXPANEL_TOKEN: z.string().optional(),
   PERSPECTIVE_API_KEY: z.string().optional(),
+  NEWSAPI_KEY: z.string().optional(),
+  GEMINI_API_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
   console.error("Invalid environment variables:", parsed.error.flatten().fieldErrors);
+  process.exit(1);
+}
+
+if (parsed.data.NODE_ENV === "production" && !parsed.data.CORS_ALLOWED_ORIGINS) {
+  console.error("Production environment requires CORS_ALLOWED_ORIGINS to be set to trusted origins.");
   process.exit(1);
 }
 
@@ -88,14 +97,13 @@ export const config = {
   sentryDsn: parsed.data.SENTRY_DSN,
   mixpanelToken: parsed.data.MIXPANEL_TOKEN,
   perspectiveApiKey: parsed.data.PERSPECTIVE_API_KEY,
-  corsOrigins: [
-    parsed.data.WEB_URL,
-    "https://pulse.app",
-    "https://admin.pulse.app",
-    "https://parda.vercel.app",
-    "http://localhost:3000",
-    "http://localhost:3001",
-  ].filter(Boolean),
+  newsApiKey: parsed.data.NEWSAPI_KEY,
+  geminiApiKey: parsed.data.GEMINI_API_KEY,
+  corsOrigins: (parsed.data.CORS_ALLOWED_ORIGINS
+    ? parsed.data.CORS_ALLOWED_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean)
+    : parsed.data.NODE_ENV === "production"
+      ? []
+      : [parsed.data.WEB_URL].filter(Boolean)),
   isProduction: parsed.data.NODE_ENV === "production",
   isDevelopment: parsed.data.NODE_ENV === "development",
   isTest: parsed.data.NODE_ENV === "test",

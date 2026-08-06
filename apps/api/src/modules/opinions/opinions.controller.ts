@@ -37,7 +37,7 @@ router.get("/:id/opinions", optionalAuthGuard, validateParams(PollIdSchema), val
   }
 });
 
-router.post("/:id/react", authGuard, validateParams(OpinionIdSchema), validateBody(ReactOpinionSchema), async (req, res, next) => {
+router.post("/:id/react", authGuard, rateLimiter.opinion, validateParams(OpinionIdSchema), validateBody(ReactOpinionSchema), async (req, res, next) => {
   try {
     const result = await opinionsService.reactToOpinion(req.user!.id, req.params.id, req.body);
     res.json(result);

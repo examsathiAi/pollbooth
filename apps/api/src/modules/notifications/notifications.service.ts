@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 export class NotificationsService {
   async getNotifications(userId: string, page: number, limit: number) {
-    const [notifications, total] = await Promise.all([
+    const [notifications, total, unread_count] = await Promise.all([
       prisma.notification.findMany({
         where: { user_id: userId },
         orderBy: { created_at: "desc" },
@@ -12,11 +12,12 @@ export class NotificationsService {
         take: limit,
       }),
       prisma.notification.count({ where: { user_id: userId } }),
+      prisma.notification.count({ where: { user_id: userId, is_read: false } }),
     ]);
 
     return {
       notifications,
-      unread_count: notifications.filter((n) => !n.is_read).length,
+      unread_count,
       pagination: { page, limit, total, total_pages: Math.ceil(total / limit) },
     };
   }

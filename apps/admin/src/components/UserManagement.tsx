@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Search, ShieldAlert, UserCheck, UserX } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -27,20 +27,25 @@ export function UserManagement() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
-  const loadUsers = async (search = query) => {
+  const loadUsers = useCallback(async (search = query) => {
     setLoading(true);
     try {
       const res = await api.get<UserListResponse>("/api/v1/admin/users", { params: { search, page: 1, limit: 10 } });
       setUsers(res.data.users);
+      setError(null);
+    } catch (err: any) {
+      setError(err.response?.status === 401 ? "Please log in as an admin" : err.response?.data?.message || "Failed to load users.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [query]);
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    void loadUsers();
+  }, [loadUsers]);
 
   const filteredUsers = useMemo(() => users.filter((user) => user.username?.toLowerCase().includes(query.toLowerCase()) || user.phone_number?.includes(query)), [query, users]);
 
@@ -48,8 +53,9 @@ export function UserManagement() {
     try {
       await api.post(`/api/v1/moderation/users/${userId}/ban`, { permanent: false, duration_days: 7, reason: "Admin action from dashboard" });
       setUsers((current) => current.map((user) => (user.id === userId ? { ...user, is_banned: !user.is_banned } : user)));
-    } catch (err) {
-      console.error(err);
+      setMessage("User state updated successfully.");
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to update user state.");
     }
   };
 
@@ -65,6 +71,9 @@ export function UserManagement() {
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search users" className="bg-transparent text-sm text-slate-200 outline-none" />
         </div>
       </div>
+
+      {message ? <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">{message}</div> : null}
+      {error ? <div className="mb-4 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">{error}</div> : null}
 
       {loading ? (
         <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-8 text-center text-sm text-slate-400">Loading accounts…</div>

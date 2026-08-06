@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../config/database";
 import { logger } from "../../common/interceptors/logger";
 import type { ReportOpinionInput, ModerateOpinionInput, BanUserInput } from "./moderation.types";
-
-const prisma = new PrismaClient();
 
 export class ModerationService {
   async reportOpinion(reporterId: string, opinionId: string, input: ReportOpinionInput) {
@@ -99,6 +97,22 @@ export class ModerationService {
         action_type: input.action,
         reason: input.reason,
         triggered_by: adminId,
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        user_id: adminId,
+        action: "MODERATION_ACTION",
+        entity_type: "OPINION",
+        entity_id: opinionId,
+        ip_address: null,
+        user_agent: null,
+        metadata: {
+          action: input.action,
+          reason: input.reason,
+          opinion_user_id: opinion.user_id,
+        },
       },
     });
 
@@ -229,6 +243,21 @@ export class ModerationService {
         },
       });
 
+      await prisma.auditLog.create({
+        data: {
+          user_id: adminId,
+          action: "PERMANENT_ACCOUNT_BAN",
+          entity_type: "USER",
+          entity_id: userId,
+          ip_address: null,
+          user_agent: null,
+          metadata: {
+            reason: input.reason,
+            duration_days: null,
+          },
+        },
+      });
+
       return { message: "User permanently banned" };
     }
 
@@ -243,6 +272,22 @@ export class ModerationService {
       update: {
         comment_banned_until: banUntil,
         ban_reason: input.reason,
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        user_id: adminId,
+        action: "TEMPORARY_COMMENT_BAN",
+        entity_type: "USER",
+        entity_id: userId,
+        ip_address: null,
+        user_agent: null,
+        metadata: {
+          reason: input.reason,
+          duration_days: input.duration_days || 7,
+          banned_until: banUntil.toISOString(),
+        },
       },
     });
 

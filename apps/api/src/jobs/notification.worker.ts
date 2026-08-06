@@ -5,7 +5,7 @@ import { redis } from "../config/redis";
 import { config } from "../config";
 
 const prisma = new PrismaClient();
-const notificationRedisConnection = { ...(redis as Record<string, unknown>), maxRetriesPerRequest: null };
+const notificationRedisConnection = { ...(redis as unknown as Record<string, unknown>), maxRetriesPerRequest: null };
 
 export const notificationQueue = new Queue("notification", {
   connection: notificationRedisConnection as any,

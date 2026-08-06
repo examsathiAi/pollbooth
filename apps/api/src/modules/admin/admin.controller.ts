@@ -1,13 +1,13 @@
-import { PrismaClient } from "@prisma/client";
 import { Router } from "express";
 import { authGuard } from "../../common/guards/auth.guard";
-import { adminGuard } from "../../common/guards/roles.guard";
+import { roleGuard } from "../../common/guards/roles.guard";
+import { rateLimiter } from "../../common/interceptors/rate-limiter";
+import { prisma } from "../../config/database";
 import { adminService } from "./admin.service";
 
 const router = Router();
-const prisma = new PrismaClient();
 
-router.get("/dashboard", authGuard, adminGuard, async (req, res, next) => {
+router.get("/dashboard", authGuard, roleGuard("ADMIN"), async (req, res, next) => {
   try {
     const result = await adminService.getDashboardStats();
     res.json(result);
@@ -16,7 +16,7 @@ router.get("/dashboard", authGuard, adminGuard, async (req, res, next) => {
   }
 });
 
-router.get("/users", authGuard, adminGuard, async (req, res, next) => {
+router.get("/users", authGuard, roleGuard("ADMIN"), async (req, res, next) => {
   try {
     const result = await adminService.getUsers({
       page: Number(req.query.page) || 1,
@@ -30,7 +30,7 @@ router.get("/users", authGuard, adminGuard, async (req, res, next) => {
   }
 });
 
-router.get("/topic-balance", authGuard, adminGuard, async (req, res, next) => {
+router.get("/topic-balance", authGuard, roleGuard("ADMIN"), async (req, res, next) => {
   try {
     const result = await adminService.getQuestionTopicBalance();
     res.json(result);
@@ -39,7 +39,7 @@ router.get("/topic-balance", authGuard, adminGuard, async (req, res, next) => {
   }
 });
 
-router.post("/election-blackout", authGuard, adminGuard, async (req, res, next) => {
+router.post("/election-blackout", authGuard, roleGuard("SUPER_ADMIN"), rateLimiter.adminAction, async (req, res, next) => {
   try {
     const { region, polling_date } = req.body as { region?: string; polling_date?: string | Date };
     const pollingDate = new Date(polling_date ?? new Date());
@@ -53,7 +53,66 @@ router.post("/election-blackout", authGuard, adminGuard, async (req, res, next) 
       },
     });
 
+    await prisma.auditLog.create({
+      data: {
+        user_id: req.user!.id,
+        action: "CREATE_ELECTION_BLACKOUT",
+        entity_type: "ELECTION_BLACKOUT",
+        entity_id: blackout.id,
+        ip_address: req.ip,
+        user_agent: req.headers["user-agent"] as string | undefined,
+        metadata: {
+          region: blackout.region,
+          polling_date: blackout.polling_date.toISOString(),
+          blackout_starts: blackout.blackout_starts.toISOString(),
+        },
+      },
+    });
+
     res.status(201).json(blackout);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/roles", authGuard, roleGuard("SUPER_ADMIN"), async (req, res, next) => {
+  try {
+    const result = await adminService.getRoleUsers();
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch("/roles/:userId", authGuard, roleGuard("SUPER_ADMIN"), rateLimiter.adminAction, async (req, res, next) => {
+  try {
+    const { role } = req.body as { role?: string };
+    const result = await adminService.updateUserRole(req.params.userId, role);
+
+    await prisma.auditLog.create({
+      data: {
+        user_id: req.user!.id,
+        action: "UPDATE_USER_ROLE",
+        entity_type: "USER",
+        entity_id: req.params.userId,
+        ip_address: req.ip,
+        user_agent: req.headers["user-agent"] as string | undefined,
+        metadata: {
+          role: result.user.role,
+        },
+      },
+    });
+
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/health", authGuard, roleGuard("SUPER_ADMIN"), async (req, res, next) => {
+  try {
+    const result = await adminService.getPlatformHealth();
+    res.json(result);
   } catch (err) {
     next(err);
   }

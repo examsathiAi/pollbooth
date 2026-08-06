@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import { logger } from "../../common/interceptors/logger";
 import type { UpdateProfileInput } from "./users.types";
 
 const prisma = new PrismaClient();
@@ -31,6 +30,10 @@ export class UsersService {
       where: { user_id: userId },
     });
 
+    const moderationStatus = await prisma.userModerationStatus.findUnique({
+      where: { user_id: userId },
+    });
+
     return {
       id: user.id,
       username: user.username,
@@ -49,6 +52,10 @@ export class UsersService {
         total_opinions: user._count.opinions,
         current_streak: streak?.current_streak || 0,
         longest_streak: streak?.longest_streak || 0,
+      },
+      moderation: {
+        comment_banned_until: moderationStatus?.comment_banned_until ?? null,
+        is_permanently_banned: moderationStatus?.is_permanently_banned ?? false,
       },
     };
   }

@@ -22,6 +22,8 @@ import { adminRouter } from "./modules/admin/admin.controller";
 import { notificationRouter } from "./modules/notifications/notifications.controller";
 import { paymentRouter } from "./modules/payments/payments.controller";
 import { analyticsRouter } from "./modules/analytics/analytics.controller";
+import { topicRouter } from "./modules/topics/topics.controller";
+import { aiRouter } from "./modules/ai/ai.controller";
 
 export function createApp(): Application {
   const app = express();
@@ -68,6 +70,8 @@ export function createApp(): Application {
   app.use("/api/v1/notifications", notificationRouter);
   app.use("/api/v1/payments", paymentRouter);
   app.use("/api/v1/analytics", analyticsRouter);
+  app.use("/api/v1/topics", topicRouter);
+  app.use("/api/v1/ai", aiRouter);
 
   // Error handling (must be last)
   app.use(errorHandler);

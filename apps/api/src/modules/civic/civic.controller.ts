@@ -1,12 +1,14 @@
 import { Router } from "express";
 import { authGuard } from "../../common/guards/auth.guard";
+import { rateLimiter } from "../../common/interceptors/rate-limiter";
+import { roleGuard } from "../../common/guards/roles.guard";
 import { validateBody } from "../../common/pipes/validation.pipe";
 import { civicService } from "./civic.service";
 import { CreateCivicIssueSchema } from "./civic.types";
 
 const router = Router();
 
-router.post("/issues", authGuard, validateBody(CreateCivicIssueSchema), async (req, res, next) => {
+router.post("/issues", authGuard, rateLimiter.civicIssue, validateBody(CreateCivicIssueSchema), async (req, res, next) => {
   try {
     const result = await civicService.createIssue(req.user!.id, req.body);
     res.status(201).json(result);
@@ -15,7 +17,7 @@ router.post("/issues", authGuard, validateBody(CreateCivicIssueSchema), async (r
   }
 });
 
-router.get("/issues", async (req, res, next) => {
+router.get("/issues", authGuard, roleGuard("MODERATOR"), async (req, res, next) => {
   try {
     const result = await civicService.getIssues(
       req.query.city as string,

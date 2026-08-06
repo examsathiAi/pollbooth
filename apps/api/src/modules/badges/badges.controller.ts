@@ -13,6 +13,15 @@ router.get("/", authGuard, async (req, res, next) => {
   }
 });
 
+router.get("/me", authGuard, async (req, res, next) => {
+  try {
+    const result = await badgesService.getMeBadges(req.user!.id);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/all", async (req, res, next) => {
   try {
     const result = await badgesService.getAllBadges();

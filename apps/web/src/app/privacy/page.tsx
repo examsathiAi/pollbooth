@@ -37,8 +37,15 @@ export default function PrivacyPage() {
         </ul>
       </section>
 
-      <div className="text-sm text-slate-500">
+      <section className="rounded-[28px] border border-slate-200 p-6">
+        <h2 className="text-xl font-semibold text-slate-900">Your rights</h2>
+        <p className="mt-4 text-sm leading-7">You may withdraw your consent at any time, request access to the data we hold about you, or ask for deletion of your account-linked information. Submit a grievance request through the grievance page to start the process.</p>
+      </section>
+
+      <div className="text-sm text-slate-500 flex flex-col gap-2">
+        <Link href="/consent" className="font-medium text-blue-600">Manage your consent preferences</Link>
         <Link href="/terms" className="font-medium text-blue-600">View terms of service</Link>
+        <Link href="/grievance" className="font-medium text-blue-600">Grievance officer and data request</Link>
       </div>
     </main>
   );

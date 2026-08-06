@@ -43,19 +43,20 @@ export class ConsentService {
     return { message: "Consent revoked successfully" };
   }
 
-  async recordDPDPConsent(userId: string, ipAddress: string, userAgent: string) {
+  async recordDPDPConsent(userId: string, ipAddress: string | null, userAgent: string | null, consentDetails: Record<string, unknown>) {
     await prisma.auditLog.create({
       data: {
         user_id: userId,
         action: "DPDP_CONSENT_GIVEN",
         entity_type: "USER",
         entity_id: userId,
-        ip_address: ipAddress,
-        user_agent: userAgent,
+        ip_address: ipAddress ?? undefined,
+        user_agent: userAgent ?? undefined,
         metadata: {
-          purpose: "aggregated_research_analytics",
-          retention_period: "7_years",
+          ...consentDetails,
+          purpose: "platform_access_and_research",
           rights: ["access", "correction", "erasure", "withdrawal"],
+          logged_at: new Date().toISOString(),
         },
       },
     });

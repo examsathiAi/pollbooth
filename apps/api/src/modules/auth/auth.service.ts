@@ -4,9 +4,14 @@ import bcrypt from "bcryptjs";
 import { config } from "../../config";
 import { redis } from "../../config/redis";
 import { logger } from "../../common/interceptors/logger";
+import { consentService } from "../consent/consent.service";
 import type { SendOtpInput, VerifyOtpInput, RefreshTokenInput } from "./auth.types";
 
 const prisma = new PrismaClient();
+
+if (config.nodeEnv === "production" && config.isDevelopment) {
+  throw new Error("Misconfigured environment: production mode must not enable development OTP fallback.");
+}
 
 // In production, use Firebase Auth or Twilio for real OTP
 // This is a mock implementation for development
@@ -24,19 +29,23 @@ export class AuthService {
       throw new Error("Too many OTP requests. Please try again later.");
     }
 
-    const otp = config.isDevelopment ? "123456" : Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = this.generateOtpCode();
     const otpKey = `otp:${phone_number}`;
 
     await redis.setex(otpKey, 300, otp); // 5 minutes expiry
 
     // In production: send via Firebase Auth SMS or Twilio
-    logger.info(`OTP sent to ${phone_number}: ${otp}`);
+    if (config.isDevelopment) {
+      logger.info(`OTP sent to ${phone_number}: ${otp}`);
+    } else {
+      logger.info(`OTP request created for ${phone_number}`);
+    }
 
     return { message: "OTP sent successfully", expires_in: 300 };
   }
 
-  async verifyOtp(input: VerifyOtpInput) {
-    const { phone_number, otp } = input;
+  async verifyOtp(input: VerifyOtpInput, context?: { ipAddress?: string; userAgent?: string }) {
+    const { phone_number, otp, accepted_terms, accepted_privacy, age_confirmed, analytics_consent } = input;
     const otpKey = `otp:${phone_number}`;
     const storedOtp = await redis.get(otpKey);
 
@@ -46,16 +55,22 @@ export class AuthService {
 
     await redis.del(otpKey);
 
-    const phone_hash = await bcrypt.hash(phone_number, 12);
+    const phone_hash = await this.getPhoneHash(phone_number);
 
-    let user = await prisma.user.findUnique({
-      where: { phone_hash },
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [{ phone_hash }, { phone_number }],
+      },
       include: { profile: true },
     });
 
     const isNewUser = !user;
 
     if (!user) {
+      if (accepted_terms !== true || accepted_privacy !== true || age_confirmed !== true) {
+        throw new Error("Please accept the Terms and Privacy policy and confirm your age to create an account.");
+      }
+
       const referralCode = this.generateReferralCode();
       user = await prisma.user.create({
         data: {
@@ -75,6 +90,20 @@ export class AuthService {
       await prisma.voteStreak.create({
         data: { user_id: user.id },
       });
+
+      await consentService.recordDPDPConsent(user.id, context?.ipAddress ?? null, context?.userAgent ?? null, {
+        accepted_terms: true,
+        accepted_privacy: true,
+        age_confirmed: true,
+        analytics_consent: analytics_consent === true,
+      });
+    }
+
+    if (user.phone_hash !== phone_hash) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { phone_hash },
+      });
     }
 
     // Generate tokens
@@ -91,6 +120,7 @@ export class AuthService {
       user: {
         id: user.id,
         username: user.username,
+        role: user.role,
         phone_number: user.phone_number,
         city: user.city,
         state: user.state,
@@ -137,6 +167,18 @@ export class AuthService {
     } catch {
       throw new Error("Invalid or expired refresh token");
     }
+  }
+
+  private generateOtpCode(): string {
+    if (config.nodeEnv === "development") {
+      return "123456";
+    }
+
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  private async getPhoneHash(phoneNumber: string): Promise<string> {
+    return bcrypt.hash(phoneNumber.trim().toLowerCase(), 12);
   }
 
   private generateAccessToken(userId: string): string {
