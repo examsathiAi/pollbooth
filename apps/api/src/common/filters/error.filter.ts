@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
 import { logger } from "../interceptors/logger";
 import { config } from "../../config";
+import { captureException } from "../instrumentation/error-tracking";
 
 export function errorHandler(err: any, req: Request, res: Response, _next: NextFunction) {
   const requestId = (req as any).requestId || "unknown";
@@ -38,6 +39,8 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
     url: req.url,
     method: req.method,
   });
+
+  captureException(err, { requestId, url: req.url, method: req.method });
 
   const statusCode = err.statusCode || err.status || 500;
   const message = config.isProduction && statusCode === 500

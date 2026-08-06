@@ -4,10 +4,13 @@ import { logger } from "./common/interceptors/logger";
 import { prisma } from "./config/database";
 import { redis } from "./config/redis";
 import { startWorkers } from "./jobs";
+import { initErrorTracking } from "./common/instrumentation/error-tracking";
 
 const PORT = config.port;
 
 async function bootstrap() {
+  initErrorTracking();
+
   const app = createApp();
 
   // Health check

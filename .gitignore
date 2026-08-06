@@ -4,4 +4,11 @@ build/
 .next/
 .turbo/
 .env
+.env.*
+!.env.example
+*.local
 *.log
+*.pem
+*.key
+*.p12
+*.pfx
