@@ -260,13 +260,13 @@ export default function FeedPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-4 py-6 lg:grid lg:grid-cols-[220px,minmax(0,1fr),320px] lg:gap-6" style={{ height: `calc(100vh - ${headerHeight}px)` }}>
-        <div className="hidden lg:block lg:self-start" style={{ position: "sticky", top: `${headerHeight}px` }}>
+      <div className="mx-auto max-w-7xl px-4 py-6 lg:grid lg:grid-cols-[220px,minmax(0,1fr),320px] lg:gap-6 scrollbar-paper" style={{ height: `calc(100vh - ${headerHeight}px)` }}>
+        <div className="hidden lg:block lg:self-start scrollbar-paper" style={{ position: "sticky", top: `${headerHeight}px` }}>
           <FeedSidebar activeCategory={activeCategory} onCategoryChange={handleCategoryChange} />
         </div>
 
-        <main className="min-w-0 lg:overflow-y-auto" style={{ maxHeight: `calc(100vh - ${headerHeight}px)` }}>
-          <div className="mx-auto max-w-2xl">
+        <main className="min-w-0 lg:overflow-y-auto scrollbar-paper" style={{ maxHeight: `calc(100vh - ${headerHeight}px)` }}>
+          <div className="mx-auto max-w-2xl pb-12">
             {isSearching && searchQuery ? (
               <div className="mb-6">
                 <h2 className="mb-4 text-xl font-semibold text-gray-900">Search results for &quot;{searchQuery}&quot;</h2>
@@ -344,7 +344,7 @@ export default function FeedPage() {
           </div>
         </main>
 
-        <div className="hidden lg:block lg:self-start" style={{ position: "sticky", top: `${headerHeight}px` }}>
+        <div className="hidden lg:block lg:self-start scrollbar-paper" style={{ position: "sticky", top: `${headerHeight}px` }}>
           <FeedRightRail />
         </div>
       </div>

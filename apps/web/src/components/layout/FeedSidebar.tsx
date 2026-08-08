@@ -20,7 +20,7 @@ interface FeedSidebarProps {
 
 export function FeedSidebar({ activeCategory, onCategoryChange }: FeedSidebarProps) {
   return (
-    <aside className="hidden w-full space-y-6 lg:block lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
+    <aside className="hidden w-full space-y-6 lg:block lg:max-h-full lg:overflow-y-auto scrollbar-paper">
       <div className="space-y-1">
         <p className="px-3 py-1 text-xs font-sans uppercase tracking-widest text-ink border-b-2 border-ink">Browse</p>
         <nav className="space-y-0.5">

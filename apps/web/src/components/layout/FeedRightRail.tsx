@@ -52,7 +52,7 @@ export function FeedRightRail() {
   }, []);
 
   return (
-    <aside className="w-full lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
+    <aside className="w-full lg:max-h-full lg:overflow-y-auto scrollbar-paper">
       <div className="space-y-4">
         <div className="rounded-sm border border-paper-border bg-paper-bg p-4">
           <div className="mb-3">
