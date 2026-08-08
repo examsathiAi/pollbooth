@@ -1,16 +1,32 @@
 import { Router } from "express";
 import { authGuard } from "../../common/guards/auth.guard";
 import { roleGuard } from "../../common/guards/roles.guard";
-import { validateBody, validateParams } from "../../common/pipes/validation.pipe";
+import { validateBody, validateParams, validateQuery } from "../../common/pipes/validation.pipe";
 import { topicsService } from "./topics.service";
-import { CreateTopicSchema, TopicIdSchema, UpdateTopicSchema } from "./topics.types";
+import { CreateTopicSchema, ListTopicsQuerySchema, TopicIdSchema, TopicPollsQuerySchema, UpdateTopicSchema } from "./topics.types";
 
 const router = Router();
 
-router.get("/", async (_req, res, next) => {
+router.get("/", validateQuery(ListTopicsQuerySchema), async (req, res, next) => {
   try {
-    const result = await topicsService.listTopics();
+    const { parent_category, exclude_slug, active, limit } = req.query as any;
+    const result = await topicsService.listTopics({
+      parent_category,
+      exclude_slug,
+      active,
+      limit,
+    });
     res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/:slug/polls", validateQuery(TopicPollsQuerySchema), async (req, res, next) => {
+  try {
+    const { sort, limit } = req.query as any;
+    const result = await topicsService.getTopicPollsBySlug(req.params.slug, sort, limit);
+    res.json({ polls: result });
   } catch (err) {
     next(err);
   }

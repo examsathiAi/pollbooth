@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authGuard } from "../../common/guards/auth.guard";
+import { authGuard, optionalAuthGuard } from "../../common/guards/auth.guard";
 import { rateLimiter } from "../../common/interceptors/rate-limiter";
 import { roleGuard } from "../../common/guards/roles.guard";
 import { logger } from "../../common/interceptors/logger";
@@ -28,9 +28,11 @@ router.get("/review", authGuard, roleGuard("ADMIN"), validateQuery(PollQuerySche
   }
 });
 
-router.get("/feed", validateQuery(PollQuerySchema), async (req, res, next) => {
+router.get("/feed", optionalAuthGuard, validateQuery(PollQuerySchema), async (req, res, next) => {
   try {
-    const result = await pollsService.getPolls(req.query as any);
+    const userId = (req as any).user?.id;
+    const guestSessionId = typeof req.headers["x-pulse-guest-session"] === "string" ? req.headers["x-pulse-guest-session"] as string : undefined;
+    const result = await pollsService.getPolls(req.query as any, userId, guestSessionId);
     res.json(result);
   } catch (err) {
     next(err);
@@ -46,7 +48,7 @@ router.get("/estimated-reach", async (req, res, next) => {
   }
 });
 
-router.get("/:id", validateParams(PollIdSchema), async (req, res, next) => {
+router.get("/:id", optionalAuthGuard, validateParams(PollIdSchema), async (req, res, next) => {
   try {
     const userId = (req as any).user?.id;
     const result = await pollsService.getPollById(req.params.id, userId);

@@ -1,5 +1,14 @@
 import { prisma } from "../../config/database";
 
+interface ListTopicsFilters {
+  parent_category?: string;
+  exclude_slug?: string;
+  active?: boolean;
+  limit?: number;
+}
+
+type TopicPollSort = "latest" | "trending" | "most-voted";
+
 export class TopicsService {
   private slugify(value: string) {
     return value
@@ -41,9 +50,22 @@ export class TopicsService {
     });
   }
 
-  async listTopics() {
+  async listTopics(filters: ListTopicsFilters = {}) {
+    const where: any = {};
+    if (filters.parent_category) {
+      where.parent_category = filters.parent_category;
+    }
+    if (filters.exclude_slug) {
+      where.slug = { not: filters.exclude_slug };
+    }
+    if (filters.active) {
+      where.polls = { some: { is_active: true } };
+    }
+
     return prisma.topic.findMany({
+      where,
       orderBy: { created_at: "desc" },
+      take: filters.limit,
     });
   }
 
@@ -51,9 +73,41 @@ export class TopicsService {
     return prisma.topic.findUnique({ where: { slug } });
   }
 
-  async getTopicByName(name: string) {
-    return prisma.topic.findFirst({
-      where: { name: { equals: name, mode: "insensitive" } },
+  async getTopicPollsBySlug(slug: string, sort: TopicPollSort, limit = 6) {
+    const orderBy: any = [];
+    if (sort === "latest") {
+      orderBy.push({ created_at: "desc" });
+    } else {
+      orderBy.push({ votes: { _count: "desc" } });
+      if (sort === "trending") {
+        orderBy.push({ created_at: "desc" });
+      }
+    }
+
+    return prisma.poll.findMany({
+      where: {
+        is_active: true,
+        topics: {
+          some: { slug },
+        },
+      },
+      orderBy,
+      take: limit,
+      select: {
+        id: true,
+        question: true,
+        options: true,
+        category: true,
+        is_commercial: true,
+        created_at: true,
+        end_date: true,
+        _count: {
+          select: {
+            votes: true,
+            opinions: true,
+          },
+        },
+      },
     });
   }
 
@@ -61,6 +115,12 @@ export class TopicsService {
     return prisma.topic.update({
       where: { id },
       data: input,
+    });
+  }
+
+  async getTopicByName(name: string) {
+    return prisma.topic.findFirst({
+      where: { name: { equals: name, mode: "insensitive" } },
     });
   }
 

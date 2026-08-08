@@ -93,6 +93,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
   const [showVoteToast, setShowVoteToast] = useState(false);
   const [showSharePrompt, setShowSharePrompt] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
   const [commentFocused, setCommentFocused] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(Date.now());
   const [liveTick, setLiveTick] = useState(Date.now());
@@ -237,6 +238,30 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
     setIsVoting(true);
     setFeedback(null);
     setSelectedOptionIndex(index);
+    // Lock voting UI immediately so options are not shown again
+    // prepare optimistic UI
+    const prevResults = results.slice();
+    const prevTotalVotes = totalVotes;
+    const builtResults = poll.options.map((opt, i) => {
+      const found = results.find((rr) => rr.index === i);
+      return {
+        option: opt,
+        index: i,
+        count: found ? found.count : 0,
+        percentage: found ? found.percentage : 0,
+      };
+    });
+    // increment optimistic count
+    builtResults[index].count = (builtResults[index].count || 0) + 1;
+    const optimisticTotal = (prevTotalVotes || 0) + 1;
+    const optimisticResults = builtResults.map((r) => ({ ...r, percentage: Math.round(((r.count || 0) / optimisticTotal) * 100) }));
+    setResults(optimisticResults);
+    setTotalVotes(optimisticTotal);
+    setAnimatedVotes(optimisticTotal);
+    setUserVoteIndex(index);
+    setHasVoted(true);
+    // reveal bars quickly for animation
+    window.setTimeout(() => setBarRevealReady(true), 30);
     try {
       if (!user) {
         const sessionId = typeof window !== "undefined" ? window.localStorage.getItem("pulse_guest_session") || `guest-${Date.now()}` : `guest-${Date.now()}`;
@@ -245,7 +270,6 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         }
         await api.post(`/api/v1/votes/${poll.id}/guest-vote`, { session_id: sessionId, option_index: index });
         const pollRes = await api.get(`/api/v1/polls/${poll.id}`);
-        setHasVoted(true);
         setHasOpinion(false);
         setUserVoteIndex(index);
         setFeedback("✓ Your guest vote is recorded");
@@ -262,7 +286,6 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
 
       await api.post(`/api/v1/votes/${poll.id}/vote`, { option_index: index });
       const pollRes = await api.get(`/api/v1/polls/${poll.id}`);
-      setHasVoted(true);
       setHasOpinion(false);
       setUserVoteIndex(index);
       setFeedback("✓ Your vote is recorded");
@@ -275,7 +298,13 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       setTotalOpinions(pollRes.data.total_opinions || 0);
       setLastUpdatedAt(Date.now());
     } catch (err: any) {
+      // revert optimistic UI on error
       alert(err.response?.data?.message || "Failed to vote");
+      setResults(prevResults);
+      setTotalVotes(prevTotalVotes);
+      setAnimatedVotes(prevTotalVotes);
+      setUserVoteIndex(poll.user_vote_index ?? null);
+      setHasVoted(Boolean(poll.has_voted));
     } finally {
       setIsVoting(false);
     }
@@ -387,6 +416,19 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
     }
   };
 
+  // close share menu when clicking outside
+  useEffect(() => {
+    if (!showShareMenu) return;
+    const onDocClick = (e: MouseEvent) => {
+      const target = e.target as Node | null;
+      const root = document.getElementById(`poll-card-${poll.id}`);
+      if (!root) return;
+      if (!target || !root.contains(target)) setShowShareMenu(false);
+    };
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, [showShareMenu, poll.id]);
+
   const headline = useMemo(() => {
     const winningResult = [...(results || [])].sort((a, b) => b.percentage - a.percentage)[0];
     const totalVotesForSignal = totalVotes || 0;
@@ -423,173 +465,130 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
   return (
     <article
       id={`poll-card-${poll.id}`}
-      className={`overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm transition-all duration-500 ${visible ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"} ${isFeatured ? "border-blue-200 shadow-[0_18px_45px_-25px_rgba(37,99,235,0.55)]" : "hover:shadow-md"} hover:-translate-y-0.5 hover:scale-[1.01] hover:border-blue-200 hover:shadow-[0_14px_34px_-18px_rgba(37,99,235,0.35)]`}
+      className={`overflow-hidden rounded-2xl bg-white dark:bg-gray-900 shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-800 transition-all duration-200 ${visible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`}
     >
-      <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
-        <div className="flex items-start gap-3">
-          <div className="relative mt-0.5">
-            <div className="avatar-live flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 font-semibold text-white shadow-sm">
-              P
+      <div className="flex items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-800 px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 font-semibold text-white">P</div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Pulse</p>
+              <span className="text-xs text-gray-400">· {relativeTime}</span>
             </div>
-          </div>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-semibold text-slate-900">Pulse</p>
-              <span className="text-xs text-slate-500">· {relativeTime}</span>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5">{poll.category.replace(/_/g, " ")}</span>
             </div>
-            <p className="mt-0.5 text-xs text-slate-500">{poll.category.replace(/_/g, " ")}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-            {liveFreshness}
-          </span>
-          {isTrending ? (
-            <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-600">
-              🔥 Trending
-            </span>
-          ) : null}
-          {isEndingSoon ? (
-            <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-700">
-              Ends soon
-            </span>
-          ) : null}
+        <div>
+          <button aria-label="menu" className="rounded-full p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">⋯</button>
         </div>
       </div>
 
       <div className="px-4 py-4">
-        <div className="mb-2 flex items-center gap-2">
-          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-700">Live</span>
-          <span className="text-[13px] font-semibold text-slate-600">{headline}</span>
-        </div>
-        <h3 className="text-[17px] font-semibold leading-6 text-slate-900">{poll.question}</h3>
-        <p className="mt-2 text-sm leading-6 text-slate-600">{socialLead}</p>
+        <h3 className="text-lg font-semibold leading-snug text-gray-900 dark:text-gray-100 line-clamp-4">{poll.question}</h3>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{socialLead}</p>
       </div>
 
       {!hasVoted ? (
-        <div className="space-y-3 px-4 py-3">
+        <div className="px-4 pb-4">
           {feedback ? (
-            <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+            <div className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 flex items-center gap-2">
               <Sparkles className="h-4 w-4" /> {feedback}
             </div>
           ) : null}
-          {showVoteToast ? (
-            <div className="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700">
-              <CheckCircle2 className="h-4 w-4" /> Voted! Results are updating.
-            </div>
-          ) : null}
-          {poll.options.map((option, idx) => (
-            <button
-              key={idx}
-              onClick={() => void handleVote(idx)}
-              disabled={isVoting}
-              className={`w-full rounded-xl border px-4 py-3 text-left text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 active:scale-[0.98] disabled:opacity-60 ${selectedOptionIndex === idx && showVoteToast ? "border-blue-400 bg-blue-50 text-blue-700 shadow-[0_0_0_4px_rgba(59,130,246,0.12)]" : "border-slate-200 bg-slate-50 text-slate-800 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"}`}
-            >
-              <span className="flex items-center justify-between gap-3">
-                <span>{option}</span>
-                {selectedOptionIndex === idx && showVoteToast ? <CheckCircle2 className="h-4 w-4" /> : null}
-              </span>
-            </button>
-          ))}
 
-          {results.length > 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Live vote split</p>
-                <p className="text-xs text-slate-500">{totalVotes.toLocaleString()} votes</p>
-              </div>
-              <div className="space-y-2.5">
-                {results.map((r, idx) => {
-                  const toneClasses = [
-                    "from-blue-500 to-cyan-500",
-                    "from-emerald-500 to-lime-500",
-                    "from-amber-500 to-orange-500",
-                    "from-violet-500 to-fuchsia-500",
-                    "from-rose-500 to-pink-500",
-                  ];
-                  const barClass = toneClasses[idx % toneClasses.length];
-                  return (
-                    <div key={`${r.index}-${r.option}`}>
-                      <div className="mb-1 flex items-center justify-between text-xs text-slate-600">
-                        <span className="font-semibold text-slate-700">{r.option}</span>
-                        <span>{r.percentage}% • {(r.count || 0).toLocaleString()} votes</span>
-                      </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-                        <div className={`h-full rounded-full bg-gradient-to-r ${barClass}`} style={{ width: `${Math.max(r.percentage, 2)}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+          <div className="mt-3 flex w-full flex-col gap-2">
+            {poll.options.map((option, idx) => (
+              <button
+                key={idx}
+                onClick={() => void handleVote(idx)}
+                disabled={isVoting}
+                className={`group flex w-full items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-[0.98] transition`}
+              >
+                <span className="flex h-4 w-4 items-center justify-center">
+                  <span className={`inline-block h-3.5 w-3.5 rounded-full border ${selectedOptionIndex === idx ? 'bg-blue-500 border-blue-500' : 'border-gray-400 dark:border-gray-600'} transition-colors`} />
+                </span>
+                <span className="truncate">{option}</span>
+              </button>
+            ))}
+          </div>
+
+          {results.length === 0 ? (
+            <div className="mt-3 rounded-xl border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 px-4 py-3 text-sm text-gray-500">Be the first to vote</div>
           ) : null}
         </div>
       ) : (
-        <div className="space-y-3 px-4 py-3">
-          {showSharePrompt ? (
-            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-3">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-sm font-semibold text-blue-900">Your vote is in! Share this poll to see what your friends think.</p>
-                  <p className="mt-1 text-xs text-blue-700">A quick share helps the conversation grow right away.</p>
-                </div>
-                <button onClick={() => setShowSharePrompt(false)} className="text-sm font-semibold text-blue-700">Dismiss</button>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button onClick={() => void handleShare()} className="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700">Share now</button>
-                <button onClick={() => setShowSharePrompt(false)} className="rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100">Maybe later</button>
-              </div>
-            </div>
-          ) : null}
-          {results.map((r, idx) => {
-            const isUserChoice = r.index === userVoteIndex;
-            const toneClasses = [
-              "from-blue-500 to-cyan-500",
-              "from-emerald-500 to-lime-500",
-              "from-amber-500 to-orange-500",
-              "from-violet-500 to-fuchsia-500",
-              "from-rose-500 to-pink-500",
-            ];
-            const barClass = toneClasses[idx % toneClasses.length];
-            return (
-              <div key={r.index}>
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <span className={`text-sm font-semibold ${isUserChoice ? "text-blue-700" : "text-slate-800"}`}>
-                    {r.option}
-                    {isUserChoice ? <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-[11px] text-blue-700">Your vote</span> : null}
-                  </span>
-                  <span className="text-sm font-bold text-slate-900">{r.percentage}%</span>
-                </div>
-                <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+        <div className="px-4 pb-4">
+          <div className="mt-3 flex w-full flex-col gap-2">
+            {results.map((r, idx) => {
+              const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-violet-500', 'bg-rose-500'];
+              const fillColor = colors[idx % colors.length];
+              const pct = Math.max(0, Math.min(100, r.percentage || 0));
+              const isWide = pct > 30;
+              const isUserChoice = r.index === userVoteIndex;
+              const displayLabel = r.option.length > 80 ? `${r.option.slice(0, 77)}…` : r.option;
+              const fillWidth = `${pct}%`;
+
+              return (
+                <div key={r.index} className="relative h-12 rounded-xl overflow-hidden">
+                  <div className="absolute inset-0 bg-gray-100 dark:bg-gray-800" />
                   <div
-                    className={`h-full rounded-full bg-gradient-to-r transition-all duration-700 ${barClass} ${isUserChoice ? "shadow-[0_0_0_2px_rgba(37,99,235,0.12)]" : ""}`}
-                    style={{ width: `${barRevealReady ? Math.max(r.percentage, 4) : 0}%` }}
+                    className={`absolute left-0 top-0 h-full rounded-xl opacity-90 transition-all duration-700 ease-out ${fillColor}`}
+                    style={{ width: barRevealReady ? fillWidth : '0%' }}
                   />
+
+                  <div className="relative z-10 flex h-full items-center justify-between px-4">
+                    <div className="flex items-center gap-3">
+                      {isWide ? (
+                        <span className="text-sm font-medium text-white">{displayLabel}</span>
+                      ) : (
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{displayLabel}</span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-bold ${isWide ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{pct}%</span>
+                    </div>
+                  </div>
+
+                  {isUserChoice ? (
+                    <span className="absolute right-3 top-2 z-20 rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">✓ You</span>
+                  ) : null}
                 </div>
-                <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
-                  <span>{(r.count || 0).toLocaleString()} votes</span>
-                  <span>{r.percentage}% of responses</span>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-4 py-3">
-        <button className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-white hover:text-slate-900 active:scale-[0.98]">
-          <CheckCircle2 className="h-4 w-4" />
-          <span>{hasVoted ? "Voted" : "Vote"}</span>
-        </button>
-        <button className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-white hover:text-slate-900 active:scale-[0.98]">
-          <MessageCircle className="h-4 w-4" />
-          <span>{animatedOpinions.toLocaleString()}</span>
-        </button>
-        <button onClick={() => void handleShare()} className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-white hover:text-slate-900 active:scale-[0.98]">
-          <Share2 className="h-4 w-4" />
-          <span>Share</span>
-        </button>
+      <div className="flex items-center justify-between gap-2 border-t border-gray-100 dark:border-gray-800 px-4 py-3 bg-white dark:bg-gray-900">
+        <div className="text-xs text-gray-500">{totalVotes.toLocaleString()} votes</div>
+        <div>
+              <div className="relative">
+                <button
+                  onClick={() => setShowShareMenu((s) => !s)}
+                  aria-expanded={showShareMenu}
+                  className="inline-flex items-center gap-2 rounded-lg px-3 py-1 text-xs font-semibold text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/40 hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <Share2 className="h-4 w-4" /> Share
+                </button>
+
+                {showShareMenu ? (
+                  <div className="absolute right-0 z-30 mt-2 w-44 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-md py-2">
+                    <button onClick={async () => { try { const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`; await navigator.clipboard.writeText(url); setShowSharePrompt(true); setTimeout(() => setShowSharePrompt(false), 2000); } catch {} }} className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200">Copy link</button>
+                    <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(poll.question)}&url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200">Twitter</a>
+                    <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200">Facebook</a>
+                    <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200">LinkedIn</a>
+                    <a href={`https://wa.me/?text=${encodeURIComponent(poll.question + ' ' + (typeof window !== 'undefined' ? window.location.origin + '/poll/' + poll.id : ''))}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200">WhatsApp</a>
+                    <a href={`https://t.me/share/url?url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}&text=${encodeURIComponent(poll.question)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200">Telegram</a>
+                  </div>
+                ) : null}
+              </div>
+              {showSharePrompt ? (
+                <div className="absolute right-12 top-0 mt-2 rounded-full bg-black/90 text-white px-2 py-1 text-xs">Copied!</div>
+              ) : null}
+        </div>
       </div>
 
       <div className="border-t border-slate-100 bg-white px-4 py-4">

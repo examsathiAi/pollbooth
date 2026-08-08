@@ -89,6 +89,23 @@ export class PollsService {
       .slice(0, 100);
   }
 
+  private computePollResults(
+    options: string[],
+    voteDistribution: Array<{ option_index: number; _count: { option_index: number } }>,
+    totalVotes: number
+  ) {
+    return options.map((option, index) => {
+      const voteData = voteDistribution.find((v) => v.option_index === index);
+      const count = voteData?._count?.option_index || 0;
+      return {
+        option,
+        index,
+        count,
+        percentage: totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0,
+      };
+    });
+  }
+
   async getPendingPolls(query: { page: number; limit: number }) {
     const [polls, total] = await Promise.all([
       prisma.poll.findMany({
@@ -164,16 +181,7 @@ export class PollsService {
     });
 
     const totalVotes = poll._count.votes;
-    const results = poll.options.map((option, index) => {
-      const voteData = voteDistribution.find((v) => v.option_index === index);
-      const count = voteData?._count?.option_index || 0;
-      return {
-        option,
-        index,
-        count,
-        percentage: totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0,
-      };
-    });
+    const results = this.computePollResults(poll.options, voteDistribution, totalVotes);
 
     // Check if user has voted
     let userVote = null;
@@ -239,7 +247,11 @@ export class PollsService {
     return this.calculateEstimatedReach(filters);
   }
 
-  async getPolls(query: { category?: string; status: string; page: number; limit: number; search?: string }) {
+  async getPolls(
+    query: { category?: string; status: string; page: number; limit: number; search?: string },
+    userId?: string,
+    guestSessionId?: string
+  ) {
     const where: any = {};
     const region = typeof (query as any).region === "string" && (query as any).region ? (query as any).region : "ALL";
 
@@ -281,18 +293,62 @@ export class PollsService {
       prisma.poll.count({ where }),
     ]);
 
+    const pollIds = polls.map((poll) => poll.id);
+    const voteDistribution = await prisma.vote.groupBy({
+      by: ["poll_id", "option_index"],
+      where: { poll_id: { in: pollIds } },
+      _count: { option_index: true },
+    });
+
+    const voteDistributionByPoll = voteDistribution.reduce((acc, vote) => {
+      const existing = acc.get(vote.poll_id) || [];
+      existing.push(vote);
+      acc.set(vote.poll_id, existing);
+      return acc;
+    }, new Map<string, Array<typeof voteDistribution[number]>>());
+
+    const currentVotes = userId
+      ? await prisma.vote.findMany({
+          where: { poll_id: { in: pollIds }, user_id: userId },
+          select: { poll_id: true, option_index: true },
+          orderBy: { voted_at: "desc" },
+        })
+      : guestSessionId
+      ? await prisma.guestVote.findMany({
+          where: { poll_id: { in: pollIds }, session_id: guestSessionId, converted_user_id: null },
+          select: { poll_id: true, option_index: true },
+          orderBy: { voted_at: "desc" },
+        })
+      : [];
+
+    const userVoteMap = new Map<string, number>();
+    for (const vote of currentVotes) {
+      if (!userVoteMap.has(vote.poll_id)) {
+        userVoteMap.set(vote.poll_id, vote.option_index);
+      }
+    }
+
     return {
-      polls: polls.map((poll) => ({
-        id: poll.id,
-        question: poll.question,
-        options: poll.options,
-        category: poll.category,
-        status: poll.status,
-        is_commercial: poll.is_commercial ?? false,
-        total_votes: poll._count.votes,
-        total_opinions: poll._count.opinions,
-        created_at: poll.created_at,
-      })),
+      polls: polls.map((poll) => {
+        const totalVotes = poll._count.votes;
+        const results = this.computePollResults(poll.options, voteDistributionByPoll.get(poll.id) || [], totalVotes);
+        const userVoteIndex = userVoteMap.has(poll.id) ? userVoteMap.get(poll.id) ?? null : null;
+
+        return {
+          id: poll.id,
+          question: poll.question,
+          options: poll.options,
+          category: poll.category,
+          status: poll.status,
+          is_commercial: poll.is_commercial ?? false,
+          total_votes: totalVotes,
+          total_opinions: poll._count.opinions,
+          created_at: poll.created_at,
+          results,
+          has_voted: userVoteMap.has(poll.id),
+          user_vote_index: userVoteIndex,
+        };
+      }),
       pagination: {
         page: query.page,
         limit: query.limit,

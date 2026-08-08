@@ -38,7 +38,7 @@ export function createApp(): Application {
     origin: config.corsOrigins,
     credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-pulse-guest-session"],
   }));
 
   app.use(compression());

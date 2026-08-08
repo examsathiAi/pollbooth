@@ -114,7 +114,13 @@ export default function FeedPage() {
         params.category = categoryFilter;
       }
 
-      const res = await api.get("/api/v1/polls/feed", { params });
+      const guestSessionId = typeof window !== "undefined" ? window.localStorage.getItem("pulse_guest_session") || undefined : undefined;
+      const headers: Record<string, string> = {};
+      if (guestSessionId) {
+        headers["x-pulse-guest-session"] = guestSessionId;
+      }
+
+      const res = await api.get("/api/v1/polls/feed", { params, headers });
       const basePolls = (res.data.polls || []) as PollSummary[];
       const hydratedPolls = await Promise.all(
         basePolls.map(async (poll) => {
