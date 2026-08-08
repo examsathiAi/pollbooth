@@ -99,17 +99,17 @@ export function NotificationBell() {
           setOpen((value) => !value);
           void load();
         }}
-        className="relative rounded-full border border-slate-200 bg-white p-2 text-slate-700 shadow-sm"
+        className="relative rounded-sm border border-paper-border bg-paper-card p-2 text-ink shadow-sm"
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 ? (
-          <span className="absolute -right-1 -top-1 rounded-full bg-cyan-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+          <span className="absolute -right-1 -top-1 rounded-full bg-maroon px-1.5 py-0.5 text-[10px] font-semibold text-white">
             {unreadCount}
           </span>
         ) : null}
       </button>
       {open ? (
-        <div className="absolute right-0 mt-2 w-80 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
+        <div className="absolute right-0 mt-2 w-80 rounded-sm border border-paper-border bg-paper-card p-3 shadow-xl">
           <div className="mb-2 flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-slate-800">Notifications</p>
@@ -122,7 +122,7 @@ export function NotificationBell() {
           </div>
           <div className="space-y-2">
             {notifications.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3 text-sm text-slate-500">
+              <div className="rounded-sm border border-dashed border-paper-border bg-paper-card p-3 text-sm text-ink-muted">
                 No fresh activity yet. When someone reacts or a poll spikes, it will appear here.
               </div>
             ) : (
@@ -131,17 +131,17 @@ export function NotificationBell() {
                 const meta = getNotificationMeta(notification);
                 const Icon = meta.icon;
                 return (
-                  <Link key={notification.id} href={href} onClick={() => void markAsRead(notification.id)} className={`flex gap-2 rounded-xl border p-2.5 transition ${notification.is_read ? "border-slate-100 bg-slate-50" : "border-blue-200 bg-blue-50"}`}>
+                  <Link key={notification.id} href={href} onClick={() => void markAsRead(notification.id)} className={`flex gap-2 rounded-sm border p-2.5 transition ${notification.is_read ? "border-paper-border bg-paper-card" : "border-paper-border bg-paper-card/80"}`}>
                     <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${meta.tone}`}>
                       <Icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-800">{notification.title}</p>
-                        {!notification.is_read ? <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-blue-600" /> : null}
+                        <p className="text-sm font-semibold text-ink">{notification.title}</p>
+                        {!notification.is_read ? <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-maroon" /> : null}
                       </div>
-                      <p className="mt-0.5 text-xs leading-5 text-slate-600">{notification.body}</p>
-                      <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-500">
+                      <p className="mt-0.5 text-xs leading-5 text-ink-muted">{notification.body}</p>
+                      <div className="mt-1 flex items-center gap-2 text-[11px] text-ink-muted">
                         <span>{formatRelativeTime(notification.created_at)}</span>
                         {notification.data?.reaction_type ? <span>• {notification.data.reaction_type.toLowerCase()}</span> : null}
                       </div>

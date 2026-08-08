@@ -38,6 +38,7 @@ const categoryAccentMap: Record<string, { ring: string; bg: string; text: string
 
 export default function FeedPage() {
   const { user, isLoading: authLoading, logout } = useAuth();
+  const [todayStr, setTodayStr] = useState("");
   const [organicPolls, setOrganicPolls] = useState<PollSummary[]>([]);
   const [sponsoredPolls, setSponsoredPolls] = useState<PollSummary[]>([]);
   const [activeCategory, setActiveCategory] = useState("for-you");
@@ -74,6 +75,10 @@ export default function FeedPage() {
     );
     setSearchResults(filtered);
   };
+
+  useEffect(() => {
+    setTodayStr(new Date().toLocaleDateString());
+  }, []);
 
   const loadHotPolls = useCallback(async () => {
     try {
@@ -177,38 +182,58 @@ export default function FeedPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-50 border-b border-gray-200 bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-3">
+      <header className="sticky top-0 z-50 border-b-2 border-ink bg-paper-bg text-ink paper-texture">
+        <div className="mx-auto max-w-7xl px-4 py-4">
           <div className="flex items-center justify-between gap-4">
-            <div className="text-2xl font-bold text-blue-600">Pulse</div>
+            <div className="text-4xl font-headline font-bold text-maroon">Pulse Times</div>
+
             <div className="flex-1 max-w-md">
               <input
                 type="text"
                 placeholder="Search polls…"
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full rounded-full border border-gray-300 bg-gray-100 px-4 py-2 text-sm focus:border-blue-500 focus:bg-white focus:outline-none"
+                className="w-full border border-ink bg-paper-card px-3 py-2 text-sm font-sans rounded-sm focus:outline-none"
               />
             </div>
-            <div className="flex items-center gap-2">
+
+            <div className="flex items-center gap-3">
               {user ? (
                 <>
-                  <span className="text-sm font-medium text-gray-700">{user.username || "User"}</span>
-                  <button onClick={() => logout()} className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100">
+                  <Link href="/profile" className="text-sm font-sans uppercase tracking-widest text-ink-muted">{user.username || "User"}</Link>
+                  <button onClick={() => logout()} className="px-3 py-1 text-xs font-sans uppercase tracking-widest text-ink-muted hover:bg-paper-card/60">
                     Logout
                   </button>
                 </>
               ) : (
                 <>
-                  <Link href="/auth/login?mode=login&redirect=/feed" className="rounded-full border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700">
+                  <Link href="/auth/login?mode=login&redirect=/feed" className="px-3 py-1 text-xs font-sans uppercase tracking-widest text-ink-muted border border-transparent hover:border-paper-border">
                     Login
                   </Link>
-                  <Link href="/auth/login?mode=signup&redirect=/feed" className="rounded-full bg-blue-600 px-3 py-2 text-sm font-semibold text-white">
+                  <Link href="/auth/login?mode=signup&redirect=/feed" className="px-3 py-1 text-xs font-sans uppercase tracking-widest text-white bg-maroon hover:bg-maroon-dark">
                     Sign up
                   </Link>
                 </>
               )}
               <NotificationBell />
+            </div>
+          </div>
+
+          <div className="mt-2 border-t border-paper-border pt-2">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-sans uppercase tracking-widest text-ink-muted">{(function(){
+                const map: Record<string,string> = {
+                  "for-you": "FOR YOU",
+                  "trending": "TRENDING",
+                  "local": "LOCAL",
+                  "news": "NEWS",
+                  "bollywood": "BOLLYWOOD",
+                  "sports": "SPORTS",
+                  "civic": "CIVIC",
+                };
+                return (map[activeCategory] || activeCategory.toUpperCase()) + " EDITION";
+              })()}</div>
+              <div className="text-xs font-sans uppercase tracking-widest text-ink-muted">{todayStr}</div>
             </div>
           </div>
         </div>
