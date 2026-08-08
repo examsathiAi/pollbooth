@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -89,6 +89,8 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
   const [isPostingOpinion, setIsPostingOpinion] = useState(false);
   const [opinionFeedback, setOpinionFeedback] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
+  const rootRef = useRef<HTMLElement | null>(null);
+  const [inViewHighlight, setInViewHighlight] = useState(false);
   const [pressedReaction, setPressedReaction] = useState<string | null>(null);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
   const [showVoteToast, setShowVoteToast] = useState(false);
@@ -158,6 +160,22 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
     observer.observe(cardElement);
     return () => observer.disconnect();
   }, [poll.id, poll.total_votes, poll.total_opinions]);
+
+  // highlight observer for visual "in-view" spotlight (60% threshold)
+  useEffect(() => {
+    if (!poll.id || typeof window === "undefined") return;
+    const el = rootRef.current || document.getElementById(`poll-card-${poll.id}`);
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setInViewHighlight(Boolean(entry && entry.intersectionRatio >= 0.6));
+      },
+      { threshold: [0, 0.6, 1] }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [poll.id]);
 
   useEffect(() => {
     if (!poll.id || typeof window === "undefined") return;
@@ -464,36 +482,33 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
 
   return (
     <article
+      ref={rootRef}
       id={`poll-card-${poll.id}`}
-      className={`overflow-hidden rounded-2xl bg-white dark:bg-gray-900 shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-800 transition-all duration-200 ${visible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`}
+      className={`overflow-hidden relative rounded-sm border border-paper-border bg-paper-card transition-all duration-200 ${visible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"} ${inViewHighlight ? "border-l-4 border-maroon" : ""}`}
     >
-      <div className="flex items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-800 px-4 py-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 font-semibold text-white">P</div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Pulse</p>
-              <span className="text-xs text-gray-400">· {relativeTime}</span>
-            </div>
-            <div className="mt-1 flex items-center gap-2">
-              <span className="text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5">{poll.category.replace(/_/g, " ")}</span>
-            </div>
-          </div>
+      {/* visual highlight overlay when card is in view */}
+      <div className={`pointer-events-none absolute inset-0 transition-opacity duration-300 ${inViewHighlight ? "opacity-100" : "opacity-0"}`} style={{ mixBlendMode: 'multiply' }}>
+        <div className="h-full w-full" style={{ background: inViewHighlight ? 'linear-gradient(90deg, rgba(250,222,120,0.0) 0%, rgba(250,222,120,0.18) 40%, rgba(250,222,120,0.0) 100%)' : 'transparent' }} />
+      </div>
+
+      <div className="flex items-center justify-between gap-3 px-4 py-2 bg-paper-card border-b border-paper-border">
+        <div className="min-w-0">
+          <div className="text-xs font-sans uppercase tracking-widest text-ink-muted">{poll.category.replace(/_/g, " ")} · {relativeTime}</div>
         </div>
         <div>
-          <button aria-label="menu" className="rounded-full p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">⋯</button>
+          <button aria-label="menu" className="rounded-sm p-2 text-ink hover:bg-paper-card">⋯</button>
         </div>
       </div>
 
       <div className="px-4 py-4">
-        <h3 className="text-lg font-semibold leading-snug text-gray-900 dark:text-gray-100 line-clamp-4">{poll.question}</h3>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{socialLead}</p>
+        <h3 className="text-2xl font-headline leading-snug text-ink line-clamp-4">{poll.question}</h3>
+        <p className="mt-2 text-sm text-ink-muted">{socialLead}</p>
       </div>
 
       {!hasVoted ? (
         <div className="px-4 pb-4">
           {feedback ? (
-            <div className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 flex items-center gap-2">
+            <div className="mb-3 rounded-sm border border-maroon/10 bg-paper-card px-3 py-2 text-sm text-maroon flex items-center gap-2">
               <Sparkles className="h-4 w-4" /> {feedback}
             </div>
           ) : null}
@@ -504,10 +519,10 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
                 key={idx}
                 onClick={() => void handleVote(idx)}
                 disabled={isVoting}
-                className={`group flex w-full items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-[0.98] transition`}
+                className={`group flex w-full items-center gap-3 rounded-sm border border-paper-border bg-paper-card px-4 py-3 text-left text-sm font-medium text-ink hover:bg-paper-border active:scale-[0.98] transition`}
               >
                 <span className="flex h-4 w-4 items-center justify-center">
-                  <span className={`inline-block h-3.5 w-3.5 rounded-full border ${selectedOptionIndex === idx ? 'bg-blue-500 border-blue-500' : 'border-gray-400 dark:border-gray-600'} transition-colors`} />
+                  <span className={`inline-block h-3 w-3 ${selectedOptionIndex === idx ? 'bg-maroon border-maroon' : 'border-ink-muted'} transition-colors`} />
                 </span>
                 <span className="truncate">{option}</span>
               </button>
@@ -515,45 +530,40 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
           </div>
 
           {results.length === 0 ? (
-            <div className="mt-3 rounded-xl border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 px-4 py-3 text-sm text-gray-500">Be the first to vote</div>
+            <div className="mt-3 rounded-sm border border-dashed border-paper-border bg-paper-card px-4 py-3 text-sm text-ink-muted">Be the first to vote</div>
           ) : null}
         </div>
       ) : (
         <div className="px-4 pb-4">
           <div className="mt-3 flex w-full flex-col gap-2">
             {results.map((r, idx) => {
-              const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-violet-500', 'bg-rose-500'];
-              const fillColor = colors[idx % colors.length];
               const pct = Math.max(0, Math.min(100, r.percentage || 0));
-              const isWide = pct > 30;
               const isUserChoice = r.index === userVoteIndex;
               const displayLabel = r.option.length > 80 ? `${r.option.slice(0, 77)}…` : r.option;
               const fillWidth = `${pct}%`;
+              const maxPct = Math.max(...(results || []).map((rr) => rr.percentage || 0));
+              const isLeading = (r.percentage || 0) === maxPct;
 
               return (
-                <div key={r.index} className="relative h-12 rounded-xl overflow-hidden">
-                  <div className="absolute inset-0 bg-gray-100 dark:bg-gray-800" />
+                <div key={r.index} className="relative h-12 rounded-sm overflow-hidden">
+                  <div className="absolute inset-0 bg-paper-border" />
                   <div
-                    className={`absolute left-0 top-0 h-full rounded-xl opacity-90 transition-all duration-700 ease-out ${fillColor}`}
+                    className={`absolute left-0 top-0 h-full ${isLeading ? 'bg-maroon' : 'bg-paper-border'} opacity-90 transition-all duration-700 ease-out`}
                     style={{ width: barRevealReady ? fillWidth : '0%' }}
                   />
 
                   <div className="relative z-10 flex h-full items-center justify-between px-4">
                     <div className="flex items-center gap-3">
-                      {isWide ? (
-                        <span className="text-sm font-medium text-white">{displayLabel}</span>
-                      ) : (
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{displayLabel}</span>
-                      )}
+                      <span className={`text-sm font-medium ${isLeading ? 'text-white' : 'text-ink'}`}>{displayLabel}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className={`text-sm font-bold ${isWide ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{pct}%</span>
+                      <span className={`text-sm font-bold ${isLeading ? 'text-white' : 'text-ink'}`}>{pct}%</span>
                     </div>
                   </div>
 
                   {isUserChoice ? (
-                    <span className="absolute right-3 top-2 z-20 rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">✓ You</span>
+                    <span className="absolute right-1 top-1 z-20 rounded-sm bg-maroon-dark px-1.5 py-0.5 text-xs font-semibold text-white">✓</span>
                   ) : null}
                 </div>
               );
@@ -562,45 +572,45 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-2 border-t border-gray-100 dark:border-gray-800 px-4 py-3 bg-white dark:bg-gray-900">
-        <div className="text-xs text-gray-500">{totalVotes.toLocaleString()} votes</div>
+      <div className="flex items-center justify-between gap-2 border-t border-paper-border px-4 py-3 bg-paper-card">
+        <div className="text-xs text-ink-muted">{totalVotes.toLocaleString()} votes</div>
         <div>
               <div className="relative">
                 <button
                   onClick={() => setShowShareMenu((s) => !s)}
                   aria-expanded={showShareMenu}
-                  className="inline-flex items-center gap-2 rounded-lg px-3 py-1 text-xs font-semibold text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/40 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="inline-flex items-center gap-2 rounded-sm px-3 py-1 text-xs font-semibold text-ink bg-paper-card hover:bg-paper-border"
                 >
                   <Share2 className="h-4 w-4" /> Share
                 </button>
 
                 {showShareMenu ? (
-                  <div className="absolute right-0 z-30 mt-2 w-44 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-md py-2">
-                    <button onClick={async () => { try { const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`; await navigator.clipboard.writeText(url); setShowSharePrompt(true); setTimeout(() => setShowSharePrompt(false), 2000); } catch {} }} className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200">Copy link</button>
-                    <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(poll.question)}&url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200">Twitter</a>
-                    <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200">Facebook</a>
-                    <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200">LinkedIn</a>
-                    <a href={`https://wa.me/?text=${encodeURIComponent(poll.question + ' ' + (typeof window !== 'undefined' ? window.location.origin + '/poll/' + poll.id : ''))}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200">WhatsApp</a>
-                    <a href={`https://t.me/share/url?url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}&text=${encodeURIComponent(poll.question)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200">Telegram</a>
+                  <div className="absolute right-0 z-30 mt-2 w-44 rounded-sm border border-paper-border bg-paper-card shadow-sm py-2">
+                    <button onClick={async () => { try { const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`; await navigator.clipboard.writeText(url); setShowSharePrompt(true); setTimeout(() => setShowSharePrompt(false), 2000); } catch {} }} className="flex w-full items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-paper-border">Copy link</button>
+                    <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(poll.question)}&url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-paper-border">Twitter</a>
+                    <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-paper-border">Facebook</a>
+                    <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-paper-border">LinkedIn</a>
+                    <a href={`https://wa.me/?text=${encodeURIComponent(poll.question + ' ' + (typeof window !== 'undefined' ? window.location.origin + '/poll/' + poll.id : ''))}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-paper-border">WhatsApp</a>
+                    <a href={`https://t.me/share/url?url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}&text=${encodeURIComponent(poll.question)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-paper-border">Telegram</a>
                   </div>
                 ) : null}
+                {showSharePrompt ? (
+                  <div className="absolute right-0 -top-9 rounded-sm bg-maroon-dark text-white px-2 py-1 text-xs whitespace-nowrap">Copied!</div>
+                ) : null}
               </div>
-              {showSharePrompt ? (
-                <div className="absolute right-12 top-0 mt-2 rounded-full bg-black/90 text-white px-2 py-1 text-xs">Copied!</div>
-              ) : null}
         </div>
       </div>
 
-      <div className="border-t border-slate-100 bg-white px-4 py-4">
+      <div className="border-t border-paper-border bg-paper-card px-4 py-4">
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-sm font-semibold text-slate-900">Comments</p>
-          <span className="text-xs text-slate-500">{opinionsTotal} total</span>
+          <p className="text-sm font-semibold text-ink">Comments</p>
+          <span className="text-xs text-ink-muted">{opinionsTotal} total</span>
         </div>
 
         {isLoadingOpinions ? (
-          <p className="text-sm text-slate-500">Loading comments…</p>
+          <p className="text-sm text-ink-muted">Loading comments…</p>
         ) : opinions.length === 0 ? (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+          <div className="rounded-sm border border-paper-border bg-paper-card px-3 py-2 text-sm text-ink-muted">
             {poll.total_opinions > 0 ? `There are ${poll.total_opinions} comment contributions on this poll, but the visible thread is currently empty.` : "No comments yet. Be the first to add one."}
           </div>
         ) : (
@@ -610,33 +620,33 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
               const initials = getAvatarInitials(city || "Pulse");
               const isPressed = pressedReaction === `${opinion.id}:AGREE` || pressedReaction === `${opinion.id}:DISAGREE`;
               return (
-                <div key={opinion.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <div key={opinion.id} className="rounded-sm border border-paper-border bg-paper-card p-3">
                   <div className="flex items-start gap-2.5">
                     <div className="relative mt-0.5 flex-shrink-0">
-                      <div className="avatar-live flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-slate-600 to-slate-800 text-[11px] font-semibold text-white">
+                      <div className="avatar-live flex h-8 w-8 items-center justify-center rounded-full bg-maroon text-[11px] font-semibold text-white">
                         {initials}
                       </div>
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-semibold text-slate-900">{city || "Pulse"}</p>
-                        {city ? <span className="text-xs text-slate-500">{city}</span> : null}
-                        <span className="text-xs text-slate-400">{formatRelativeTime(opinion.created_at)}</span>
+                        <p className="text-sm font-semibold text-ink">{city || "Pulse"}</p>
+                        {city ? <span className="text-xs text-ink-muted">{city}</span> : null}
+                        <span className="text-xs text-ink-muted">{formatRelativeTime(opinion.created_at)}</span>
                       </div>
-                      <p className="mt-1 text-sm leading-5 text-slate-700">{opinion.content}</p>
+                      <p className="mt-1 text-sm leading-5 text-ink">{opinion.content}</p>
                     </div>
                   </div>
                   <div className="mt-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => void handleReaction(opinion.id, "AGREE")}
-                        className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold transition-all duration-200 ${opinion.user_reaction === "AGREE" ? "bg-blue-100 text-blue-700" : "bg-white text-slate-700"} ${isPressed ? "reaction-bounce" : ""}`}
+                        className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-all duration-200 ${opinion.user_reaction === "AGREE" ? "bg-paper-card border-maroon text-maroon" : "bg-paper-card text-ink-muted"} ${isPressed ? "reaction-bounce" : ""}`}
                       >
                         <ThumbsUp className="h-3 w-3" /> {opinion.agree_count}
                       </button>
                       <button
                         onClick={() => void handleReaction(opinion.id, "DISAGREE")}
-                        className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold transition-all duration-200 ${opinion.user_reaction === "DISAGREE" ? "bg-rose-100 text-rose-700" : "bg-white text-slate-700"} ${isPressed ? "reaction-bounce" : ""}`}
+                        className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-all duration-200 ${opinion.user_reaction === "DISAGREE" ? "bg-paper-card border-maroon text-maroon" : "bg-paper-card text-ink-muted"} ${isPressed ? "reaction-bounce" : ""}`}
                       >
                         <ThumbsDown className="h-3 w-3" /> {opinion.disagree_count}
                       </button>
@@ -649,25 +659,25 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         )}
 
         {opinionsTotal > opinions.length ? (
-          <button onClick={() => setShowAllOpinions((prev) => !prev)} className="mt-3 text-sm font-semibold text-blue-600">
-            {showAllOpinions ? "Show fewer" : `View all ${opinionsTotal} comments`}
-          </button>
+          <button onClick={() => setShowAllOpinions((prev) => !prev)} className="mt-3 text-sm font-semibold text-ink">{
+            showAllOpinions ? "Show fewer" : `View all ${opinionsTotal} comments`
+          }</button>
         ) : null}
 
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+        <div className="mt-4 rounded-sm border border-paper-border bg-paper-card p-3">
           {hasOpinion ? (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+            <div className="rounded-sm border border-paper-border bg-paper-card px-3 py-2 text-sm text-ink">
               You&apos;ve shared your view on this poll.
             </div>
           ) : !user ? (
-            <div className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-3 text-sm text-blue-700">
+            <div className="rounded-sm border border-paper-border bg-paper-card px-3 py-3 text-sm text-ink">
               <p className="font-semibold">You need an account to post a comment.</p>
-              <p className="mt-1 text-blue-700/90">Comments are readable publicly, but posting is reserved for registered members.</p>
+              <p className="mt-1 text-ink-muted">Comments are readable publicly, but posting is reserved for registered members.</p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <Link href={`/auth/login?mode=login&redirect=/poll/${poll.id}`} className="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm ring-1 ring-blue-200 transition hover:bg-blue-100">
+                <Link href={`/auth/login?mode=login&redirect=/poll/${poll.id}`} className="rounded-sm border border-maroon bg-paper-card px-3 py-2 text-sm font-semibold text-maroon transition hover:bg-paper-border">
                   Sign in
                 </Link>
-                <Link href={`/auth/login?mode=signup&redirect=/poll/${poll.id}`} className="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700">
+                <Link href={`/auth/login?mode=signup&redirect=/poll/${poll.id}`} className="rounded-sm bg-maroon px-3 py-2 text-sm font-semibold text-white transition hover:bg-maroon-dark">
                   Create account
                 </Link>
               </div>
@@ -683,11 +693,11 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
                 maxLength={280}
                 rows={3}
                 disabled={!hasVoted || isPostingOpinion}
-                className={`w-full resize-none rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition-all duration-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 ${commentFocused ? "translate-y-[-1px] border-blue-400 shadow-[0_0_0_4px_rgba(59,130,246,0.08)]" : ""}`}
+                className={`w-full resize-none rounded-sm border border-paper-border bg-paper-card px-3 py-2 text-sm text-ink outline-none transition-all duration-200 focus:border-maroon focus:ring-2 focus:ring-maroon/20 disabled:cursor-not-allowed disabled:opacity-60 ${commentFocused ? "translate-y-[-1px] border-maroon shadow-[0_0_0_4px_rgba(128,0,0,0.08)]" : ""}`}
               />
               <div className="mt-2 flex items-center justify-between">
                 <span className={`text-xs ${opinionText.length > 250 ? "font-semibold text-rose-500" : "text-slate-500"}`}>{opinionText.length}/280</span>
-                <button onClick={() => void handleOpinionSubmit()} disabled={!opinionText.trim() || !hasVoted || isPostingOpinion} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60">
+                <button onClick={() => void handleOpinionSubmit()} disabled={!opinionText.trim() || !hasVoted || isPostingOpinion} className="rounded-sm bg-maroon px-4 py-2 text-sm font-semibold text-white transition hover:bg-maroon-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60">
                   {isPostingOpinion ? "Posting..." : "Post"}
                 </button>
               </div>

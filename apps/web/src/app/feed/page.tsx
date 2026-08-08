@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { EnhancedPollCard } from "@/components/feed/EnhancedPollCard";
 import { FeedSidebar } from "@/components/layout/FeedSidebar";
@@ -38,6 +38,8 @@ const categoryAccentMap: Record<string, { ring: string; bg: string; text: string
 
 export default function FeedPage() {
   const { user, isLoading: authLoading, logout } = useAuth();
+  const headerRef = useRef<HTMLElement | null>(null);
+  const [headerHeight, setHeaderHeight] = useState(96);
   const [todayStr, setTodayStr] = useState("");
   const [organicPolls, setOrganicPolls] = useState<PollSummary[]>([]);
   const [sponsoredPolls, setSponsoredPolls] = useState<PollSummary[]>([]);
@@ -78,6 +80,25 @@ export default function FeedPage() {
 
   useEffect(() => {
     setTodayStr(new Date().toLocaleDateString());
+  }, []);
+
+  useEffect(() => {
+    if (!headerRef.current) return;
+    const updateHeight = () => {
+      setHeaderHeight(headerRef.current?.getBoundingClientRect().height || 96);
+    };
+
+    updateHeight();
+    const resizeObserver = new ResizeObserver(() => updateHeight());
+    resizeObserver.observe(headerRef.current);
+
+    const onWindowResize = () => updateHeight();
+    window.addEventListener("resize", onWindowResize);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", onWindowResize);
+    };
   }, []);
 
   const loadHotPolls = useCallback(async () => {
@@ -174,15 +195,15 @@ export default function FeedPage() {
 
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <div className="flex min-h-screen items-center justify-center bg-paper-bg">
+        <Loader2 className="h-8 w-8 animate-spin text-maroon" />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-50 border-b-2 border-ink bg-paper-bg text-ink paper-texture">
+      <header ref={headerRef} className="sticky top-0 z-50 border-b-2 border-ink bg-paper-bg text-ink paper-texture">
         <div className="mx-auto max-w-7xl px-4 py-4">
           <div className="flex items-center justify-between gap-4">
             <div className="text-4xl font-headline font-bold text-maroon">Pulse Times</div>
@@ -239,12 +260,12 @@ export default function FeedPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-4 py-6 lg:grid lg:grid-cols-[220px,minmax(0,1fr),320px] lg:gap-6 lg:h-[calc(100vh-6rem)] lg:overflow-hidden">
-        <div className="hidden lg:block lg:sticky lg:top-[5.5rem] lg:self-start">
+      <div className="mx-auto max-w-7xl px-4 py-6 lg:grid lg:grid-cols-[220px,minmax(0,1fr),320px] lg:gap-6" style={{ height: `calc(100vh - ${headerHeight}px)` }}>
+        <div className="hidden lg:block lg:self-start" style={{ position: "sticky", top: `${headerHeight}px` }}>
           <FeedSidebar activeCategory={activeCategory} onCategoryChange={handleCategoryChange} />
         </div>
 
-        <main className="min-w-0 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
+        <main className="min-w-0 lg:overflow-y-auto" style={{ maxHeight: `calc(100vh - ${headerHeight}px)` }}>
           <div className="mx-auto max-w-2xl">
             {isSearching && searchQuery ? (
               <div className="mb-6">
@@ -256,8 +277,8 @@ export default function FeedPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center">
-                    <p className="text-gray-500">No polls found for &quot;{searchQuery}&quot;</p>
+                  <div className="rounded-sm border border-paper-border bg-paper-card p-8 text-center">
+                    <p className="text-ink-muted">No polls found for &quot;{searchQuery}&quot;</p>
                   </div>
                 )}
               </div>
@@ -265,7 +286,7 @@ export default function FeedPage() {
               <>
                 {page === 1 && hotPolls.length > 0 && (
                   <div className="mb-6">
-                    <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Hot Polls 🔥</h3>
+                    <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-ink-muted">Hot Polls 🔥</h3>
                     <div className="overflow-x-auto pb-2">
                       <div className="flex gap-3">
                         {hotPolls.map((poll) => {
@@ -275,15 +296,15 @@ export default function FeedPage() {
                           const label = poll.question.length > 34 ? `${poll.question.slice(0, 34)}…` : poll.question;
 
                           return (
-                            <Link key={poll.id} href={`/poll/${poll.id}`} className="min-w-[160px] rounded-2xl border border-gray-200 bg-white p-3 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-md">
+                            <Link key={poll.id} href={`/poll/${poll.id}`} className="min-w-[160px] rounded-sm border border-paper-border bg-paper-card p-3 transition duration-200 hover:-translate-y-0.5 hover:scale-[1.02]">
                               <div className={`mb-2 flex h-12 w-12 items-center justify-center rounded-2xl ${accent.bg} ${accent.text}`}>
-                                <span className="text-lg font-bold">{winningPercent}%</span>
+                                <span className="text-lg font-bold text-maroon">{winningPercent}%</span>
                               </div>
-                              <p className="text-[13px] font-semibold leading-5 text-slate-900">{label}</p>
-                              <p className="mt-2 text-[12px] leading-5 text-slate-600">
+                              <p className="text-[13px] font-semibold leading-5 text-ink">{label}</p>
+                              <p className="mt-2 text-[12px] leading-5 text-ink-muted">
                                 {winningPercent}% voted for {winningResult?.option ? <>&quot;{winningResult.option}&quot;</> : "the leading option"}
                               </p>
-                              <p className="mt-2 text-[11px] uppercase tracking-[0.2em] text-slate-500">{poll.category.replace(/_/g, " ")}</p>
+                              <p className="mt-2 text-[11px] uppercase tracking-[0.2em] text-ink-muted">{poll.category.replace(/_/g, " ")}</p>
                             </Link>
                           );
                         })}
@@ -295,15 +316,15 @@ export default function FeedPage() {
                 <div className="space-y-4">
                   {isLoading && page === 1 ? (
                     <div className="flex justify-center py-12">
-                      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                      <Loader2 className="h-8 w-8 animate-spin text-maroon" />
                     </div>
                   ) : error ? (
                     <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>
                   ) : organicPolls.length > 0 ? (
                     organicPolls.map((poll, idx) => <EnhancedPollCard key={poll.id} poll={poll} index={idx} />)
                   ) : (
-                    <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center">
-                      <p className="text-gray-500">No polls available</p>
+                    <div className="rounded-sm border border-paper-border bg-paper-card p-8 text-center">
+                      <p className="text-ink-muted">No polls available</p>
                     </div>
                   )}
                 </div>
@@ -312,7 +333,7 @@ export default function FeedPage() {
                   <div className="mt-6 text-center">
                     <button
                       onClick={() => void loadPolls(page + 1)}
-                      className="rounded-2xl border border-gray-300 bg-white px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                      className="rounded-sm border border-paper-border bg-paper-card px-6 py-2 text-sm font-medium text-ink hover:bg-paper-border"
                     >
                       Load more
                     </button>
@@ -323,7 +344,7 @@ export default function FeedPage() {
           </div>
         </main>
 
-        <div className="hidden lg:block lg:sticky lg:top-[5.5rem] lg:self-start">
+        <div className="hidden lg:block lg:self-start" style={{ position: "sticky", top: `${headerHeight}px` }}>
           <FeedRightRail />
         </div>
       </div>
