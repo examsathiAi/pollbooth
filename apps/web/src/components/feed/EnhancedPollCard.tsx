@@ -555,16 +555,14 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
                   <div className="relative z-10 flex h-full items-center justify-between px-4">
                     <div className="flex items-center gap-3">
                       <span className={`text-sm font-medium ${isLeading ? 'text-white' : 'text-ink'}`}>{displayLabel}</span>
+                      {isUserChoice ? (
+                        <span className={`rounded-sm px-1 text-xs font-bold ${isLeading ? 'bg-white/20 text-white' : 'bg-maroon-dark text-white'}`}>✓</span>
+                      ) : null}
                     </div>
-
                     <div className="flex items-center gap-2">
                       <span className={`text-sm font-bold ${isLeading ? 'text-white' : 'text-ink'}`}>{pct}%</span>
                     </div>
                   </div>
-
-                  {isUserChoice ? (
-                    <span className="absolute right-1 top-1 z-20 rounded-sm bg-maroon-dark px-1.5 py-0.5 text-xs font-semibold text-white">✓</span>
-                  ) : null}
                 </div>
               );
             })}

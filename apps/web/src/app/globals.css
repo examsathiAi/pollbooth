@@ -34,6 +34,25 @@
       radial-gradient(circle at 85% 75%, rgba(0,0,0,0.03) 0%, transparent 40%),
       radial-gradient(circle at 60% 10%, rgba(0,0,0,0.02) 0%, transparent 30%);
   }
+
+  .scrollbar-paper {
+    scrollbar-width: thin;
+    scrollbar-color: #a89f85 #e8e1cc;
+  }
+  .scrollbar-paper::-webkit-scrollbar {
+    width: 8px;
+  }
+  .scrollbar-paper::-webkit-scrollbar-track {
+    background: #e8e1cc;
+  }
+  .scrollbar-paper::-webkit-scrollbar-thumb {
+    background-color: #a89f85;
+    border-radius: 4px;
+    border: 2px solid #e8e1cc;
+  }
+  .scrollbar-paper::-webkit-scrollbar-thumb:hover {
+    background-color: #7a1f10;
+  }
 }
 
 @keyframes avatarGlow {
