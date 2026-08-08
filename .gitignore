@@ -12,3 +12,6 @@ build/
 *.key
 *.p12
 *.pfx
+tmp-dist/
+sitemap.out
+*.out

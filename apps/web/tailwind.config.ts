@@ -8,6 +8,10 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        headline: ["var(--font-headline)", "Georgia", "serif"],
+        sans: ["var(--font-sans)", "-apple-system", "sans-serif"],
+      },
       colors: {
         pulse: {
           50: "#eff6ff",
@@ -16,6 +20,20 @@ const config: Config = {
           600: "#2563eb",
           700: "#1d4ed8",
           900: "#1e3a8a",
+        },
+        paper: {
+          bg: "#e8e1cc",
+          card: "#f5f1e6",
+          border: "#b8b3a0",
+          borderStrong: "#a89f85",
+        },
+        ink: {
+          DEFAULT: "#171512",
+          muted: "#5c5541",
+        },
+        maroon: {
+          DEFAULT: "#7a1f10",
+          dark: "#5c1709",
         },
       },
     },
