@@ -5,6 +5,8 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { CheckCircle2, MessageCircle, Share2, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react";
+import { ProgressiveGateModal } from "./ProgressiveGateModal";
+import { ShareCardGenerator } from "./ShareCardGenerator";
 
 interface EnhancedPollCardProps {
   poll: {
@@ -98,6 +100,8 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [commentFocused, setCommentFocused] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(Date.now());
+  const [showGate, setShowGate] = useState(false);
+  const [gateMessage, setGateMessage] = useState<string | null>(null);
   const [liveTick, setLiveTick] = useState(Date.now());
   const [barRevealReady, setBarRevealReady] = useState(false);
 
@@ -289,7 +293,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         await api.post(`/api/v1/votes/${poll.id}/guest-vote`, { session_id: sessionId, option_index: index });
         const pollRes = await api.get(`/api/v1/polls/${poll.id}`);
         setHasOpinion(false);
-        setUserVoteIndex(index);
+        setUserVoteIndex(pollRes.data.user_vote_index ?? index);
         setFeedback("✓ Your guest vote is recorded");
         setShowVoteToast(true);
         setShowSharePrompt(true);
@@ -305,7 +309,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       await api.post(`/api/v1/votes/${poll.id}/vote`, { option_index: index });
       const pollRes = await api.get(`/api/v1/polls/${poll.id}`);
       setHasOpinion(false);
-      setUserVoteIndex(index);
+      setUserVoteIndex(pollRes.data.user_vote_index ?? index);
       setFeedback("✓ Your vote is recorded");
       setShowVoteToast(true);
       setShowSharePrompt(true);
@@ -315,6 +319,15 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       setTotalVotes(pollRes.data.total_votes || 0);
       setTotalOpinions(pollRes.data.total_opinions || 0);
       setLastUpdatedAt(Date.now());
+      try {
+        const gateRes = await api.get(`/api/v1/users/profile/gate/${poll.category}`);
+        if (gateRes?.data?.required) {
+          setShowGate(true);
+          setGateMessage("We need one quick detail to keep your vote relevant.");
+        }
+      } catch (err) {
+        // non-fatal: profile gate failure should not block vote flow
+      }
     } catch (err: any) {
       // revert optimistic UI on error
       alert(err.response?.data?.message || "Failed to vote");
@@ -599,6 +612,23 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         </div>
       </div>
 
+      {hasVoted && (
+      <div className="mt-3">
+        <ShareCardGenerator
+          title={poll.question}
+          headline={(() => {
+            const maxPct = Math.max(...results.map((rr) => rr.percentage || 0));
+            const lead = results.find((r) => (r.percentage || 0) === maxPct);
+            return lead ? `${lead.option} leads with ${lead.percentage}%` : "Latest poll result";
+          })()}
+          subtitle={`${totalVotes?.toLocaleString()} votes`}
+          voteCount={totalVotes}
+          resultData={results?.map((r) => ({ label: r.option, value: r.percentage }))}
+          shareUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/poll/${poll.id}`}
+        />
+      </div>
+      )}
+
       <div className="border-t border-paper-border bg-paper-card px-4 py-4">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-semibold text-ink">Comments</p>
@@ -704,6 +734,16 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
           {opinionFeedback ? <p className="mt-2 text-xs text-emerald-600">{opinionFeedback}</p> : null}
         </div>
       </div>
+      <ProgressiveGateModal
+        isOpen={showGate}
+        onClose={() => setShowGate(false)}
+        onSelect={(value) => {
+          if (typeof window !== "undefined") {
+            window.localStorage.setItem(`pulse-cohort:${poll.id}`, value);
+          }
+          setShowGate(false);
+        }}
+      />
     </article>
   );
 }

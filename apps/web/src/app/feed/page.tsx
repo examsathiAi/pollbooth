@@ -321,7 +321,16 @@ export default function FeedPage() {
                   ) : error ? (
                     <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>
                   ) : organicPolls.length > 0 ? (
-                    organicPolls.map((poll, idx) => <EnhancedPollCard key={poll.id} poll={poll} index={idx} />)
+                    organicPolls.map((poll, idx) => (
+                      <EnhancedPollCard
+                        key={poll.id}
+                        poll={poll}
+                        index={idx}
+                        onVoteComplete={() => {
+                          void loadHotPolls();
+                        }}
+                      />
+                    ))
                   ) : (
                     <div className="rounded-sm border border-paper-border bg-paper-card p-8 text-center">
                       <p className="text-ink-muted">No polls available</p>
