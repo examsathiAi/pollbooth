@@ -13,6 +13,11 @@ api.interceptors.request.use((config) => {
   const token = typeof window !== "undefined" ? localStorage.getItem("pulse_token") : null;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  } else if (typeof window !== "undefined") {
+    const guestSessionId = localStorage.getItem("pulse_guest_session");
+    if (guestSessionId) {
+      config.headers["x-pulse-guest-session"] = guestSessionId;
+    }
   }
   return config;
 });

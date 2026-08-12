@@ -5,8 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2, Share2, Sparkles, ThumbsDown, ThumbsUp, Flag } from "lucide-react";
-import { PollCard } from "@/components/feed/PollCard";
-import { ShareCardGenerator } from "@/components/feed/ShareCardGenerator";
+import { EnhancedPollCard } from "@/components/feed/EnhancedPollCard";
 
 interface PollDetailClientProps {
   pollId: string;
@@ -191,7 +190,7 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
       </header>
 
       <main>
-        <PollCard poll={poll} onVoteComplete={handleVoteComplete} />
+        <EnhancedPollCard poll={poll} onVoteComplete={handleVoteComplete} />
 
         {poll.has_voted && cohort ? (
           <div className="m-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-800">
@@ -253,21 +252,6 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
             </div>
           </div>
         ) : null}
-
-        <div className="border-b border-gray-100 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-slate-900">Share this result card</p>
-              <p className="text-sm text-slate-500">Turn the current results into a shareable story.</p>
-            </div>
-            <button className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white">
-              <Share2 className="h-4 w-4" /> Share
-            </button>
-          </div>
-          <div className="mt-4">
-            <ShareCardGenerator title={poll.question} subtitle={`${poll.total_votes?.toLocaleString() || 0} voices • ${poll.category}`} />
-          </div>
-        </div>
 
         <div className="m-4 rounded-3xl border border-slate-200 bg-slate-50 p-4">
           <p className="text-sm font-semibold text-slate-900">Discussion thread</p>

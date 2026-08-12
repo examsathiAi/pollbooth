@@ -161,7 +161,7 @@ export class PollsService {
     return poll;
   }
 
-  async getPollById(pollId: string, userId?: string) {
+  async getPollById(pollId: string, userId?: string, guestSessionId?: string) {
     const poll = await prisma.poll.findUnique({
       where: { id: pollId },
       include: {
@@ -199,14 +199,22 @@ export class PollsService {
       });
     }
 
+    let guestVoteIndex: number | null = null;
+    if (!userId && guestSessionId) {
+      const guestVote = await prisma.guestVote.findFirst({
+        where: { poll_id: pollId, session_id: guestSessionId, converted_user_id: null },
+      });
+      guestVoteIndex = guestVote?.option_index ?? null;
+    }
+
     return {
       ...poll,
       is_commercial: poll.is_commercial ?? false,
       total_votes: totalVotes,
       total_opinions: poll._count.opinions,
       results,
-      has_voted: !!userVote,
-      user_vote_index: userVote?.option_index ?? null,
+      has_voted: !!userVote || guestVoteIndex !== null,
+      user_vote_index: userVote?.option_index ?? guestVoteIndex ?? null,
       has_opinion: !!userOpinion,
       user_opinion: userOpinion
         ? {

@@ -51,7 +51,8 @@ router.get("/estimated-reach", async (req, res, next) => {
 router.get("/:id", optionalAuthGuard, validateParams(PollIdSchema), async (req, res, next) => {
   try {
     const userId = (req as any).user?.id;
-    const result = await pollsService.getPollById(req.params.id, userId);
+    const guestSessionId = typeof req.headers["x-pulse-guest-session"] === "string" ? req.headers["x-pulse-guest-session"] as string : undefined;
+    const result = await pollsService.getPollById(req.params.id, userId, guestSessionId);
     res.json(result);
   } catch (err) {
     next(err);
