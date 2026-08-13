@@ -1,30 +1,13 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
-import { CheckCircle2, Loader2, Plus, Sparkles, X } from "lucide-react";
+import { CheckCircle2, Loader2, Plus, Sparkles, X, Link as LinkIcon } from "lucide-react";
 import { api } from "@/lib/api";
 
 const CATEGORY_OPTIONS = [
-  "POLITICS",
-  "CIVIC",
-  "BOLLYWOOD",
-  "SPORTS",
-  "CURRENT_EVENTS",
-  "LOCAL",
-  "SOCIAL",
-  "ECONOMY",
-  "EDUCATION",
-  "HEALTH",
-  "TECH",
-  "FOOD",
-  "TRAVEL",
-  "FASHION",
-  "AUTO",
-  "REAL_ESTATE",
-  "STARTUPS",
-  "WORK_CULTURE",
-  "ENVIRONMENT",
-  "OTHER",
+  "POLITICS", "CIVIC", "BOLLYWOOD", "SPORTS", "CURRENT_EVENTS", "LOCAL",
+  "SOCIAL", "ECONOMY", "EDUCATION", "HEALTH", "TECH", "FOOD", "TRAVEL",
+  "FASHION", "AUTO", "REAL_ESTATE", "STARTUPS", "WORK_CULTURE", "ENVIRONMENT", "OTHER",
 ];
 
 interface AiContent {
@@ -43,6 +26,8 @@ interface AiContent {
   og_title: string;
   og_description: string;
   suggested_topics: string[];
+  suggested_options?: string[];
+  sources?: Array<{ url: string; title: string; publisher?: string; published_at?: string }>;
 }
 
 export function PollCreationPanel() {
@@ -91,6 +76,11 @@ export function PollCreationPanel() {
       setAiContent(content);
       setQuestion(content.improved_question);
       setTopicTags(content.suggested_topics.slice(0, 4));
+      
+      if (content.suggested_options && content.suggested_options.length >= 2) {
+        setOptions(content.suggested_options.slice(0, 5));
+      }
+      
       setMessage("AI content generated. Review and edit before posting.");
     } catch (err: any) {
       setError(err.response?.data?.error || "Failed to generate AI content.");
@@ -258,6 +248,8 @@ export function PollCreationPanel() {
                 <span className="mb-2 block text-sm font-medium text-slate-300">Improved question</span>
                 <textarea value={aiContent.improved_question} onChange={(e) => updateAiField("improved_question", e.target.value)} rows={2} className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-500" />
               </label>
+              
+              {/* Other metadata fields remain */}
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-slate-300">SEO title</span>
@@ -342,6 +334,21 @@ export function PollCreationPanel() {
                   <button type="button" onClick={addTopicTag} className="rounded-2xl border border-cyan-700 px-3 py-2 text-sm font-semibold text-cyan-300">Add</button>
                 </div>
               </div>
+              
+              {/* THE HALLUCINATION CHECK UI */}
+              {aiContent.sources && aiContent.sources.length > 0 && (
+                <div className="mt-4 border-t border-cyan-800/40 pt-4">
+                  <span className="mb-2 block text-sm font-medium text-slate-300">Verified Sources (Click to audit)</span>
+                  <div className="grid gap-2">
+                    {aiContent.sources.map((source, idx) => (
+                      <a key={idx} href={source.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-cyan-400 hover:text-cyan-300 hover:underline">
+                        <LinkIcon className="h-3 w-3" />
+                        <span className="truncate">{source.title} {source.publisher ? `— ${source.publisher}` : ""}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : null}

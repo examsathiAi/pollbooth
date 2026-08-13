@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+﻿import { PrismaClient } from "@prisma/client";
 import { logger } from "../../common/interceptors/logger";
 import { topicsService } from "../topics/topics.service";
 import type { CreatePollInput } from "./polls.types";
@@ -111,8 +111,8 @@ export class PollsService {
       prisma.poll.findMany({
         where: { status: { in: ["DRAFT", "PENDING_REVIEW"] }, is_active: false },
         orderBy: { created_at: "desc" },
-        skip: (query.page - 1) * query.limit,
-        take: query.limit,
+        skip: (Number(query.page || 1) - 1) * Number(query.limit || 10),
+        take: Number(query.limit || 10),
       }),
       prisma.poll.count({ where: { status: { in: ["DRAFT", "PENDING_REVIEW"] }, is_active: false } }),
     ]);
@@ -126,10 +126,10 @@ export class PollsService {
         created_at: poll.created_at,
       })),
       pagination: {
-        page: query.page,
-        limit: query.limit,
+        page: Number(query.page || 1),
+        limit: Number(query.limit || 10),
         total,
-        total_pages: Math.ceil(total / query.limit),
+        total_pages: Math.ceil(total / Number(query.limit || 10)),
       },
     };
   }
@@ -292,8 +292,8 @@ export class PollsService {
       prisma.poll.findMany({
         where,
         orderBy: { created_at: "desc" },
-        skip: (query.page - 1) * query.limit,
-        take: query.limit,
+        skip: (Number(query.page || 1) - 1) * Number(query.limit || 10),
+        take: Number(query.limit || 10),
         include: {
           _count: { select: { votes: true, opinions: true } },
         },
@@ -358,10 +358,10 @@ export class PollsService {
         };
       }),
       pagination: {
-        page: query.page,
-        limit: query.limit,
+        page: Number(query.page || 1),
+        limit: Number(query.limit || 10),
         total,
-        total_pages: Math.ceil(total / query.limit),
+        total_pages: Math.ceil(total / Number(query.limit || 10)),
       },
     };
   }

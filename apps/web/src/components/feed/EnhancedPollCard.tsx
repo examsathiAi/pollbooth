@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -491,51 +491,59 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
   const isTrending = totalVotes >= 42 && ageHours <= 24;
   const endDate = poll.end_date ? new Date(poll.end_date) : null;
   const hoursToEnd = endDate ? (endDate.getTime() - Date.now()) / 3600000 : null;
-  const isEndingSoon = endDate ? hoursToEnd !== null && hoursToEnd <= 24 && hoursToEnd > 0 : false;
-
-  return (
+  const isEndingSoon = endDate ? hoursToEnd !== null && hoursToEnd <= 24 && hoursToEnd > 0 : false;  return (
     <article
       ref={rootRef}
       id={`poll-card-${poll.id}`}
-      className={`overflow-hidden relative rounded-sm border border-paper-border bg-paper-card transition-all duration-200 ${visible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"} ${inViewHighlight ? "border-l-4 border-maroon" : ""}`}
+      className={`relative mb-6 overflow-hidden rounded-3xl border border-paper-border bg-transparent transition-all duration-400 ease-out ${visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"} ${inViewHighlight ? "ring-1 ring-maroon/20 bg-maroon/[0.01]" : "hover:border-ink/10 shadow-sm"}`}
     >
       {/* visual highlight overlay when card is in view */}
-      <div className={`pointer-events-none absolute inset-0 transition-opacity duration-300 ${inViewHighlight ? "opacity-100" : "opacity-0"}`} style={{ mixBlendMode: 'multiply' }}>
-        <div className="h-full w-full" style={{ background: inViewHighlight ? 'linear-gradient(90deg, rgba(250,222,120,0.0) 0%, rgba(250,222,120,0.18) 40%, rgba(250,222,120,0.0) 100%)' : 'transparent' }} />
+      <div className={`pointer-events-none absolute inset-0 transition-opacity duration-500 ${inViewHighlight ? "opacity-100" : "opacity-0"}`} style={{ mixBlendMode: 'multiply' }}>
+        <div className="h-full w-full" style={{ background: inViewHighlight ? 'linear-gradient(90deg, rgba(250,222,120,0.0) 0%, rgba(250,222,120,0.08) 40%, rgba(250,222,120,0.0) 100%)' : 'transparent' }} />
       </div>
 
-      <div className="flex items-center justify-between gap-3 px-4 py-2 bg-paper-card border-b border-paper-border">
-        <div className="min-w-0">
-          <div className="text-xs font-sans uppercase tracking-widest text-ink-muted">{poll.category.replace(/_/g, " ")} · {relativeTime}</div>
+      <div className="flex items-center justify-between gap-3 px-5 pt-5 pb-3">
+        <div className="min-w-0 flex items-center gap-2 text-ink-muted">
+          <div className="text-xs font-sans font-semibold uppercase tracking-wider">{poll.category.replace(/_/g, " ")}</div>
+          <span className="opacity-40">•</span>
+          <div className="text-xs font-sans font-medium">{relativeTime}</div>
         </div>
         <div>
-          <button aria-label="menu" className="rounded-sm p-2 text-ink hover:bg-paper-card">⋯</button>
+          <button aria-label="menu" className="rounded-full p-1.5 text-ink-muted hover:bg-ink/5 hover:text-ink transition-colors duration-200">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" /></svg>
+          </button>
         </div>
       </div>
 
-      <div className="px-4 py-4">
-        <h3 className="text-2xl font-headline leading-snug text-ink line-clamp-4">{poll.question}</h3>
-        <p className="mt-2 text-sm text-ink-muted">{socialLead}</p>
+      <div className="px-5 pb-4">
+        <Link href={`/poll/${poll.id}`} className="block group">
+          <h3 className="text-xl sm:text-2xl font-sans font-semibold tracking-tight leading-snug text-ink mb-2 line-clamp-4 group-hover:text-maroon transition-colors duration-200">{poll.question}</h3>
+        </Link>
+        <p className="text-sm text-ink-muted leading-relaxed">{socialLead}</p>
       </div>
 
       {!hasVoted ? (
-        <div className="px-4 pb-4">
+        <div className="px-5 pb-5">
           {feedback ? (
-            <div className="mb-3 rounded-sm border border-maroon/10 bg-paper-card px-3 py-2 text-sm text-maroon flex items-center gap-2">
+            <div className="mb-4 rounded-xl border border-maroon/10 bg-maroon/5 px-4 py-3 text-sm font-medium text-maroon flex items-center gap-2 transition-all duration-300">
               <Sparkles className="h-4 w-4" /> {feedback}
             </div>
           ) : null}
 
-          <div className="mt-3 flex w-full flex-col gap-2">
+          <div className="mt-2 flex w-full flex-col gap-2.5">
             {poll.options.map((option, idx) => (
               <button
                 key={idx}
                 onClick={() => void handleVote(idx)}
                 disabled={isVoting}
-                className={`group flex w-full items-center gap-3 rounded-sm border border-paper-border bg-paper-card px-4 py-3 text-left text-sm font-medium text-ink hover:bg-paper-border active:scale-[0.98] transition`}
+                className={`group relative flex w-full items-center gap-3 rounded-2xl border px-4 py-3.5 text-left text-sm font-medium transition-all duration-200 ease-out active:scale-[0.98] ${
+                  selectedOptionIndex === idx 
+                    ? 'border-ink bg-ink text-paper-bg shadow-sm' 
+                    : 'border-paper-border bg-transparent text-ink hover:border-ink/30 hover:bg-ink/5'
+                }`}
               >
-                <span className="flex h-4 w-4 items-center justify-center">
-                  <span className={`inline-block h-3 w-3 ${selectedOptionIndex === idx ? 'bg-maroon border-maroon' : 'border-ink-muted'} transition-colors`} />
+                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-200 ${selectedOptionIndex === idx ? 'border-paper-bg' : 'border-ink/30 group-hover:border-ink/50'}`}>
+                  <span className={`inline-block h-2 w-2 rounded-full transition-transform duration-200 ${selectedOptionIndex === idx ? 'bg-paper-bg scale-100' : 'bg-transparent scale-0'}`} />
                 </span>
                 <span className="truncate">{option}</span>
               </button>
@@ -543,38 +551,37 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
           </div>
 
           {results.length === 0 ? (
-            <div className="mt-3 rounded-sm border border-dashed border-paper-border bg-paper-card px-4 py-3 text-sm text-ink-muted">Be the first to vote</div>
+            <div className="mt-3 rounded-2xl border border-dashed border-paper-border bg-transparent px-4 py-3 text-sm text-ink-muted text-center font-medium">Be the first to vote</div>
           ) : null}
         </div>
       ) : (
-        <div className="px-4 pb-4">
-          <div className="mt-3 flex w-full flex-col gap-2">
+        <div className="px-5 pb-5">
+          <div className="mt-2 flex w-full flex-col gap-2.5">
             {results.map((r, idx) => {
               const pct = Math.max(0, Math.min(100, r.percentage || 0));
               const isUserChoice = r.index === userVoteIndex;
               const displayLabel = r.option.length > 80 ? `${r.option.slice(0, 77)}…` : r.option;
               const fillWidth = `${pct}%`;
               const maxPct = Math.max(...(results || []).map((rr) => rr.percentage || 0));
-              const isLeading = (r.percentage || 0) === maxPct;
+              const isLeading = (r.percentage || 0) === maxPct && maxPct > 0;
 
               return (
-                <div key={r.index} className="relative h-12 rounded-sm overflow-hidden">
-                  <div className="absolute inset-0 bg-paper-border" />
+                <div key={r.index} className="relative h-12 rounded-2xl overflow-hidden border border-paper-border/50 bg-paper-bg transition-all duration-300">
                   <div
-                    className={`absolute left-0 top-0 h-full ${isLeading ? 'bg-maroon' : 'bg-paper-border'} opacity-90 transition-all duration-700 ease-out`}
+                    className={`absolute left-0 top-0 h-full opacity-[0.15] transition-all duration-700 ease-out ${isLeading ? 'bg-maroon' : 'bg-ink'}`}
                     style={{ width: barRevealReady ? fillWidth : '0%' }}
                   />
-
+                  
                   <div className="relative z-10 flex h-full items-center justify-between px-4">
                     <div className="flex items-center gap-3">
-                      <span className={`text-sm font-medium ${isLeading ? 'text-white' : 'text-ink'}`}>{displayLabel}</span>
+                      <span className={`text-sm font-medium ${isUserChoice ? 'text-ink font-semibold' : 'text-ink'}`}>{displayLabel}</span>
                       {isUserChoice ? (
-                        <span className={`rounded-sm px-1 text-xs font-bold ${isLeading ? 'bg-white/20 text-white' : 'bg-maroon-dark text-white'}`}>✓</span>
+                        <span className="flex items-center justify-center h-4 w-4 rounded-full bg-ink text-paper-bg">
+                          <CheckCircle2 className="h-3 w-3" />
+                        </span>
                       ) : null}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-sm font-bold ${isLeading ? 'text-white' : 'text-ink'}`}>{pct}%</span>
-                    </div>
+                    <span className={`text-sm font-semibold text-ink`}>{pct}%</span>
                   </div>
                 </div>
               );
@@ -583,37 +590,45 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-2 border-t border-paper-border px-4 py-3 bg-paper-card">
-        <div className="text-xs text-ink-muted">{totalVotes.toLocaleString()} votes</div>
-        <div>
-              <div className="relative">
-                <button
-                  onClick={() => setShowShareMenu((s) => !s)}
-                  aria-expanded={showShareMenu}
-                  className="inline-flex items-center gap-2 rounded-sm px-3 py-1 text-xs font-semibold text-ink bg-paper-card hover:bg-paper-border"
-                >
-                  <Share2 className="h-4 w-4" /> Share
-                </button>
+      <div className="flex items-center justify-between gap-2 border-t border-paper-border/60 px-5 py-3 bg-transparent">
+        <div className="flex items-center gap-4">
+          <div className="text-xs font-medium text-ink-muted flex items-center gap-1.5">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            {totalVotes.toLocaleString()} votes
+          </div>
+          <div className="text-xs font-medium text-ink-muted flex items-center gap-1.5">
+            <MessageCircle className="w-4 h-4" />
+            {opinionsTotal.toLocaleString()}
+          </div>
+        </div>
+        
+        <div className="relative">
+          <button
+            onClick={() => setShowShareMenu((s) => !s)}
+            aria-expanded={showShareMenu}
+            className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-ink hover:bg-ink/5 transition-colors duration-200"
+          >
+            <Share2 className="h-3.5 w-3.5" /> Share
+          </button>
 
-                {showShareMenu ? (
-                  <div className="absolute right-0 z-30 mt-2 w-44 rounded-sm border border-paper-border bg-paper-card shadow-sm py-2">
-                    <button onClick={async () => { try { const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`; await navigator.clipboard.writeText(url); setShowSharePrompt(true); setTimeout(() => setShowSharePrompt(false), 2000); } catch {} }} className="flex w-full items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-paper-border">Copy link</button>
-                    <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(poll.question)}&url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-paper-border">Twitter</a>
-                    <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-paper-border">Facebook</a>
-                    <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-paper-border">LinkedIn</a>
-                    <a href={`https://wa.me/?text=${encodeURIComponent(poll.question + ' ' + (typeof window !== 'undefined' ? window.location.origin + '/poll/' + poll.id : ''))}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-paper-border">WhatsApp</a>
-                    <a href={`https://t.me/share/url?url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}&text=${encodeURIComponent(poll.question)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-paper-border">Telegram</a>
-                  </div>
-                ) : null}
-                {showSharePrompt ? (
-                  <div className="absolute right-0 -top-9 rounded-sm bg-maroon-dark text-white px-2 py-1 text-xs whitespace-nowrap">Copied!</div>
-                ) : null}
-              </div>
+          {showShareMenu ? (
+            <div className="absolute right-0 bottom-full mb-2 z-30 w-48 rounded-2xl border border-paper-border bg-paper-bg shadow-lg py-1.5 overflow-hidden transition-all duration-200">
+              <button onClick={async () => { try { const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`; await navigator.clipboard.writeText(url); setShowSharePrompt(true); setTimeout(() => setShowSharePrompt(false), 2000); } catch {} }} className="flex w-full items-center gap-2.5 px-4 py-2 text-sm font-medium text-ink hover:bg-ink/5 transition-colors">Copy link</button>
+              <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(poll.question)}&url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2.5 px-4 py-2 text-sm font-medium text-ink hover:bg-ink/5 transition-colors">Twitter</a>
+              <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2.5 px-4 py-2 text-sm font-medium text-ink hover:bg-ink/5 transition-colors">Facebook</a>
+              <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2.5 px-4 py-2 text-sm font-medium text-ink hover:bg-ink/5 transition-colors">LinkedIn</a>
+              <a href={`https://wa.me/?text=${encodeURIComponent(poll.question + ' ' + (typeof window !== 'undefined' ? window.location.origin + '/poll/' + poll.id : ''))}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2.5 px-4 py-2 text-sm font-medium text-ink hover:bg-ink/5 transition-colors">WhatsApp</a>
+              <a href={`https://t.me/share/url?url=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`)}&text=${encodeURIComponent(poll.question)}`} target="_blank" rel="noreferrer" className="flex w-full items-center gap-2.5 px-4 py-2 text-sm font-medium text-ink hover:bg-ink/5 transition-colors">Telegram</a>
+            </div>
+          ) : null}
+          {showSharePrompt ? (
+            <div className="absolute right-0 -top-10 rounded-xl bg-ink text-paper-bg px-3 py-1.5 text-xs font-medium whitespace-nowrap shadow-md">Copied!</div>
+          ) : null}
         </div>
       </div>
 
       {hasVoted && (
-      <div className="mt-3">
+      <div className="px-5 pb-2">
         <ShareCardGenerator
           title={poll.question}
           headline={(() => {
@@ -629,55 +644,48 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       </div>
       )}
 
-      <div className="border-t border-paper-border bg-paper-card px-4 py-4">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-sm font-semibold text-ink">Comments</p>
-          <span className="text-xs text-ink-muted">{opinionsTotal} total</span>
+      {/* Embedded Comments Section */}
+      {hasVoted && (
+      <div className="border-t border-paper-border/60 bg-transparent px-5 py-5">
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-sm font-semibold tracking-tight text-ink">Discussion</p>
+          <span className="text-xs font-medium text-ink-muted">{opinionsTotal} comments</span>
         </div>
 
         {isLoadingOpinions ? (
-          <p className="text-sm text-ink-muted">Loading comments…</p>
+          <p className="text-sm text-ink-muted animate-pulse">Loading comments…</p>
         ) : opinions.length === 0 ? (
-          <div className="rounded-sm border border-paper-border bg-paper-card px-3 py-2 text-sm text-ink-muted">
-            {poll.total_opinions > 0 ? `There are ${poll.total_opinions} comment contributions on this poll, but the visible thread is currently empty.` : "No comments yet. Be the first to add one."}
+          <div className="rounded-2xl border border-dashed border-paper-border bg-transparent px-4 py-3 text-sm text-ink-muted text-center font-medium">
+             Be the first to share your thoughts.
           </div>
         ) : (
           <div className="space-y-3">
-            {opinions.map((opinion) => {
+            {opinions.slice(0, 2).map((opinion) => {
               const city = extractCityFromHint(opinion.demographic_hint);
               const initials = getAvatarInitials(city || "Pulse");
               const isPressed = pressedReaction === `${opinion.id}:AGREE` || pressedReaction === `${opinion.id}:DISAGREE`;
               return (
-                <div key={opinion.id} className="rounded-sm border border-paper-border bg-paper-card p-3">
-                  <div className="flex items-start gap-2.5">
+                <div key={opinion.id} className="rounded-2xl border border-paper-border/50 bg-paper-bg p-3.5 transition-all hover:border-paper-border hover:shadow-sm">
+                  <div className="flex items-start gap-3">
                     <div className="relative mt-0.5 flex-shrink-0">
-                      <div className="avatar-live flex h-8 w-8 items-center justify-center rounded-full bg-maroon text-[11px] font-semibold text-white">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-ink text-[11px] font-semibold text-paper-bg shadow-sm">
                         {initials}
                       </div>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
                         <p className="text-sm font-semibold text-ink">{city || "Pulse"}</p>
-                        {city ? <span className="text-xs text-ink-muted">{city}</span> : null}
                         <span className="text-xs text-ink-muted">{formatRelativeTime(opinion.created_at)}</span>
                       </div>
-                      <p className="mt-1 text-sm leading-5 text-ink">{opinion.content}</p>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => void handleReaction(opinion.id, "AGREE")}
-                        className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-all duration-200 ${opinion.user_reaction === "AGREE" ? "bg-paper-card border-maroon text-maroon" : "bg-paper-card text-ink-muted"} ${isPressed ? "reaction-bounce" : ""}`}
-                      >
-                        <ThumbsUp className="h-3 w-3" /> {opinion.agree_count}
-                      </button>
-                      <button
-                        onClick={() => void handleReaction(opinion.id, "DISAGREE")}
-                        className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-all duration-200 ${opinion.user_reaction === "DISAGREE" ? "bg-paper-card border-maroon text-maroon" : "bg-paper-card text-ink-muted"} ${isPressed ? "reaction-bounce" : ""}`}
-                      >
-                        <ThumbsDown className="h-3 w-3" /> {opinion.disagree_count}
-                      </button>
+                      <p className="text-sm leading-relaxed text-ink/90">{opinion.content}</p>
+                      <div className="mt-2.5 flex items-center gap-2">
+                        <button onClick={() => void handleReaction(opinion.id, "AGREE")} className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-all duration-200 ${opinion.user_reaction === "AGREE" ? "bg-ink/10 text-ink" : "bg-transparent text-ink-muted hover:bg-ink/5"} ${isPressed ? "scale-95" : ""}`}>
+                          <ThumbsUp className="h-3.5 w-3.5" /> {opinion.agree_count}
+                        </button>
+                        <button onClick={() => void handleReaction(opinion.id, "DISAGREE")} className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-all duration-200 ${opinion.user_reaction === "DISAGREE" ? "bg-ink/10 text-ink" : "bg-transparent text-ink-muted hover:bg-ink/5"} ${isPressed ? "scale-95" : ""}`}>
+                          <ThumbsDown className="h-3.5 w-3.5" /> {opinion.disagree_count}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -686,54 +694,40 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
           </div>
         )}
 
-        {opinionsTotal > opinions.length ? (
-          <button onClick={() => setShowAllOpinions((prev) => !prev)} className="mt-3 text-sm font-semibold text-ink">{
-            showAllOpinions ? "Show fewer" : `View all ${opinionsTotal} comments`
-          }</button>
-        ) : null}
-
-        <div className="mt-4 rounded-sm border border-paper-border bg-paper-card p-3">
-          {hasOpinion ? (
-            <div className="rounded-sm border border-paper-border bg-paper-card px-3 py-2 text-sm text-ink">
-              You&apos;ve shared your view on this poll.
-            </div>
-          ) : !user ? (
-            <div className="rounded-sm border border-paper-border bg-paper-card px-3 py-3 text-sm text-ink">
-              <p className="font-semibold">You need an account to post a comment.</p>
-              <p className="mt-1 text-ink-muted">Comments are readable publicly, but posting is reserved for registered members.</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Link href={`/auth/login?mode=login&redirect=/poll/${poll.id}`} className="rounded-sm border border-maroon bg-paper-card px-3 py-2 text-sm font-semibold text-maroon transition hover:bg-paper-border">
+        <div className="mt-4">
+          {!user ? (
+            <div className="rounded-2xl border border-paper-border bg-transparent p-4 text-sm transition-all">
+              <p className="font-semibold text-ink">Join the conversation</p>
+              <p className="mt-1 text-ink-muted mb-4">Sign in to share your view.</p>
+              <div className="flex flex-wrap gap-2.5">
+                <Link href={`/auth/login?mode=login&redirect=/poll/${poll.id}`} className="rounded-xl border border-paper-border bg-transparent px-4 py-2.5 text-sm font-medium text-ink hover:bg-ink/5 transition-all duration-200 ease-out active:scale-[0.98]">
                   Sign in
                 </Link>
-                <Link href={`/auth/login?mode=signup&redirect=/poll/${poll.id}`} className="rounded-sm bg-maroon px-3 py-2 text-sm font-semibold text-white transition hover:bg-maroon-dark">
+                <Link href={`/auth/login?mode=signup&redirect=/poll/${poll.id}`} className="rounded-xl bg-ink px-4 py-2.5 text-sm font-medium text-paper-bg hover:bg-ink/90 transition-all duration-200 shadow-sm active:scale-[0.98]">
                   Create account
                 </Link>
               </div>
             </div>
           ) : (
-            <>
+            <div className="relative flex gap-2 items-start">
               <textarea
                 value={opinionText}
                 onChange={(e) => setOpinionText(e.target.value)}
-                onFocus={() => setCommentFocused(true)}
-                onBlur={() => setCommentFocused(false)}
-                placeholder={hasVoted ? "Write your view on this poll..." : "Vote first to add your opinion"}
+                placeholder="Share your view..."
                 maxLength={280}
-                rows={3}
-                disabled={!hasVoted || isPostingOpinion}
-                className={`w-full resize-none rounded-sm border border-paper-border bg-paper-card px-3 py-2 text-sm text-ink outline-none transition-all duration-200 focus:border-maroon focus:ring-2 focus:ring-maroon/20 disabled:cursor-not-allowed disabled:opacity-60 ${commentFocused ? "translate-y-[-1px] border-maroon shadow-[0_0_0_4px_rgba(128,0,0,0.08)]" : ""}`}
+                rows={1}
+                disabled={isPostingOpinion}
+                className={`w-full resize-none rounded-2xl border border-paper-border bg-transparent px-4 py-3 text-sm text-ink placeholder:text-ink-muted/50 outline-none transition-all duration-200 focus:border-ink focus:ring-1 focus:ring-ink disabled:opacity-60 overflow-hidden min-h-[46px]`}
               />
-              <div className="mt-2 flex items-center justify-between">
-                <span className={`text-xs ${opinionText.length > 250 ? "font-semibold text-rose-500" : "text-slate-500"}`}>{opinionText.length}/280</span>
-                <button onClick={() => void handleOpinionSubmit()} disabled={!opinionText.trim() || !hasVoted || isPostingOpinion} className="rounded-sm bg-maroon px-4 py-2 text-sm font-semibold text-white transition hover:bg-maroon-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60">
-                  {isPostingOpinion ? "Posting..." : "Post"}
-                </button>
-              </div>
-            </>
+              <button onClick={() => void handleOpinionSubmit()} disabled={!opinionText.trim() || isPostingOpinion} className="rounded-2xl bg-ink px-4 py-3 text-sm font-medium text-paper-bg transition-all duration-200 hover:bg-ink/90 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed shrink-0 h-[46px] shadow-sm flex items-center justify-center">
+                Post
+              </button>
+            </div>
           )}
-          {opinionFeedback ? <p className="mt-2 text-xs text-emerald-600">{opinionFeedback}</p> : null}
         </div>
       </div>
+      )}
+
       <ProgressiveGateModal
         isOpen={showGate}
         onClose={() => setShowGate(false)}

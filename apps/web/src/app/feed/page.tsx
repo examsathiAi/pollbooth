@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -265,7 +265,7 @@ export default function FeedPage() {
           <FeedSidebar activeCategory={activeCategory} onCategoryChange={handleCategoryChange} />
         </div>
 
-        <main className="min-w-0 lg:overflow-y-auto scrollbar-paper" style={{ maxHeight: `calc(100vh - ${headerHeight}px)` }}>
+        <main className="min-w-0">
           <div className="mx-auto max-w-2xl pb-12">
             {isSearching && searchQuery ? (
               <div className="mb-6">

@@ -1,4 +1,4 @@
-import { config } from "../../config";
+﻿import { config } from "../../config";
 import {
   GeminiPollContentWithSourcesSchema,
   type GeminiPollContentWithSources,
@@ -18,14 +18,29 @@ export async function generatePollContent(question: string, category: string): P
   }
 
   try {
-    // perform a server-side news search first to gather verifiable sources
-    const searchQuery = `${question} ${category}`;
-    const found = await fetchNewsArticles(searchQuery, 6);
-    if (!found || found.length === 0) {
-      return { ok: false, error: "NO_VERIFIABLE_SOURCES_FOUND" };
+    const found = await fetchNewsArticles(`${question} ${category}`, 6);
+    
+    let sourceListText = "No live news sources were found. Rely on your general knowledge to provide factual, unbiased context.";
+    if (found && found.length > 0) {
+      sourceListText = found
+        .map((f: any, i: number) => `${i + 1}. ${f.title} — ${f.source} — ${f.publishedAt || ""} — ${f.url}`)
+        .join("\n");
     }
 
-    const sourceListText = found.map((f: any, i: number) => `${i + 1}. ${f.title} — ${f.source} — ${f.publishedAt || ""} — ${f.url}`).join("\n");
+    const prompt = `You are an expert news researcher, viral social media strategist, and SEO editor for a public opinion platform (Pulse).
+
+MANDATE:
+1. Rephrase 'improved_question' to be sentiment-driven, punchy, and compelling to drive maximum user engagement while remaining objective.
+2. Write 'ai_summary': A factual 2-3 paragraph Inshorts/Firstpost style news brief giving essential background context on the topic based on the provided sources (or your general knowledge if none are provided). You MUST append this exact disclaimer at the end:
+' *Disclaimer: This context was AI-generated based on recent news sources. Always verify facts independently.*'
+3. Generate comprehensive SEO tags, search keywords (5-8), hashtags (3-6), and viral social media captions tailored for X, Facebook, Instagram, and WhatsApp.
+4. Provide 2-4 highly engaging 'suggested_options' for the poll (MUST be an array of plain strings, not objects), 2-3 FAQ objects, and include the provided sources array (or an empty array if no sources are provided).
+
+Sources:\n${sourceListText}\n\n
+Category: ${category}
+Question: ${question}
+
+Return strictly valid JSON with no markdown block wrappers matching fields: improved_question, seo_title, meta_description, slug, keywords (array of strings), hashtags (array of strings), facebook_caption, instagram_caption, x_caption, whatsapp_share_text, ai_summary, faq, og_title, og_description, suggested_topics (array of strings), suggested_options (array of strings), sources.`;
 
     const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent", {
       method: "POST",
@@ -34,31 +49,15 @@ export async function generatePollContent(question: string, category: string): P
         "x-goog-api-key": config.geminiApiKey,
       },
       body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: prompt }]
+          }
+        ],
         generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.0,
-          candidateCount: 1,
-          maxOutputTokens: 1200,
-        },
-        contents: [{
-          parts: [{
-            text: `You are a web researcher and factual content generator. STRICT RULES (tuned):
-
-1) No hallucinations: DO NOT invent facts, numbers, dates, or named entities. Every factual claim must be directly supported by one or more of the server-provided sources below.
-2) Source use: Use ONLY the sources explicitly listed below. Do not call any other sources or rely on internal world knowledge. If a required factual field cannot be supported by these sources, omit that field or return {"error":"NO_VERIFIABLE_SOURCES_FOUND"}.
-3) Recency preference: Prefer sources published within the last 30 days. If you must use older sources, mark them by adding an attribute (e.g., "stale": true) in the sources array.
-4) Field-level provenance: For any field that contains factual claims (numbers, dates, named entities, percentages, specific citations), include a sibling field with the suffix '_source_indices' listing the 1-based indices of the source(s) in the provided 'sources' array that directly support that field. Example: "ai_summary_source_indices": [1], "keywords_source_indices": [2,3].
-5) Output shape: Return exactly one JSON object and nothing else. The object MUST match the schema and include: improved_question, seo_title, meta_description, slug, keywords (5-8), hashtags (3-6), facebook_caption, instagram_caption, x_caption, whatsapp_share_text, ai_summary (2-3 sentences), faq (2-3 objects with question and answer), og_title, og_description, suggested_topics (2-4), and sources (array of objects with url, title, publisher (optional), published_at (optional)). No extra keys.
-6) Sources array: The 'sources' array must contain canonical objects for each source you used, matching the required shape. Do not invent URLs or publishers. At least one source must be reachable.
-7) Length & formatting constraints: Keep 'seo_title' <=60 chars, 'meta_description' <=160 chars, 'facebook_caption' <=400 chars, 'instagram_caption' <=300 chars, 'x_caption' <=280 chars, 'whatsapp_share_text' <=200 chars.
-
-Sources (server-provided, use these only):\n${sourceListText}\n\n
-Category: ${category}
-Question: ${question}
-
-Return strictly valid JSON that conforms to the schema.`,
-          }],
-        }],
+          temperature: 0.2,
+          maxOutputTokens: 2000,
+        }
       }),
     });
 
@@ -70,7 +69,14 @@ Return strictly valid JSON that conforms to the schema.`,
       };
     }
 
-    const payload = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+    const payload = await response.json() as {
+      candidates?: Array<{
+        content?: {
+          parts?: Array<{ text?: string }>;
+        };
+      }>;
+    };
+
     const text = payload.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
     if (!text) {
@@ -80,16 +86,18 @@ Return strictly valid JSON that conforms to the schema.`,
       };
     }
 
+    const cleanJson = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/, "").trim();
+
     let parsed: unknown;
     try {
-      parsed = JSON.parse(text);
+      parsed = JSON.parse(cleanJson);
     } catch {
       return {
         ok: false,
         error: "Gemini returned a non-JSON response.",
       };
     }
-    // allow the model to return a short error object
+
     if (typeof parsed === "object" && parsed !== null && (parsed as any).error) {
       return { ok: false, error: String((parsed as any).error) };
     }
@@ -98,21 +106,8 @@ Return strictly valid JSON that conforms to the schema.`,
     if (!result.success) {
       return {
         ok: false,
-        error: `Gemini response did not match the expected shape: ${result.error.issues.map((issue) => issue.message).join(", ")}`,
+        error: `Gemini response validation failed: ${result.error.issues.map((issue) => issue.message).join(", ")}`,
       };
-    }
-
-    // verify that each source is reachable (simple HEAD request); fail early if any source is unreachable
-    const sources = result.data.sources || [];
-    for (const s of sources) {
-      try {
-        const res = await fetch(s.url, { method: "HEAD" });
-        if (!res.ok) {
-          return { ok: false, error: `Source unreachable: ${s.url}` };
-        }
-      } catch (err) {
-        return { ok: false, error: `Source fetch failed: ${s.url}` };
-      }
     }
 
     return {

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -184,194 +184,45 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
   }
 
   return (
-    <div className="max-w-lg mx-auto min-h-screen bg-white">
-      <header className="sticky top-0 bg-white border-b z-10 px-4 py-3">
-        <Link href="/feed" className="text-blue-600 text-sm font-medium">← Back to Feed</Link>
+        <div className="max-w-lg mx-auto min-h-screen bg-transparent transition-colors duration-300">
+      <header className="sticky top-0 bg-white/70 backdrop-blur-xl border-b border-paper-border/50 z-20 px-2 py-2 transition-all duration-300">
+        <Link href="/feed" className="group inline-flex items-center justify-center w-10 h-10 rounded-full bg-transparent hover:bg-ink/5 transition-all duration-200 ease-out active:scale-[0.92]">
+          <svg className="w-5 h-5 text-ink-muted group-hover:text-ink transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+          </svg>
+        </Link>
       </header>
 
-      <main>
+            <main>
+        {(poll as any).ai_summary ? (
+          <div className="mx-4 mt-4 mb-2 overflow-hidden rounded-3xl border border-paper-border/60 bg-transparent p-5 shadow-sm transition-all">
+            <div className="flex items-center gap-2 mb-3 border-b border-paper-border/40 pb-3">
+              <svg className="w-4 h-4 text-maroon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h2 className="text-xs font-bold uppercase tracking-widest text-ink">Context & Insights</h2>
+            </div>
+            <div className="text-sm leading-relaxed text-ink/90 whitespace-pre-wrap font-sans">
+              {(poll as any).ai_summary}
+            </div>
+          </div>
+        ) : null}
+
         <EnhancedPollCard poll={poll} onVoteComplete={handleVoteComplete} />
 
-        {poll.has_voted && cohort ? (
-          <div className="m-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-800">
-            <p className="font-semibold">People like you voted</p>
-            <p className="mt-1">
-              {cohort.cohort_breakdown?.find((item: any) => item.option_index === cohort.user_vote_index)?.percentage || 0}% of people in your age group / city voted the same way.
+                {poll.has_voted && cohort ? (
+          <div className="mx-4 my-4 rounded-2xl border border-ink/10 bg-ink/5 p-4 transition-all duration-300">
+            <div className="flex items-center gap-2 mb-1.5">
+              <svg className="w-4 h-4 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <p className="text-sm font-semibold tracking-tight text-ink">People like you voted</p>
+            </div>
+            <p className="text-sm text-ink-muted ml-6">
+              {cohort.cohort_breakdown?.find((item: any) => item.option_index === cohort.user_vote_index)?.percentage || 0}% of people in your demographic voted the same way.
             </p>
           </div>
         ) : null}
 
-        {poll.status === "ACTIVE" && !poll.has_voted ? (
-          <div className="m-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm font-semibold text-slate-800">Pulse Predicts</p>
-            <p className="mt-1 text-sm text-slate-500">Choose the percentage bracket you think will win this poll.</p>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {predictionBands.map((band) => (
-                <button
-                  key={band.label}
-                  type="button"
-                  onClick={() => {
-                    setPredictionInput(band.value.toString());
-                    setMessage("");
-                  }}
-                  className={`rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${
-                    predictionInput === band.value.toString()
-                      ? "border-blue-500 bg-blue-600 text-white"
-                      : "border-slate-300 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50"
-                  }`}
-                >
-                  {band.label}
-                </button>
-              ))}
-            </div>
-            <div className="mt-3 flex items-center justify-between gap-2">
-              <p className="text-xs text-slate-500">Your saved bracket will be evaluated once the poll closes.</p>
-              <button
-                onClick={submitPrediction}
-                disabled={isSubmitting || !predictionInput}
-                className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isSubmitting ? "Saving..." : "Save prediction"}
-              </button>
-            </div>
-            {prediction !== null ? <p className="mt-2 text-sm text-slate-600">Your prediction: {prediction}%</p> : null}
-            {message ? <p className="mt-2 text-sm text-blue-700">{message}</p> : null}
-          </div>
-        ) : null}
-
-        {related.length > 0 ? (
-          <div className="border-b border-gray-100 p-4">
-            <p className="mb-3 text-sm font-semibold text-slate-900">You might also want to vote on</p>
-            <div className="flex gap-3 overflow-x-auto">
-              {related.map((item) => (
-                <Link key={item.id} href={`/poll/${item.id}`} className="min-w-[220px] rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                  <p className="text-sm font-semibold text-slate-800">{item.question}</p>
-                  <p className="mt-2 text-xs text-slate-500">{item.total_votes} votes • {item.total_opinions} opinions</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        <div className="m-4 rounded-3xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm font-semibold text-slate-900">Discussion thread</p>
-          <p className="mt-1 text-sm text-slate-500">Share your view, react to others, and keep the conversation moving in a safe public space.</p>
-        </div>
-
-        {(hasVoted || poll.has_voted) && (
-          <div className="p-4 border-b border-gray-100">
-            {isCommentFeatureDisabled ? (
-              <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
-                <p className="font-semibold">Commenting disabled</p>
-                <p className="mt-2 text-sm text-rose-700">{commentDisableMessage}</p>
-              </div>
-            ) : !user ? (
-              <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
-                <p className="font-semibold">You need an account to post a comment.</p>
-                <p className="mt-1 text-sm text-blue-700">Comments are readable publicly, but only registered members can join the thread.</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Link href={`/auth/login?mode=login&redirect=/poll/${pollId}`} className="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm ring-1 ring-blue-200 transition hover:bg-blue-100">
-                    Sign in
-                  </Link>
-                  <Link href={`/auth/login?mode=signup&redirect=/poll/${pollId}`} className="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700">
-                    Create account
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="flex gap-2">
-                  <textarea
-                    value={newOpinion}
-                    onChange={(e) => setNewOpinion(e.target.value)}
-                    placeholder="Share your opinion (280 chars max)..."
-                    className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none resize-none text-sm"
-                    rows={3}
-                    maxLength={280}
-                  />
-                </div>
-                <div className="flex justify-between items-center mt-2">
-                  <span className={`text-xs ${newOpinion.length > 250 ? "text-red-500" : "text-gray-400"}`}>
-                    {newOpinion.length}/280
-                  </span>
-                  <button
-                    onClick={submitOpinion}
-                    disabled={!newOpinion.trim()}
-                    className="bg-blue-600 text-white text-sm font-semibold px-6 py-2 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                  >
-                    Post
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        <div className="flex gap-2 px-4 py-3 border-b border-gray-100">
-          {['TOP', 'NEWEST', 'CONTROVERSIAL'].map((sort) => (
-            <button
-              key={sort}
-              onClick={() => {
-                setSortBy(sort);
-                loadPoll(sort);
-              }}
-              className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-                sortBy === sort ? "bg-blue-100 text-blue-700" : "text-gray-500 hover:bg-gray-100"
-              }`}
-            >
-              {sort}
-            </button>
-          ))}
-        </div>
-
-        <div className="divide-y divide-gray-50">
-          {opinions.length === 0 ? (
-            <div className="p-8 text-center text-gray-400 text-sm">
-              No opinions yet. Be the first to share yours!
-            </div>
-          ) : (
-            opinions.map((op) => (
-              <div key={op.id} className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  {op.demographic_hint && (
-                    <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-                      {op.demographic_hint}
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-gray-800 leading-relaxed mb-3">{op.content}</p>
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => reactToOpinion(op.id, "AGREE")}
-                    className={`flex items-center gap-1 text-xs font-medium transition-colors ${
-                      op.user_reaction === "AGREE" ? "text-blue-600" : "text-gray-400 hover:text-blue-500"
-                    }`}
-                  >
-                    <ThumbsUp className="w-3.5 h-3.5" />
-                    {op.agree_count}
-                  </button>
-                  <button
-                    onClick={() => reactToOpinion(op.id, "DISAGREE")}
-                    className={`flex items-center gap-1 text-xs font-medium transition-colors ${
-                      op.user_reaction === "DISAGREE" ? "text-red-500" : "text-gray-400 hover:text-red-400"
-                    }`}
-                  >
-                    <ThumbsDown className="w-3.5 h-3.5" />
-                    {op.disagree_count}
-                  </button>
-                  <button
-                    onClick={() => reportOpinion(op.id)}
-                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 transition-colors ml-auto"
-                  >
-                    <Flag className="w-3.5 h-3.5" />
-                    Report
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </main>
+        </main>
     </div>
   );
 }
