@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { EnhancedPollCard } from "@/components/feed/EnhancedPollCard";
+import { InsightsSlider } from "@/components/feed/InsightsSlider";
 import { FeedSidebar } from "@/components/layout/FeedSidebar";
 import { FeedRightRail } from "@/components/layout/FeedRightRail";
 import { NotificationBell } from "@/components/layout/NotificationBell";
@@ -28,12 +29,12 @@ interface PollSummary {
 }
 
 const categoryAccentMap: Record<string, { ring: string; bg: string; text: string; icon: string }> = {
-  civic: { ring: "border-cyan-500", bg: "bg-cyan-50", text: "text-cyan-700", icon: "🏛️" },
-  sports: { ring: "border-orange-500", bg: "bg-orange-50", text: "text-orange-700", icon: "⚽" },
-  bollywood: { ring: "border-pink-500", bg: "bg-pink-50", text: "text-pink-700", icon: "🎬" },
-  news: { ring: "border-emerald-500", bg: "bg-emerald-50", text: "text-emerald-700", icon: "📰" },
-  local: { ring: "border-indigo-500", bg: "bg-indigo-50", text: "text-indigo-700", icon: "📍" },
-  default: { ring: "border-blue-500", bg: "bg-blue-50", text: "text-blue-700", icon: "📊" },
+  civic: { ring: "border-cyan-500", bg: "bg-cyan-50", text: "text-cyan-700", icon: "???" },
+  sports: { ring: "border-orange-500", bg: "bg-orange-50", text: "text-orange-700", icon: "?" },
+  bollywood: { ring: "border-pink-500", bg: "bg-pink-50", text: "text-pink-700", icon: "??" },
+  news: { ring: "border-emerald-500", bg: "bg-emerald-50", text: "text-emerald-700", icon: "??" },
+  local: { ring: "border-indigo-500", bg: "bg-indigo-50", text: "text-indigo-700", icon: "??" },
+  default: { ring: "border-blue-500", bg: "bg-blue-50", text: "text-blue-700", icon: "??" },
 };
 
 export default function FeedPage() {
@@ -204,17 +205,17 @@ export default function FeedPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header ref={headerRef} className="sticky top-0 z-50 border-b-2 border-ink bg-paper-bg text-ink paper-texture">
-        <div className="mx-auto max-w-7xl px-4 py-4">
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-8 py-4">
           <div className="flex items-center justify-between gap-4">
             <div className="text-4xl font-headline font-bold text-maroon">Pulse Times</div>
 
             <div className="flex-1 max-w-md">
               <input
                 type="text"
-                placeholder="Search polls…"
+                placeholder="Search polls..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full border border-ink bg-paper-card px-3 py-2 text-sm font-sans rounded-sm focus:outline-none"
+                className="w-full border border-paper-border/50 bg-paper-card px-4 py-2 text-sm font-sans rounded-full focus:outline-none focus:border-maroon/50 focus:ring-1 focus:ring-maroon/20 shadow-inner"
               />
             </div>
 
@@ -260,8 +261,8 @@ export default function FeedPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-4 py-6 lg:grid lg:grid-cols-[220px,minmax(0,1fr),320px] lg:gap-6 scrollbar-paper" style={{ height: `calc(100vh - ${headerHeight}px)` }}>
-        <div className="hidden lg:block lg:self-start scrollbar-paper" style={{ position: "sticky", top: `${headerHeight}px` }}>
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-8 py-6 lg:grid lg:grid-cols-[260px,minmax(0,1fr),340px] lg:gap-10 min-h-screen">
+        <div className="hidden lg:block lg:self-start overflow-y-auto overscroll-contain pb-6 scrollbar-paper" style={{ position: "sticky", top: `${headerHeight}px`, height: `calc(100vh - ${headerHeight}px)` }}>
           <FeedSidebar activeCategory={activeCategory} onCategoryChange={handleCategoryChange} />
         </div>
 
@@ -277,43 +278,15 @@ export default function FeedPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-sm border border-paper-border bg-paper-card p-8 text-center">
+                  <div className="rounded-2xl border border-paper-border/30 bg-paper-card shadow-sm p-8 text-center">
                     <p className="text-ink-muted">No polls found for &quot;{searchQuery}&quot;</p>
                   </div>
                 )}
               </div>
             ) : (
               <>
-                {page === 1 && hotPolls.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-ink-muted">Hot Polls 🔥</h3>
-                    <div className="overflow-x-auto pb-2">
-                      <div className="flex gap-3">
-                        {hotPolls.map((poll) => {
-                          const winningResult = [...(poll.results || [])].sort((left, right) => right.percentage - left.percentage)[0];
-                          const winningPercent = winningResult ? Math.round(winningResult.percentage) : Math.min(92, Math.max(12, Math.round((poll.total_votes || 0) % 90)) + 10);
-                          const accent = categoryAccentMap[poll.category?.toLowerCase()] || categoryAccentMap.default;
-                          const label = poll.question.length > 34 ? `${poll.question.slice(0, 34)}…` : poll.question;
-
-                          return (
-                            <Link key={poll.id} href={`/poll/${poll.id}`} className="min-w-[160px] rounded-sm border border-paper-border bg-paper-card p-3 transition duration-200 hover:-translate-y-0.5 hover:scale-[1.02]">
-                              <div className={`mb-2 flex h-12 w-12 items-center justify-center rounded-2xl ${accent.bg} ${accent.text}`}>
-                                <span className="text-lg font-bold text-maroon">{winningPercent}%</span>
-                              </div>
-                              <p className="text-[13px] font-semibold leading-5 text-ink">{label}</p>
-                              <p className="mt-2 text-[12px] leading-5 text-ink-muted">
-                                {winningPercent}% voted for {winningResult?.option ? <>&quot;{winningResult.option}&quot;</> : "the leading option"}
-                              </p>
-                              <p className="mt-2 text-[11px] uppercase tracking-[0.2em] text-ink-muted">{poll.category.replace(/_/g, " ")}</p>
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-4">
+                {page === 1 && <InsightsSlider />}
+                  <div className="space-y-4">
                   {isLoading && page === 1 ? (
                     <div className="flex justify-center py-12">
                       <Loader2 className="h-8 w-8 animate-spin text-maroon" />
@@ -332,7 +305,7 @@ export default function FeedPage() {
                       />
                     ))
                   ) : (
-                    <div className="rounded-sm border border-paper-border bg-paper-card p-8 text-center">
+                    <div className="rounded-2xl border border-paper-border/30 bg-paper-card shadow-sm p-8 text-center">
                       <p className="text-ink-muted">No polls available</p>
                     </div>
                   )}
@@ -342,7 +315,7 @@ export default function FeedPage() {
                   <div className="mt-6 text-center">
                     <button
                       onClick={() => void loadPolls(page + 1)}
-                      className="rounded-sm border border-paper-border bg-paper-card px-6 py-2 text-sm font-medium text-ink hover:bg-paper-border"
+                      className="rounded-2xl border border-paper-border/30 bg-paper-card shadow-sm px-6 py-2 text-sm font-medium text-ink hover:bg-paper-border"
                     >
                       Load more
                     </button>
@@ -353,10 +326,11 @@ export default function FeedPage() {
           </div>
         </main>
 
-        <div className="hidden lg:block lg:self-start scrollbar-paper" style={{ position: "sticky", top: `${headerHeight}px` }}>
+        <div className="hidden lg:block lg:self-start overflow-y-auto overscroll-contain pb-6 scrollbar-paper" style={{ position: "sticky", top: `${headerHeight}px`, height: `calc(100vh - ${headerHeight}px)` }}>
           <FeedRightRail />
         </div>
       </div>
     </div>
   );
 }
+

@@ -37,6 +37,8 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  
   const [form, setForm] = useState({
     username: "",
     city: "",
@@ -48,6 +50,20 @@ export default function ProfilePage() {
     employment: "",
     streaming_platforms: "",
   });
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm("DPDP Mandate: This action will permanently scrub your personal identity (PII). Proceed?");
+    if (!confirmed) return;
+    setDeleting(true);
+    try {
+      await api.delete("/api/v1/users/me");
+      localStorage.removeItem("pulse_token");
+      window.location.href = "/auth/login";
+    } catch (err) {
+      alert("Server Error Details: " + (err.response?.data?.message || err.response?.data?.error || err.message || JSON.stringify(err.response?.data)));
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     const loadProfileData = async () => {
@@ -351,10 +367,19 @@ export default function ProfilePage() {
         </section>
 
         <section className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6">
-          <h2 className="text-lg font-semibold">Settings</h2>
-          <Link href="/consent" className="mt-4 inline-flex rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-200 transition hover:border-cyan-500/50 hover:text-white">
-            Manage consent settings
-          </Link>
+          <h2 className="text-lg font-semibold">Settings & Data Protection</h2>
+          <div className="mt-4 flex flex-col sm:flex-row gap-3">
+            <Link href="/consent" className="inline-flex items-center justify-center rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-cyan-500/50 hover:text-white">
+              Manage consent settings
+            </Link>
+            <button 
+              onClick={() => void handleDeleteAccount()} 
+              disabled={deleting} 
+              className="inline-flex items-center justify-center rounded-2xl border border-rose-900/50 bg-rose-950/30 px-4 py-3 text-sm font-medium text-rose-400 transition hover:bg-rose-900/50 hover:text-rose-300 disabled:opacity-50"
+            >
+              {deleting ? "Scrubbing Data..." : "Delete Account & Data"}
+            </button>
+          </div>
         </section>
       </div>
     </main>

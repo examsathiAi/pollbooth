@@ -63,7 +63,6 @@ export class UsersService {
   async updateProfile(userId: string, input: UpdateProfileInput) {
     const { username, city, state, ...profileFields } = input;
 
-    // Update user basic info
     const userUpdate: any = {};
     if (username) userUpdate.username = username;
     if (city) userUpdate.city = city;
@@ -76,7 +75,6 @@ export class UsersService {
       });
     }
 
-    // Update profile with completion tracking
     if (Object.keys(profileFields).length > 0) {
       const currentProfile = await prisma.profile.findUnique({
         where: { user_id: userId },
@@ -102,7 +100,6 @@ export class UsersService {
         },
       });
 
-      // Check for Pulse Insider badge
       if (completedPercentage === 100) {
         await this.awardBadgeIfNotExists(userId, "PULSE_INSIDER");
       }
@@ -150,53 +147,16 @@ export class UsersService {
       return { required: false };
     }
 
-    // Return the first missing field with friendly framing
     const fieldGates: Record<string, { field: string; question: string; options: string[] }> = {
-      age_bracket: {
-        field: "age_bracket",
-        question: "Which generation's voice is yours?",
-        options: ["GEN_Z (18-24)", "MILLENNIAL (25-40)", "GEN_X (41-56)", "BOOMER (57+)"],
-      },
-      gender: {
-        field: "gender",
-        question: "How do you identify?",
-        options: ["Male", "Female", "Non-binary", "Prefer not to say"],
-      },
-      state: {
-        field: "state",
-        question: "Which state represents you?",
-        options: [], // Would be populated from Indian states
-      },
-      education: {
-        field: "education",
-        question: "What's your highest qualification?",
-        options: ["High School", "Bachelor's", "Master's", "PhD", "Other"],
-      },
-      income_bracket: {
-        field: "income_bracket",
-        question: "Which tax slab do you fall under?",
-        options: ["< \u20B93L", "\u20B93L-\u20B96L", "\u20B96L-\u20B99L", "\u20B99L-\u20B912L", "\u20B912L-\u20B915L", "> \u20B915L"],
-      },
-      employment: {
-        field: "employment",
-        question: "What's your work status?",
-        options: ["Employed", "Self-employed", "Student", "Unemployed", "Retired"],
-      },
-      vehicle: {
-        field: "vehicle",
-        question: "What do you currently drive?",
-        options: ["Two-wheeler", "Hatchback", "Sedan", "SUV", "EV", "None"],
-      },
-      diet: {
-        field: "diet",
-        question: "Veg, Non-veg, or Vegan?",
-        options: ["Veg", "Non-veg", "Vegan"],
-      },
-      shopping_pref: {
-        field: "shopping_pref",
-        question: "Online or offline shopper?",
-        options: ["Online", "Offline", "Both"],
-      },
+      age_bracket: { field: "age_bracket", question: "Which generation's voice is yours?", options: ["GEN_Z (18-24)", "MILLENNIAL (25-40)", "GEN_X (41-56)", "BOOMER (57+)"] },
+      gender: { field: "gender", question: "How do you identify?", options: ["Male", "Female", "Non-binary", "Prefer not to say"] },
+      state: { field: "state", question: "Which state represents you?", options: [] },
+      education: { field: "education", question: "What's your highest qualification?", options: ["High School", "Bachelor's", "Master's", "PhD", "Other"] },
+      income_bracket: { field: "income_bracket", question: "Which tax slab do you fall under?", options: ["< ₹3L", "₹3L-₹6L", "₹6L-₹9L", "₹9L-₹12L", "₹12L-₹15L", "> ₹15L"] },
+      employment: { field: "employment", question: "What's your work status?", options: ["Employed", "Self-employed", "Student", "Unemployed", "Retired"] },
+      vehicle: { field: "vehicle", question: "What do you currently drive?", options: ["Two-wheeler", "Hatchback", "Sedan", "SUV", "EV", "None"] },
+      diet: { field: "diet", question: "Veg, Non-veg, or Vegan?", options: ["Veg", "Non-veg", "Vegan"] },
+      shopping_pref: { field: "shopping_pref", question: "Online or offline shopper?", options: ["Online", "Offline", "Both"] },
     };
 
     return {
@@ -218,6 +178,57 @@ export class UsersService {
         data: { user_id: userId, badge_id: badge.id },
       });
     }
+  }
+
+  async deleteAccountAndScrubPII(userId: string) {
+    // DPDP Right to Erasure: Use a short 11-character mask to safely fit inside strict VarChar(15) database limits
+    const uniqueSuffix = Date.now().toString().slice(-8);
+    const scrubbedName = `DEL_${uniqueSuffix}`;
+    const scrubbedPhone = `+00${uniqueSuffix}`;
+    
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          username: scrubbedName,
+          phone_number: scrubbedPhone,
+          city: null,
+          state: null,
+          is_active: false,
+          avatar_url: null,
+        },
+      });
+      
+      const profile = await tx.profile.findUnique({ where: { user_id: userId } });
+      if (profile) {
+        await tx.profile.update({
+          where: { user_id: userId },
+          data: {
+            age_bracket: null,
+            gender: null,
+            education: null,
+            income_bracket: null,
+            employment: null,
+            vehicle: null,
+            diet: null,
+            shopping_pref: null,
+            completed_percentage: 0
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          user_id: userId,
+          action: "DPDP_RIGHT_TO_ERASURE_EXECUTED",
+          entity_type: "USER",
+          entity_id: userId,
+          metadata: { compliance_standard: "DPDP_2023", scrubbed_at: new Date().toISOString() }
+        }
+      });
+    });
+    
+    return { ok: true, message: "User PII successfully scrubbed per DPDP mandate." };
   }
 }
 

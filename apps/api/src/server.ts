@@ -1,3 +1,4 @@
+import { initAutoModeratorCron } from "./modules/moderation/auto-moderation.cron";
 import { createApp } from "./app";
 import { config } from "./config";
 import { logger } from "./common/interceptors/logger";
@@ -5,6 +6,7 @@ import { prisma } from "./config/database";
 import { redis } from "./config/redis";
 import { startWorkers } from "./jobs";
 import { initErrorTracking } from "./common/instrumentation/error-tracking";
+import { startJournalistCron } from "./modules/ai/journalist.service";
 
 const PORT = config.port;
 
@@ -19,6 +21,7 @@ async function bootstrap() {
   });
 
   const server = app.listen(PORT, () => {
+  initAutoModeratorCron();
     logger.info(`Pulse API running on port ${PORT} in ${config.nodeEnv} mode`);
   });
 
@@ -38,6 +41,9 @@ async function bootstrap() {
 
   // Start background workers
   await startWorkers();
+
+  // Start the daily AI Data Journalism cron job
+  startJournalistCron();
 }
 
 bootstrap().catch((err) => {

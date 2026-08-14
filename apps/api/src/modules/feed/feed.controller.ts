@@ -1,4 +1,4 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import { authGuard } from "../../common/guards/auth.guard";
 import { feedService } from "./feed.service";
 
@@ -69,6 +69,25 @@ router.get("/related/:pollId", authGuard, async (req, res, next) => {
 router.get("/cohort/:pollId", authGuard, async (req, res, next) => {
   try {
     const result = await feedService.getCohortComparison(req.user!.id, req.params.pollId);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/insights", async (req, res, next) => {
+  try {
+    const limit = Number(req.query.limit) || 10;
+    const result = await feedService.getInsights(limit);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/insights/:id", async (req, res, next) => {
+  try {
+    const result = await feedService.getInsightById(req.params.id);
     res.json(result);
   } catch (err) {
     next(err);

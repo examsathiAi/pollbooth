@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+﻿import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -396,6 +396,76 @@ export class FeedService {
               v._count.option_index === Math.max(...cohortVotes.map((c) => c._count.option_index))
           )
         : null,
+    };
+  }
+
+  async getInsights(limit: number = 10) {
+    const insights = await prisma.pollInsight.findMany({
+      where: { is_published: true },
+      orderBy: { created_at: "desc" },
+      take: limit,
+      include: {
+        poll: {
+          select: {
+            id: true,
+            question: true,
+            category: true,
+            options: true,
+            _count: { select: { votes: true, opinions: true } }
+          }
+        }
+      }
+    });
+
+    return insights.map((insight) => ({
+      id: insight.id,
+      poll_id: insight.poll_id,
+      headline: insight.headline,
+      content: insight.content,
+      demographics_summary: insight.demographics_summary,
+      created_at: insight.created_at,
+      poll: {
+        id: insight.poll.id,
+        question: insight.poll.question,
+        category: insight.poll.category,
+        options: insight.poll.options,
+        total_votes: insight.poll._count.votes,
+        total_opinions: insight.poll._count.opinions
+      }
+    }));
+  }
+
+  async getInsightById(id: string) {
+    const insight = await prisma.pollInsight.findUnique({
+      where: { id },
+      include: {
+        poll: {
+          include: {
+            _count: { select: { votes: true, opinions: true } }
+          }
+        }
+      }
+    });
+
+    if (!insight) {
+      throw new Error("Insight report not found");
+    }
+
+    return {
+      id: insight.id,
+      poll_id: insight.poll_id,
+      headline: insight.headline,
+      content: insight.content,
+      demographics_summary: insight.demographics_summary,
+      created_at: insight.created_at,
+      poll: {
+        id: insight.poll.id,
+        question: insight.poll.question,
+        category: insight.poll.category,
+        options: insight.poll.options,
+        total_votes: insight.poll._count.votes,
+        total_opinions: insight.poll._count.opinions
+      }
     };
   }
 }

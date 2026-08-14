@@ -1,137 +1,215 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, ShieldAlert, UserX } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertTriangle, CheckCircle, XCircle, ShieldAlert, MapPin, Loader2, Flag } from "lucide-react";
 import { api } from "@/lib/api";
 
-interface OpinionItem {
+interface FlaggedItem {
   id: string;
+  type: "OPINION" | "POLL" | "COMMENT";
   content: string;
-  report_count: number;
+  flagged_reason: string;
+  reported_by_count: number;
+  status: string;
   created_at: string;
-  moderation_status: string;
-  user?: { username?: string | null; city?: string | null };
-  poll?: { question?: string | null; category?: string | null };
 }
 
-interface QueueResponse {
-  opinions: OpinionItem[];
-  pagination: { page: number; limit: number; total: number; total_pages: number };
+interface CivicIssue {
+  id: string;
+  title: string;
+  description: string;
+  location?: string;
+  status: string;
+  upvotes: number;
 }
 
 export function ModerationQueue() {
-  const [items, setItems] = useState<OpinionItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState("ALL");
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-
-  const loadQueue = useCallback(async (nextStatus = status) => {
-    setLoading(true);
-    try {
-      const res = await api.get<QueueResponse>(`/api/v1/moderation/queue`, { params: { status: nextStatus, page: 1, limit: 10 } });
-      setItems(res.data.opinions);
-      setError(null);
-    } catch (err: any) {
-      setError(err.response?.status === 401 ? "Please log in as an admin" : err.response?.data?.message || "Failed to load moderation queue.");
-    } finally {
-      setLoading(false);
-    }
-  }, [status]);
+  const [flags, setFlags] = useState<FlaggedItem[]>([]);
+  const [civicIssues, setCivicIssues] = useState<CivicIssue[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    void loadQueue(status);
-  }, [loadQueue, status]);
+    const fetchModerationData = async () => {
+      try {
+        // Fetch flagged content and civic issues simultaneously
+        const [modRes, civicRes] = await Promise.allSettled([
+          api.get("/api/v1/moderation/queue"),
+          api.get("/api/v1/civic/issues")
+        ]);
 
-  const handleAction = async (id: string, action: "APPROVE" | "REJECT" | "WARN_USER") => {
+        if (modRes.status === "fulfilled") {
+          setFlags(modRes.value.data.queue || modRes.value.data || []);
+        }
+        if (civicRes.status === "fulfilled") {
+          setCivicIssues(civicRes.value.data.issues || civicRes.value.data || []);
+        }
+      } catch (err: any) {
+        setError("Failed to synchronize with moderation endpoints.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchModerationData();
+  }, []);
+
+  const handleResolveFlag = async (id: string, action: "APPROVE" | "REJECT") => {
     try {
-      setMessage(null);
-      await api.post(`/api/v1/moderation/${id}/moderate`, { action, reason: `${action} from admin dashboard` });
-      setItems((current) => current.filter((item) => item.id !== id));
-      setMessage(`Action ${action.toLowerCase()} completed.`);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to process moderation action.");
+      setIsProcessing(id);
+      // Enterprise standard: PUT request to update status
+      await api.put(`/api/v1/moderation/${id}/status`, { status: action });
+      
+      // Optimistically remove from queue
+      setFlags(prev => prev.filter(item => item.id !== id));
+    } catch (err) {
+      alert("Failed to process moderation action. Ensure the status endpoint is active.");
+    } finally {
+      setIsProcessing(null);
     }
   };
 
-  const summary = useMemo(() => ({ flagged: items.length, reports: items.reduce((sum, item) => sum + item.report_count, 0) }), [items]);
+  const handleCivicAction = async (id: string, action: "VERIFY" | "DISMISS") => {
+    try {
+      setIsProcessing(id);
+      await api.put(`/api/v1/civic/issues/${id}/status`, { status: action });
+      setCivicIssues(prev => prev.filter(item => item.id !== id));
+    } catch (err) {
+      alert("Failed to process civic issue.");
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
 
   return (
-    <section className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-black/20">
-      <div className="mb-5 flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.25em] text-violet-400">Moderation queue</p>
-          <h2 className="text-xl font-semibold text-white">Flagged opinions and report review</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Moderation & Civic Hub</h2>
+          <p className="mt-1 text-sm text-slate-500">Unified pipeline for flagged content resolution and community-reported civic issues.</p>
         </div>
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/80 px-3 py-2 text-sm text-slate-300">
-          {summary.flagged} flagged · {summary.reports} reports
+        <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+          <ShieldAlert className="h-4 w-4"/> AI Auto-Filter Active
         </div>
       </div>
 
-      {message ? <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">{message}</div> : null}
-      {error ? <div className="mb-4 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">{error}</div> : null}
-
-      <div className="mb-4 flex gap-2">
-        {(["ALL", "FLAGGED", "REJECTED", "APPROVED"] as const).map((value) => (
-          <button
-            key={value}
-            onClick={() => {
-              setStatus(value);
-              loadQueue(value);
-            }}
-            className={`rounded-full px-3 py-1.5 text-sm ${status === value ? "bg-violet-600 text-white" : "bg-slate-800 text-slate-300"}`}
-          >
-            {value}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-8 text-center text-sm text-slate-400">Loading queue…</div>
-      ) : items.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-700 p-8 text-center text-sm text-slate-400">No flagged opinions found.</div>
-      ) : (
-        <div className="space-y-3">
-          {items.map((item) => (
-            <article key={item.id} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-slate-400">
-                    <AlertTriangle className="h-4 w-4 text-amber-400" />
-                    <span>{item.user?.username || "Anonymous"}</span>
-                    <span>•</span>
-                    <span>{item.user?.city || "Unknown city"}</span>
-                  </div>
-                  <p className="text-sm text-slate-200">{item.content}</p>
-                  <div className="flex flex-wrap gap-2 text-xs text-slate-400">
-                    <span className="rounded-full border border-slate-700 px-2.5 py-1">Reports: {item.report_count}</span>
-                    <span className="rounded-full border border-slate-700 px-2.5 py-1">Topic: {item.poll?.category || "General"}</span>
-                    <span className="rounded-full border border-slate-700 px-2.5 py-1">Hint: {item.poll?.question ? "High engagement" : "Needs review"}</span>
-                  </div>
-                </div>
-                <div className="rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-300">
-                  {item.moderation_status}
-                </div>
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button onClick={() => handleAction(item.id, "APPROVE")} className="flex items-center gap-2 rounded-xl bg-emerald-600/90 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-500">
-                  <CheckCircle2 className="h-4 w-4" /> Approve
-                </button>
-                <button onClick={() => handleAction(item.id, "REJECT")} className="flex items-center gap-2 rounded-xl bg-rose-600/90 px-3 py-2 text-sm font-medium text-white transition hover:bg-rose-500">
-                  <ShieldAlert className="h-4 w-4" /> Reject
-                </button>
-                <button onClick={() => handleAction(item.id, "WARN_USER")} className="flex items-center gap-2 rounded-xl bg-amber-600/90 px-3 py-2 text-sm font-medium text-white transition hover:bg-amber-500">
-                  <AlertTriangle className="h-4 w-4" /> Warn
-                </button>
-                <button onClick={() => handleAction(item.id, "REJECT")} className="flex items-center gap-2 rounded-xl border border-slate-700 px-3 py-2 text-sm font-medium text-slate-200 transition hover:border-rose-400 hover:text-rose-300">
-                  <UserX className="h-4 w-4" /> Ban
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
+      {error && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</div>
       )}
-    </section>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Left Column: Flagged Content Queue */}
+        <div className="space-y-4">
+          <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+            <Flag className="h-5 w-5 text-rose-600" /> Flagged Opinions & Comments
+          </h3>
+          
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm h-[500px] overflow-y-auto scrollbar-thin">
+            {flags.length > 0 ? (
+              <div className="space-y-4">
+                {flags.map((flag) => (
+                  <div key={flag.id} className="rounded-xl border border-rose-100 bg-rose-50/50 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 bg-rose-100 px-2 py-1 rounded">
+                        {flag.type} • {flag.reported_by_count} Reports
+                      </span>
+                      <span className="text-xs font-medium text-slate-500">
+                        {flag.created_at ? new Date(flag.created_at).toLocaleDateString() : 'Recent'}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium text-slate-900 mb-3">"{flag.content}"</p>
+                    <p className="text-xs text-rose-700 mb-4 border-l-2 border-rose-300 pl-2">Reason: {flag.flagged_reason}</p>
+                    
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleResolveFlag(flag.id, "REJECT")}
+                        disabled={isProcessing === flag.id}
+                        className="flex flex-1 justify-center items-center gap-1.5 rounded-lg bg-rose-600 px-3 py-2 text-xs font-medium text-white hover:bg-rose-700 transition disabled:opacity-50"
+                      >
+                        {isProcessing === flag.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />} Remove Content
+                      </button>
+                      <button 
+                        onClick={() => handleResolveFlag(flag.id, "APPROVE")}
+                        disabled={isProcessing === flag.id}
+                        className="flex flex-1 justify-center items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
+                      >
+                        <CheckCircle className="h-3.5 w-3.5 text-emerald-600" /> Ignore Flag
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center text-center text-slate-500">
+                <CheckCircle className="h-12 w-12 text-emerald-200 mb-3" />
+                <p className="text-sm font-medium">Zero flagged items.</p>
+                <p className="text-xs mt-1">The community is operating smoothly.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column: Civic Issues Pipeline */}
+        <div className="space-y-4">
+          <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-indigo-600" /> Civic Issue Verification
+          </h3>
+          
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm h-[500px] overflow-y-auto scrollbar-thin">
+            {civicIssues.length > 0 ? (
+              <div className="space-y-4">
+                {civicIssues.map((issue) => (
+                  <div key={issue.id} className="rounded-xl border border-indigo-100 bg-indigo-50/30 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-bold text-slate-900">{issue.title}</h4>
+                      <span className="text-[10px] font-bold text-indigo-600 bg-indigo-100 px-2 py-1 rounded">
+                        {issue.upvotes} Upvotes
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 mb-3 line-clamp-2">{issue.description}</p>
+                    {issue.location && (
+                      <p className="text-xs text-slate-500 mb-4 flex items-center gap-1">
+                        <MapPin className="h-3 w-3" /> {issue.location}
+                      </p>
+                    )}
+                    
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleCivicAction(issue.id, "VERIFY")}
+                        disabled={isProcessing === issue.id}
+                        className="flex flex-1 justify-center items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-700 transition disabled:opacity-50"
+                      >
+                        {isProcessing === issue.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />} Verify & Publish
+                      </button>
+                      <button 
+                        onClick={() => handleCivicAction(issue.id, "DISMISS")}
+                        disabled={isProcessing === issue.id}
+                        className="flex flex-1 justify-center items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
+                      >
+                         Dismiss
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center text-center text-slate-500">
+                <CheckCircle className="h-12 w-12 text-emerald-200 mb-3" />
+                <p className="text-sm font-medium">No pending civic issues.</p>
+                <p className="text-xs mt-1">Local reporting queues are clear.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

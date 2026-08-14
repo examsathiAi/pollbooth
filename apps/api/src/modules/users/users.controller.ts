@@ -34,4 +34,13 @@ router.get("/profile/gate/:category", authGuard, async (req, res, next) => {
   }
 });
 
+router.delete("/me", authGuard, async (req, res, next) => {
+  try {
+    const result = await usersService.deleteAccountAndScrubPII(req.user!.id);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
 export { router as userRouter };
