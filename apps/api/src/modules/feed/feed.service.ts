@@ -1,4 +1,5 @@
 ﻿import { PrismaClient } from "@prisma/client";
+import { topicsService } from "../topics/topics.service";
 
 const prisma = new PrismaClient();
 
@@ -14,6 +15,12 @@ export class FeedService {
       total_opinions: poll._count?.opinions ?? 0,
       has_voted: hasVoted,
       created_at: poll.created_at,
+      // SEO metadata for social sharing
+      seo_title: poll.seo_title || null,
+      og_title: poll.og_title || null,
+      og_description: poll.og_description || null,
+      slug: poll.slug || null,
+      hashtags: poll.hashtags || [],
     };
   }
 
@@ -466,6 +473,67 @@ export class FeedService {
         total_votes: insight.poll._count.votes,
         total_opinions: insight.poll._count.opinions
       }
+    };
+  }
+
+  async getTopicFeed(userId: string, topicSlugs: string[], page: number, limit: number) {
+    if (topicSlugs.length === 0) {
+      return { polls: [], topics: [], pagination: { page, limit, total: 0 } };
+    }
+
+    const [polls, userVotes] = await Promise.all([
+      topicsService.getPollsByTopics(topicSlugs, limit * 2),
+      prisma.vote.findMany({
+        where: {
+          user_id: userId,
+          poll_id: {
+            in: (await topicsService.getPollsByTopics(topicSlugs, limit * 2)).map((p) => p.id),
+          },
+        },
+        select: { poll_id: true },
+      }),
+    ]);
+
+    const votedPollIds = new Set(userVotes.map((v) => v.poll_id));
+
+    // Split into organic and sponsored
+    const organic = polls.filter((p) => !p.is_commercial);
+    const sponsored = polls.filter((p) => p.is_commercial);
+
+    return {
+      organic: organic
+        .slice(0, Math.floor(limit * 0.75))
+        .map((poll) => ({
+          id: poll.id,
+          question: poll.question,
+          options: poll.options,
+          category: poll.category,
+          is_commercial: poll.is_commercial ?? false,
+          total_votes: poll._count?.votes ?? 0,
+          total_opinions: poll._count?.opinions ?? 0,
+          has_voted: votedPollIds.has(poll.id),
+          topics: poll.topics.map((t) => ({ slug: t.slug, name: t.name })),
+          created_at: poll.created_at,
+        })),
+      sponsored: sponsored.slice(0, Math.max(2, Math.floor(limit * 0.25))).map((poll) => ({
+        id: poll.id,
+        question: poll.question,
+        options: poll.options,
+        category: poll.category,
+        is_commercial: poll.is_commercial ?? false,
+        total_votes: poll._count?.votes ?? 0,
+        total_opinions: poll._count?.opinions ?? 0,
+        has_voted: votedPollIds.has(poll.id),
+        topics: poll.topics.map((t) => ({ slug: t.slug, name: t.name })),
+        created_at: poll.created_at,
+      })),
+      topics: topicSlugs.slice(0, 5),
+      pagination: {
+        page,
+        limit,
+        total: polls.length,
+        total_pages: Math.ceil(polls.length / limit),
+      },
     };
   }
 }

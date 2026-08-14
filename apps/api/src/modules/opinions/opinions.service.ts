@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { logger } from "../../common/interceptors/logger";
 import { notificationsService } from "../notifications/notifications.service";
+import { badgesService } from "../badges/badges.service";
 import type { CreateOpinionInput, ReactOpinionInput } from "./opinions.types";
 
 const prisma = new PrismaClient();
@@ -77,6 +78,9 @@ export class OpinionsService {
         action: "OPINION",
       },
     });
+
+    // Evaluate badges for opinion creation
+    await badgesService.evaluateBadges(userId);
 
     logger.info("Opinion created", { userId, pollId, opinionId: opinion.id });
     return opinion;

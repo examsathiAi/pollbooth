@@ -110,6 +110,149 @@ export class AnalyticsService {
       privacy_note: "Only cohorts with 10+ respondents are included. No individual data is shared.",
     };
   }
-}
+
+  // Platform-wide analytics
+  async getPlatformStats() {
+    const [totalUsers, totalPolls, totalVotes, totalOpinions] = await Promise.all([
+      prisma.user.count({ where: { is_active: true } }),
+      prisma.poll.count({ where: { is_active: true } }),
+      prisma.vote.count(),
+      prisma.opinion.count(),
+    ]);
+
+    const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const [votesLastWeek, opinionslastWeek] = await Promise.all([
+      prisma.vote.count({ where: { voted_at: { gte: lastWeek } } }),
+      prisma.opinion.count({ where: { created_at: { gte: lastWeek } } }),
+    ]);
+
+    return {
+      totals: {
+        active_users: totalUsers,
+        active_polls: totalPolls,
+        total_votes: totalVotes,
+        total_opinions: totalOpinions,
+      },
+      weekly_activity: {
+        votes_last_week: votesLastWeek,
+        opinions_last_week: opinionslastWeek,
+      },
+      average_engagement: {
+        votes_per_poll: totalPolls > 0 ? Math.round(totalVotes / totalPolls) : 0,
+        opinions_per_poll: totalPolls > 0 ? Math.round(totalOpinions / totalPolls) : 0,
+      },
+    };
+  }
+
+  async getTopPolls(limit: number = 10) {
+    const topPolls = await prisma.poll.findMany({
+      where: { is_active: true, status: "ACTIVE" },
+      include: {
+        _count: { select: { votes: true, opinions: true } },
+      },
+      orderBy: { _count: { votes: "desc" } },
+      take: limit,
+    });
+
+    return topPolls.map((poll) => ({
+      id: poll.id,
+      question: poll.question,
+      category: poll.category,
+      total_votes: poll._count.votes,
+      total_opinions: poll._count.opinions,
+      engagement_ratio: poll._count.votes > 0 ? poll._count.opinions / poll._count.votes : 0,
+      created_at: poll.created_at,
+    }));
+  }
+
+  async getUserEngagementStats(userId: string) {
+    const [votes, opinions, badges, engagements] = await Promise.all([
+      prisma.vote.count({ where: { user_id: userId } }),
+      prisma.opinion.count({ where: { user_id: userId } }),
+      prisma.userBadge.count({ where: { user_id: userId } }),
+      prisma.userEngagement.findMany({
+        where: { user_id: userId },
+        select: { action: true },
+      }),
+    ]);
+
+    const actionCounts: Record<string, number> = {};
+    engagements.forEach((e) => {
+      actionCounts[e.action] = (actionCounts[e.action] || 0) + 1;
+    });
+
+    const streak = await prisma.voteStreak.findUnique({
+      where: { user_id: userId },
+      select: { current_streak: true, longest_streak: true },
+    });
+
+    return {
+      total_votes: votes,
+      total_opinions: opinions,
+      badges_earned: badges,
+      current_streak: streak?.current_streak || 0,
+      longest_streak: streak?.longest_streak || 0,
+      actions_breakdown: actionCounts,
+    };
+  }
+
+  async getCategoryTrends() {
+    const categories = await prisma.poll.groupBy({
+      by: ["category"],
+      where: { status: "ACTIVE", is_active: true },
+      _count: { id: true },
+    });
+
+    const categoryStats = await Promise.all(
+      categories.map(async (cat) => {
+        const votes = await prisma.vote.count({
+          where: {
+            poll: { category: cat.category },
+          },
+        });
+        const opinions = await prisma.opinion.count({
+          where: {
+            poll: { category: cat.category },
+          },
+        });
+        return {
+          category: cat.category,
+          active_polls: cat._count.id,
+          total_votes: votes,
+          total_opinions: opinions,
+        };
+      })
+    );
+
+    return categoryStats.sort((a, b) => b.total_votes - a.total_votes);
+  }
+
+  async getRegionalBreakdown() {
+    const states = await prisma.user.groupBy({
+      by: ["state"],
+      where: { is_active: true },
+      _count: { id: true },
+    });
+
+    const stateStats = await Promise.all(
+      states
+        .filter((s) => s.state !== null)
+        .map(async (state) => {
+          const votes = await prisma.vote.count({
+            where: {
+              user: { state: state.state },
+            },
+          });
+          return {
+            state: state.state,
+            active_users: state._count.id,
+            total_votes: votes,
+            avg_votes_per_user: state._count.id > 0 ? Math.round(votes / state._count.id) : 0,
+          };
+        })
+    );
+
+    return stateStats.sort((a, b) => b.total_votes - a.total_votes);
+  }
 
 export const analyticsService = new AnalyticsService();

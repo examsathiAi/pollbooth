@@ -94,4 +94,17 @@ router.get("/insights/:id", async (req, res, next) => {
   }
 });
 
+// Topic-based feed
+router.get("/topics/:topicSlugs", authGuard, async (req, res, next) => {
+  try {
+    const topicSlugs = (req.params.topicSlugs as string).split(",");
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+    const result = await feedService.getTopicFeed(req.user!.id, topicSlugs, page, limit);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
 export { router as feedRouter };

@@ -4,6 +4,7 @@ import { roleGuard } from "../../common/guards/roles.guard";
 import { rateLimiter } from "../../common/interceptors/rate-limiter";
 import { prisma } from "../../config/database";
 import { adminService } from "./admin.service";
+import { civicService } from "../civic/civic.service";
 
 const router = Router();
 
@@ -113,6 +114,56 @@ router.get("/health", authGuard, roleGuard("SUPER_ADMIN"), async (req, res, next
   try {
     const result = await adminService.getPlatformHealth();
     res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Civic issues management
+router.get("/civic-issues", authGuard, roleGuard("ADMIN"), async (req, res, next) => {
+  try {
+    const result = await civicService.getIssues(
+      req.query.city as string,
+      req.query.state as string,
+      req.query.status as string,
+      Number(req.query.page) || 1,
+      Number(req.query.limit) || 20
+    );
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/civic-issues/:issueId/convert-to-poll", authGuard, roleGuard("ADMIN"), rateLimiter.adminAction, async (req, res, next) => {
+  try {
+    const { question, options } = req.body as { question?: string; options?: string[] };
+
+    if (!options || options.length < 2) {
+      return res.status(400).json({ error: "At least 2 options are required" });
+    }
+
+    const result = await civicService.convertToPoll(req.user!.id, req.params.issueId, {
+      question: question,
+      options,
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        user_id: req.user!.id,
+        action: "CONVERT_CIVIC_ISSUE_TO_POLL",
+        entity_type: "CIVIC_ISSUE",
+        entity_id: req.params.issueId,
+        ip_address: req.ip,
+        user_agent: req.headers["user-agent"] as string | undefined,
+        metadata: {
+          poll_id: result.poll.id,
+          issue_title: result.issue.title,
+        },
+      },
+    });
+
+    res.status(201).json(result);
   } catch (err) {
     next(err);
   }

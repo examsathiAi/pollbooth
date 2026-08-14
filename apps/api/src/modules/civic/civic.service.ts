@@ -32,14 +32,96 @@ export class CivicService {
         orderBy: { created_at: "desc" },
         skip: (page - 1) * limit,
         take: limit,
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              city: true,
+              state: true,
+            },
+          },
+        },
       }),
       prisma.civicIssue.count({ where }),
     ]);
 
     return {
-      issues,
+      issues: issues.map((issue) => ({
+        id: issue.id,
+        title: issue.title,
+        description: issue.description,
+        city: issue.city,
+        state: issue.state,
+        category: issue.category,
+        status: issue.status,
+        poll_id: issue.poll_id,
+        submitter: issue.user,
+        created_at: issue.created_at,
+      })),
       pagination: { page, limit, total, total_pages: Math.ceil(total / limit) },
     };
+  }
+
+  async getIssueById(issueId: string) {
+    const issue = await prisma.civicIssue.findUnique({
+      where: { id: issueId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            avatar_url: true,
+            city: true,
+            state: true,
+          },
+        },
+      },
+    });
+
+    if (!issue) {
+      throw new Error("Issue not found");
+    }
+
+    return issue;
+  }
+
+  async approveIssue(issueId: string) {
+    const issue = await prisma.civicIssue.findUnique({
+      where: { id: issueId },
+    });
+
+    if (!issue) {
+      throw new Error("Issue not found");
+    }
+
+    if (issue.status !== "PENDING") {
+      throw new Error(`Issue status is ${issue.status}, cannot approve`);
+    }
+
+    return prisma.civicIssue.update({
+      where: { id: issueId },
+      data: { status: "APPROVED", reviewed_at: new Date() },
+    });
+  }
+
+  async rejectIssue(issueId: string) {
+    const issue = await prisma.civicIssue.findUnique({
+      where: { id: issueId },
+    });
+
+    if (!issue) {
+      throw new Error("Issue not found");
+    }
+
+    if (issue.status !== "PENDING") {
+      throw new Error(`Issue status is ${issue.status}, cannot reject`);
+    }
+
+    return prisma.civicIssue.update({
+      where: { id: issueId },
+      data: { status: "REJECTED", reviewed_at: new Date() },
+    });
   }
 
   async convertToPoll(adminId: string, issueId: string, pollData: any) {

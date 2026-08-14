@@ -70,16 +70,76 @@ export class BadgesService {
     await this.evaluateVoteBadges(userId);
     await this.evaluateStreakBadges(userId);
     await this.evaluateLocalLeaderBadge(userId);
+    await this.evaluateOpinionBadges(userId);
+    await this.evaluatePercentileBadges(userId);
+  }
+
+  private async evaluateOpinionBadges(userId: string) {
+    const totalOpinions = await prisma.opinion.count({ where: { user_id: userId } });
+    const agreedOpinions = await prisma.opinion.count({
+      where: {
+        user_id: userId,
+        agree_count: { gte: 10 },
+      },
+    });
+
+    if (totalOpinions >= 1) {
+      await this.awardBadgeIfNotExists(userId, "VOICE_HEARD");
+    }
+    if (totalOpinions >= 10) {
+      await this.awardBadgeIfNotExists(userId, "CONVERSATION_STARTER");
+    }
+    if (agreedOpinions >= 5) {
+      await this.awardBadgeIfNotExists(userId, "POPULAR_VOICE");
+    }
+  }
+
+  private async evaluatePercentileBadges(userId: string) {
+    const allUserVoteCounts = await prisma.user.findMany({
+      select: {
+        id: true,
+        _count: { select: { votes: true } },
+      },
+    });
+
+    const userVotes = await prisma.vote.count({ where: { user_id: userId } });
+    const totalUsers = allUserVoteCounts.length;
+    const usersWithMoreVotes = allUserVoteCounts.filter((u) => u._count.votes > userVotes).length;
+    const percentile = ((totalUsers - usersWithMoreVotes) / totalUsers) * 100;
+
+    if (percentile >= 90) {
+      await this.awardBadgeIfNotExists(userId, "CENTENNIAL_CITIZEN");
+    }
+    if (percentile >= 75) {
+      await this.awardBadgeIfNotExists(userId, "TOP_VOTER");
+    }
   }
 
   private async evaluateVoteBadges(userId: string) {
     const totalVotes = await prisma.vote.count({ where: { user_id: userId } });
+    const user = await prisma.user.findUnique({ 
+      where: { id: userId }, 
+      include: { profile: true } 
+    });
 
+    // Milestone badges for votes
+    if (totalVotes >= 1) {
+      await this.awardBadgeIfNotExists(userId, "FIRST_VOTE");
+    }
+    if (totalVotes >= 10) {
+      await this.awardBadgeIfNotExists(userId, "VOICE_RISING");
+    }
+    if (totalVotes >= 50) {
+      await this.awardBadgeIfNotExists(userId, "CIVIC_CHAMPION");
+    }
     if (totalVotes >= 100) {
-      const profile = await prisma.profile.findUnique({ where: { user_id: userId } });
-      if (profile?.age_bracket === "GEN_Z") {
+      await this.awardBadgeIfNotExists(userId, "CENTURY_VOICE");
+      if (user?.profile?.age_bracket === "GEN_Z") {
         await this.awardBadgeIfNotExists(userId, "VOICE_OF_GEN_Z");
       }
+    }
+    if (totalVotes >= 250) {
+      await this.awardBadgeIfNotExists(userId, "OPINION_TITAN");
     }
   }
 
@@ -138,6 +198,65 @@ export class BadgesService {
       });
     }
   }
-}
+
+  // Badge leaderboards
+  async getBadgeLeaderboard(badgeCode: string, limit: number = 10) {
+    const badge = await prisma.badge.findUnique({ where: { code: badgeCode } });
+    if (!badge) {
+      throw new Error("Badge not found");
+    }
+
+    const leaders = await prisma.userBadge.findMany({
+      where: { badge_id: badge.id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            avatar_url: true,
+            city: true,
+            _count: { select: { votes: true, opinions: true } },
+          },
+        },
+      },
+      orderBy: { earned_at: "asc" },
+      take: limit,
+    });
+
+    return leaders.map((ub) => ({
+      badge_id: badge.id,
+      badge_name: badge.name,
+      user_id: ub.user.id,
+      username: ub.user.username,
+      avatar_url: ub.user.avatar_url,
+      city: ub.user.city,
+      earned_at: ub.earned_at,
+      shared_count: ub.shared_count,
+      stats: {
+        total_votes: ub.user._count.votes,
+        total_opinions: ub.user._count.opinions,
+      },
+    }));
+  }
+
+  async getTopBadges(limit: number = 20) {
+    const badges = await prisma.badge.findMany({
+      where: { is_active: true },
+      include: {
+        _count: { select: { user_badges: true } },
+      },
+      orderBy: { _count: { user_badges: "desc" } },
+      take: limit,
+    });
+
+    return badges.map((badge) => ({
+      id: badge.id,
+      code: badge.code,
+      name: badge.name,
+      description: badge.description,
+      icon_url: badge.icon_url,
+      total_earned: badge._count.user_badges,
+    }));
+  }
 
 export const badgesService = new BadgesService();

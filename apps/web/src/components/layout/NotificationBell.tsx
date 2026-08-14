@@ -109,7 +109,7 @@ export function NotificationBell() {
         ) : null}
       </button>
       {open ? (
-        <div className="absolute right-0 mt-2 w-80 rounded-sm border border-paper-border bg-paper-card p-3 shadow-xl">
+        <div className="absolute right-0 mt-2 w-80 rounded-sm border border-paper-border bg-paper-card p-3 shadow-xl z-50">>
           <div className="mb-2 flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-slate-800">Notifications</p>

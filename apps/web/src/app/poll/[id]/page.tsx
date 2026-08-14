@@ -1,5 +1,6 @@
 ﻿import type { Metadata } from "next";
 import { PollDetailClient } from "@/components/poll/PollDetailClient";
+import { Script } from "next/script";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
@@ -14,6 +15,9 @@ type Poll = {
   og_description?: string | null;
   keywords?: string[] | null;
   hashtags?: string[] | null;
+  total_votes?: number;
+  total_opinions?: number;
+  created_at?: string;
 };
 
 async function fetchPoll(pollId: string) {
@@ -70,5 +74,46 @@ export default async function PollDetailPage({ params }: { params: { id: string 
     );
   }
 
-  return <PollDetailClient pollId={params.id} initialPoll={poll} />;
+  // Generate JSON-LD structured data for search engines
+  const jsonLD = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: poll.seo_title || poll.question,
+    description: poll.og_description || poll.meta_description || `Vote on this poll and see live results`,
+    url: `${SITE_URL}/poll/${params.id}`,
+    author: {
+      "@type": "Organization",
+      name: "Pulse",
+      url: SITE_URL,
+    },
+    image: {
+      "@type": "ImageObject",
+      url: `${SITE_URL}/og-card.png`,
+    },
+    mainEntity: {
+      "@type": "Poll",
+      name: poll.question,
+      description: poll.og_description || poll.meta_description,
+      category: poll.category,
+      interactionCount: poll.total_votes || 0,
+      datePublished: poll.created_at,
+    },
+    keywords: poll.keywords?.join(", ") || undefined,
+    inLanguage: "en-US",
+    isAccessibleForFree: true,
+  };
+
+  return (
+    <>
+      <Script
+        id="poll-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLD),
+        }}
+        strategy="afterInteractive"
+      />
+      <PollDetailClient pollId={params.id} initialPoll={poll} />
+    </>
+  );
 }

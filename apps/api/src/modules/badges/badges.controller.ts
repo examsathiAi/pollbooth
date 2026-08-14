@@ -31,9 +31,20 @@ router.get("/all", async (req, res, next) => {
   }
 });
 
-router.post("/:id/share", authGuard, async (req, res, next) => {
+router.get("/leaderboard/:badgeCode", async (req, res, next) => {
   try {
-    const result = await badgesService.shareBadge(req.user!.id, req.params.id);
+    const limit = parseInt(req.query.limit as string) || 10;
+    const result = await badgesService.getBadgeLeaderboard(req.params.badgeCode, limit);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/top", async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20;
+    const result = await badgesService.getTopBadges(limit);
     res.json(result);
   } catch (err) {
     next(err);

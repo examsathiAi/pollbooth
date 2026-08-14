@@ -22,6 +22,28 @@ router.get("/", validateQuery(ListTopicsQuerySchema), async (req, res, next) => 
   }
 });
 
+// Trending topics
+router.get("/trending", async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 10;
+    const result = await topicsService.getTrendingTopics(limit);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Related topics
+router.get("/:slug/related", async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 5;
+    const result = await topicsService.getRelatedTopics(req.params.slug, limit);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/:slug/polls", validateQuery(TopicPollsQuerySchema), async (req, res, next) => {
   try {
     const { sort, limit } = req.query as any;

@@ -22,9 +22,8 @@ export async function startWorkers(): Promise<void> {
       await enqueueModerationSweep();
     });
 
-    cron.schedule("0 * * * *", async () => {
-      await enqueueNotificationBatch("PUSH", "Pulse update", "Your personalized Pulse updates are ready.");
-    });
+    // The hourly dummy notification spam has been permanently removed.
+    // Notifications will now only trigger via actual user events (e.g., opinion reactions, moderation).
 
     cron.schedule("0 2 * * 0", async () => {
       await enqueueCleanupJob();

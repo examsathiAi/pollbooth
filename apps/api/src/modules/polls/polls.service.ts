@@ -225,6 +225,14 @@ export class PollsService {
           }
         : null,
       user_prediction: userPrediction ? userPrediction.predicted_percentage : null,
+      // Ensure SEO metadata is included for search engines
+      seo_title: poll.seo_title || null,
+      og_title: poll.og_title || null,
+      og_description: poll.og_description || null,
+      meta_description: poll.meta_description || null,
+      slug: poll.slug || null,
+      keywords: poll.keywords || [],
+      hashtags: poll.hashtags || [],
     };
   }
 
@@ -355,6 +363,13 @@ export class PollsService {
           results,
           has_voted: userVoteMap.has(poll.id),
           user_vote_index: userVoteIndex,
+          // SEO & Social metadata
+          seo_title: poll.seo_title || null,
+          og_title: poll.og_title || null,
+          og_description: poll.og_description || null,
+          slug: poll.slug || null,
+          keywords: poll.keywords || [],
+          hashtags: poll.hashtags || [],
         };
       }),
       pagination: {

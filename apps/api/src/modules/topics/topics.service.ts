@@ -127,6 +127,72 @@ export class TopicsService {
   async deleteTopic(id: string) {
     return prisma.topic.delete({ where: { id } });
   }
-}
 
-export const topicsService = new TopicsService();
+  // Trending topics based on poll activity
+  async getTrendingTopics(limit: number = 10) {
+    const topics = await prisma.topic.findMany({
+      include: {
+        polls: {
+          where: { is_active: true, status: "ACTIVE" },
+          select: {
+            id: true,
+            _count: { select: { votes: true } },
+          },
+        },
+      },
+    });
+
+    const topicsWithStats = topics
+      .map((topic) => ({
+        id: topic.id,
+        name: topic.name,
+        slug: topic.slug,
+        description: topic.description,
+        parent_category: topic.parent_category,
+        total_polls: topic.polls.length,
+        total_votes: topic.polls.reduce((sum, p) => sum + (p._count?.votes || 0), 0),
+        created_at: topic.created_at,
+      }))
+      .filter((t) => t.total_votes > 0)
+      .sort((a, b) => b.total_votes - a.total_votes)
+      .slice(0, limit);
+
+    return topicsWithStats;
+  }
+
+  // Get related topics based on category
+  async getRelatedTopics(topicSlug: string, limit: number = 5) {
+    const topic = await prisma.topic.findUnique({ where: { slug: topicSlug } });
+    if (!topic) return [];
+
+    return prisma.topic.findMany({
+      where: {
+        parent_category: topic.parent_category,
+        slug: { not: topicSlug },
+      },
+      take: limit,
+    });
+  }
+
+  // Get polls by multiple topics (for feed filtering)
+  async getPollsByTopics(topicSlugs: string[], limit: number = 10) {
+    if (topicSlugs.length === 0) return [];
+
+    return prisma.poll.findMany({
+      where: {
+        is_active: true,
+        status: "ACTIVE",
+        topics: {
+          some: {
+            slug: { in: topicSlugs },
+          },
+        },
+      },
+      include: {
+        _count: { select: { votes: true, opinions: true } },
+        topics: { select: { slug: true, name: true } },
+      },
+      orderBy: { created_at: "desc" },
+      take: limit,
+    });
+  }
