@@ -88,6 +88,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
   const [totalVotes, setTotalVotes] = useState(poll.total_votes || 0);
   const [animatedVotes, setAnimatedVotes] = useState(poll.total_votes || 0);
   const [totalOpinions, setTotalOpinions] = useState(poll.total_opinions || 0);
+  const [animatedOpinions, setAnimatedOpinions] = useState(poll.total_opinions || 0);
   const [opinionText, setOpinionText] = useState("");
   const [opinions, setOpinions] = useState<OpinionRecord[]>([]);
   const [opinionsTotal, setOpinionsTotal] = useState(poll.total_opinions || 0);
@@ -97,12 +98,16 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
   const [opinionFeedback, setOpinionFeedback] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
   const rootRef = useRef<HTMLElement | null>(null);
+  const [inViewHighlight, setInViewHighlight] = useState(false);
   const [pressedReaction, setPressedReaction] = useState<string | null>(null);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
   const [showVoteToast, setShowVoteToast] = useState(false);
   const [showSharePrompt, setShowSharePrompt] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(Date.now());
   const [showGate, setShowGate] = useState(false);
+  const [gateMessage, setGateMessage] = useState<string | null>(null);
+  const [liveTick, setLiveTick] = useState(Date.now());
   const [barRevealReady, setBarRevealReady] = useState(false);
 
   // VIRAL LOOP STATES
@@ -118,12 +123,18 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
     setTotalVotes(poll.total_votes || 0);
     setTotalOpinions(poll.total_opinions || 0);
     setAnimatedVotes(poll.total_votes || 0);
+    setAnimatedOpinions(poll.total_opinions || 0);
   }, [poll]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setVisible(true), index * 90);
     return () => window.clearTimeout(timer);
   }, [index]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setLiveTick(Date.now()), 1000);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     if (!hasVoted) {
@@ -179,10 +190,9 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
     void loadOpinions();
   }, [poll.id, poll.total_opinions, showComments]);
 
-  // VIRAL LOOP LOGIC
   const handleReplyClick = async (opinionId: string) => {
     if (!user) {
-      window.location.href = `/auth/login?redirect=/poll/${poll.id}`;
+      window.location.href = `/auth/login?mode=login&redirect=/poll/${poll.id}`;
       return;
     }
     if (isUnlocked) {
@@ -253,6 +263,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       const pollRes = await api.get(`/api/v1/polls/${poll.id}`);
       setHasOpinion(false);
       setUserVoteIndex(pollRes.data.user_vote_index ?? index);
+      setFeedback("✓ Your vote is recorded");
       setShowVoteToast(true);
       setShowSharePrompt(true);
       window.setTimeout(() => setShowVoteToast(false), 1400);
@@ -264,11 +275,15 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         setTotalVotes(serverTotal);
       }
       setTotalOpinions(pollRes.data.total_opinions || 0);
+      setLastUpdatedAt(Date.now());
 
       try {
         if (user) {
           const gateRes = await api.get(`/api/v1/users/profile/gate/${poll.category}`);
-          if (gateRes?.data?.required) setShowGate(true);
+          if (gateRes?.data?.required) {
+            setShowGate(true);
+            setGateMessage("We need one quick detail to keep your vote relevant.");
+          }
         }
       } catch (err) {}
     } catch (err: any) {
@@ -285,11 +300,11 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
 
   const handleOpinionSubmit = async (parentId?: string) => {
     if (!user) {
-      setOpinionFeedback("Sign up to join the conversation.");
+      setOpinionFeedback("Sign up to share your opinion on this poll.");
       return;
     }
     if (!hasVoted) {
-      setOpinionFeedback("Vote on this poll first to unlock opinions.");
+      setOpinionFeedback("Vote on this poll first to add your opinion.");
       return;
     }
     if (!parentId && hasOpinion) {
@@ -313,10 +328,13 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         setActiveReplyId(null);
       } else {
         setOpinionText("");
+        setOpinionFeedback("✓ Your opinion is now live.");
         setHasOpinion(true);
       }
       
       setShowComments(true);
+      if (!parentId) setTotalOpinions((prev) => prev + 1);
+      
       const res = await api.get(`/api/v1/opinions/${poll.id}/opinions`, { params: { page: 1, limit: 15, sort: "TOP" } });
       setOpinions(res.data.opinions || []);
       setOpinionsTotal(res.data.pagination?.total || 0);
@@ -329,7 +347,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
 
   const handleReaction = async (opinionId: string, reactionType: "AGREE" | "DISAGREE") => {
     if (!user) {
-      window.location.href = `/auth/login?redirect=/poll/${poll.id}`;
+      window.location.href = `/auth/login?mode=login&redirect=/poll/${poll.id}`;
       return;
     }
     setPressedReaction(`${opinionId}:${reactionType}`);
@@ -462,7 +480,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         </div>
 
         {isLoadingOpinions ? (
-          <p className="text-sm text-ink-muted">Loading comments…</p>
+          <p className="text-sm text-ink-muted animate-pollbooth">Loading comments…</p>
         ) : opinions.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-paper-border bg-transparent px-4 py-3 text-sm text-ink-muted text-center font-medium">
              Be the first to share your thoughts.
@@ -539,7 +557,6 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
           </div>
         )}
 
-        {/* MAIN OPINION INPUT BOX */}
         <div className="mt-4">
           {!user ? (
             <div className="rounded-2xl border border-paper-border bg-transparent p-4 text-sm transition-all">
@@ -547,7 +564,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
               <p className="mt-1 text-ink-muted mb-4">Sign in to share your view.</p>
               <div className="flex flex-wrap gap-2.5">
                 <Link href={`/auth/login?mode=login&redirect=/poll/${poll.id}`} className="rounded-xl border border-paper-border bg-transparent px-4 py-2.5 text-sm font-medium text-ink hover:bg-ink/5 transition-all duration-200">Sign in</Link>
-                <Link href={`/auth/login?mode=signup&redirect=/poll/${poll.id}`} className="rounded-xl bg-ink px-4 py-2.5 text-sm font-medium text-paper-bg hover:bg-ink/90 transition-all duration-200">Create account</Link>
+                <Link href={`/auth/login?mode=login&redirect=/poll/${poll.id}`} className="rounded-xl bg-ink px-4 py-2.5 text-sm font-medium text-paper-bg hover:bg-ink/90 transition-all duration-200">Create account</Link>
               </div>
             </div>
           ) : (
@@ -559,7 +576,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
                 maxLength={280}
                 rows={1}
                 disabled={isPostingOpinion}
-                className="w-full resize-none rounded-2xl border border-paper-border bg-transparent px-4 py-3 text-sm text-ink placeholder:text-ink-muted/50 outline-none transition-all duration-200 focus:border-ink focus:ring-1 focus:ring-ink disabled:opacity-60 overflow-hidden min-h-[46px]"
+                className={`w-full resize-none rounded-2xl border border-paper-border bg-transparent px-4 py-3 text-sm text-ink placeholder:text-ink-muted/50 outline-none transition-all duration-200 focus:border-ink focus:ring-1 focus:ring-ink disabled:opacity-60 overflow-hidden min-h-[46px]`}
               />
               <button onClick={() => void handleOpinionSubmit()} disabled={!opinionText.trim() || isPostingOpinion} className="rounded-2xl bg-ink px-4 py-3 text-sm font-medium text-paper-bg transition-all duration-200 hover:bg-ink/90 active:scale-[0.97] disabled:opacity-40 shrink-0 h-[46px]">Post</button>
             </div>

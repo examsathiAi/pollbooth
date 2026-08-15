@@ -202,3 +202,4 @@ export class SurveysService {
     return { consent, redirect_url: survey.survey_url };
   }
 }
+export const surveysService = new SurveysService();

@@ -492,3 +492,4 @@ export class PollsService {
     return { unlocked: !!unlock };
   }
 }
+export const pollsService = new PollsService();

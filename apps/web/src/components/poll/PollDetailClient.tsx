@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -92,7 +92,7 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
 
   const submitPrediction = async () => {
     if (!user) {
-      window.location.href = `/auth/login?redirect=/poll/${pollId}`;
+      window.location.href = `/auth/login?mode=login&redirect=/poll/${pollId}`;
       return;
     }
     const value = Number(predictionInput);
@@ -120,7 +120,7 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
 
   const submitOpinion = async () => {
     if (!user) {
-      window.location.href = `/auth/login?redirect=/poll/${pollId}`;
+      window.location.href = `/auth/login?mode=login&redirect=/poll/${pollId}`;
       return;
     }
     if (!newOpinion.trim() || newOpinion.length > 280) {
@@ -137,7 +137,10 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
   };
 
   const reactToOpinion = async (opinionId: string, reaction: "AGREE" | "DISAGREE") => {
-    if (!user) return;
+    if (!user) {
+      window.location.href = `/auth/login?mode=login&redirect=/poll/${pollId}`;
+      return;
+    }
     try {
       await api.post(`/api/v1/opinions/${opinionId}/react`, { reaction_type: reaction });
       loadPoll();
@@ -147,7 +150,10 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
   };
 
   const reportOpinion = async (opinionId: string) => {
-    if (!user) return;
+    if (!user) {
+      window.location.href = `/auth/login?mode=login&redirect=/poll/${pollId}`;
+      return;
+    }
     try {
       await api.post(`/api/v1/moderation/${opinionId}/report`, {});
       alert("Report submitted. Thank you for keeping PollBooth safe.");
