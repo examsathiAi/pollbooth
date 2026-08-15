@@ -245,18 +245,21 @@ export class BadgesService {
       include: {
         _count: { select: { user_badges: true } },
       },
-      orderBy: { _count: { user_badges: "desc" } },
       take: limit,
     });
 
-    return badges.map((badge) => ({
-      id: badge.id,
-      code: badge.code,
-      name: badge.name,
-      description: badge.description,
-      icon_url: badge.icon_url,
-      total_earned: badge._count.user_badges,
-    }));
+    return badges
+      .map((badge) => ({
+        id: badge.id,
+        code: badge.code,
+        name: badge.name,
+        description: badge.description,
+        icon_url: badge.icon_url,
+        total_earned: badge._count.user_badges,
+      }))
+      .sort((a, b) => b.total_earned - a.total_earned)
+      .slice(0, limit);
   }
+}
 
 export const badgesService = new BadgesService();

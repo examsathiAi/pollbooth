@@ -59,8 +59,13 @@ export default function ProfilePage() {
       await api.delete("/api/v1/users/me");
       localStorage.removeItem("pulse_token");
       window.location.href = "/auth/login";
-    } catch (err) {
-      alert("Server Error Details: " + (err.response?.data?.message || err.response?.data?.error || err.message || JSON.stringify(err.response?.data)));
+    } catch (err: unknown) {
+      const errorInfo = err as {
+        response?: { data?: { message?: string; error?: string } };
+        message?: string;
+      };
+      const errorMessage = errorInfo.response?.data?.message || errorInfo.response?.data?.error || errorInfo.message || "Unknown server error";
+      alert("Server Error Details: " + errorMessage);
       setDeleting(false);
     }
   };

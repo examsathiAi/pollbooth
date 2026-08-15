@@ -15,7 +15,7 @@ router.post("/otp/send", rateLimiter.otp, validateBody(SendOtpSchema), async (re
   }
 });
 
-router.post("/otp/verify", validateBody(VerifyOtpSchema), async (req, res, next) => {
+router.post("/otp/verify", rateLimiter.otp, validateBody(VerifyOtpSchema), async (req, res, next) => {
   try {
     const result = await authService.verifyOtp(req.body, {
       ipAddress: req.ip,
@@ -27,7 +27,7 @@ router.post("/otp/verify", validateBody(VerifyOtpSchema), async (req, res, next)
   }
 });
 
-router.post("/refresh", validateBody(RefreshTokenSchema), async (req, res, next) => {
+router.post("/refresh", rateLimiter.api, validateBody(RefreshTokenSchema), async (req, res, next) => {
   try {
     const result = await authService.refreshToken(req.body);
     res.status(200).json(result);
@@ -36,7 +36,7 @@ router.post("/refresh", validateBody(RefreshTokenSchema), async (req, res, next)
   }
 });
 
-router.post("/logout", async (req, res) => {
+router.post("/logout", rateLimiter.api, async (req, res) => {
   // Client should clear tokens; server can blacklist if needed
   res.status(200).json({ message: "Logged out successfully" });
 });

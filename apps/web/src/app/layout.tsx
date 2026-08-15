@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import { SocketProvider } from "../providers/SocketProvider";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -33,7 +34,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${playfair.variable} ${inter.variable}`}>
-      <body className="min-h-screen bg-gray-50 font-sans">{children}</body>
+      <body className="min-h-screen bg-gray-50 font-sans">
+        <SocketProvider>
+          {children}
+        </SocketProvider>
+      </body>
     </html>
   );
 }

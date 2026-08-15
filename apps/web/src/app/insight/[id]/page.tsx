@@ -153,7 +153,7 @@ export default function InsightArticlePage() {
                       </Pie>
                       <Tooltip 
                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: 'bold' }}
-                        formatter={(value: number) => [`${value} votes`, 'Count']}
+                        formatter={(value) => [`${Array.isArray(value) ? value.join(", ") : value ?? 0} votes`, 'Count']}
                         labelFormatter={() => ""}
                       />
                       <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: '600' }}/>

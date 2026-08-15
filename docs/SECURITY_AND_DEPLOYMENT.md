@@ -112,6 +112,16 @@ delay that need, not avoid it forever.
 **Currently in place**: structured JSON logging via Winston (visible in local dev
 output — e.g., `{"environment":"development","service":"pulse-api",...}`).
 
+**Database Monitoring:**
+See [DATABASE_SECURITY_AND_SCALING.md](./DATABASE_SECURITY_AND_SCALING.md) for
+comprehensive production database setup, including connection pooling, scaling for peak
+users, B2B configurations, backup/restore procedures, and DPDP compliance.
+
+**Key database metrics to monitor in production:**
+- CPU utilization > 80%, connections > 90% of max, replication lag > 10 seconds
+- Query execution time (p95), full-table scans, temp file creation
+- Storage space remaining, failed authentication attempts
+
 **Not yet in place, needed before real launch**:
 - Error tracking (Sentry free tier is the standard starting point)
 - API metrics dashboard (Grafana + self-hosted Prometheus, or CloudWatch if on AWS)

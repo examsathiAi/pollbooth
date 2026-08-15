@@ -2,7 +2,7 @@ import cron from "node-cron";
 import { logger } from "../common/interceptors/logger";
 import { registerDigestWorker, enqueueDigestJob } from "./digest.worker";
 import { registerModerationWorker, enqueueModerationSweep } from "./moderation.worker";
-import { registerNotificationWorker, enqueueNotificationBatch } from "./notification.worker";
+import { registerNotificationWorker } from "./notification.worker";
 import { registerCleanupWorker, enqueueCleanupJob } from "./cleanup.worker";
 
 export async function startWorkers(): Promise<void> {

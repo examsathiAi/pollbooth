@@ -196,3 +196,6 @@ export class TopicsService {
       take: limit,
     });
   }
+}
+
+export const topicsService = new TopicsService();

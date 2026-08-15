@@ -150,19 +150,21 @@ export class AnalyticsService {
       include: {
         _count: { select: { votes: true, opinions: true } },
       },
-      orderBy: { _count: { votes: "desc" } },
       take: limit,
     });
 
-    return topPolls.map((poll) => ({
-      id: poll.id,
-      question: poll.question,
-      category: poll.category,
-      total_votes: poll._count.votes,
-      total_opinions: poll._count.opinions,
-      engagement_ratio: poll._count.votes > 0 ? poll._count.opinions / poll._count.votes : 0,
-      created_at: poll.created_at,
-    }));
+    return topPolls
+      .map((poll) => ({
+        id: poll.id,
+        question: poll.question,
+        category: poll.category,
+        total_votes: poll._count.votes,
+        total_opinions: poll._count.opinions,
+        engagement_ratio: poll._count.votes > 0 ? poll._count.opinions / poll._count.votes : 0,
+        created_at: poll.created_at,
+      }))
+      .sort((a, b) => b.total_votes - a.total_votes)
+      .slice(0, limit);
   }
 
   async getUserEngagementStats(userId: string) {
@@ -254,5 +256,6 @@ export class AnalyticsService {
 
     return stateStats.sort((a, b) => b.total_votes - a.total_votes);
   }
+}
 
 export const analyticsService = new AnalyticsService();

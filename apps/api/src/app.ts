@@ -28,10 +28,22 @@ import { aiRouter } from "./modules/ai/ai.controller";
 export function createApp(): Application {
   const app = express();
 
+  app.set("trust proxy", 1);
+
   // Security middleware
   app.use(helmet({
     contentSecurityPolicy: config.nodeEnv === "production",
     crossOriginEmbedderPolicy: config.nodeEnv === "production",
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
+    },
+    noSniff: true,
+    xssFilter: true,
+    frameguard: { action: "deny" },
+    hidePoweredBy: true,
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
   }));
 
   app.use(cors({

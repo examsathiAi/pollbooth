@@ -1,3 +1,4 @@
+import { createServer } from "http";
 import { initAutoModeratorCron } from "./modules/moderation/auto-moderation.cron";
 import { createApp } from "./app";
 import { config } from "./config";
@@ -7,11 +8,16 @@ import { redis } from "./config/redis";
 import { startWorkers } from "./jobs";
 import { initErrorTracking } from "./common/instrumentation/error-tracking";
 import { startJournalistCron } from "./modules/ai/journalist.service";
+import { initializeFirebase } from "./config/firebase";
+import { initWebSocket } from "./gateway/socket";
 
 const PORT = config.port;
 
 async function bootstrap() {
   initErrorTracking();
+
+  // Initialize Firebase Admin SDK for push notifications
+  initializeFirebase();
 
   const app = createApp();
 
@@ -20,8 +26,14 @@ async function bootstrap() {
     res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  const server = app.listen(PORT, () => {
-  initAutoModeratorCron();
+  // Create the explicit HTTP server
+  const server = createServer(app);
+
+  // Initialize WebSocket Gateway *before* listening
+  initWebSocket(server);
+
+  server.listen(PORT, () => {
+    initAutoModeratorCron();
     logger.info(`Pulse API running on port ${PORT} in ${config.nodeEnv} mode`);
   });
 

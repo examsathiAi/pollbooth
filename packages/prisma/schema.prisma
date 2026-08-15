@@ -27,6 +27,7 @@ model User {
   city            String?   @db.VarChar(100)
   state           String?   @db.VarChar(100)
   city_tier       String?   @db.VarChar(20)
+  fcm_token       String?   @db.Text // Encrypted FCM token for push notifications
   is_active       Boolean   @default(true)
   is_banned       Boolean   @default(false)
   ban_reason      String?
@@ -49,6 +50,7 @@ model User {
   earnings              UserEarning[]
   guest_votes           GuestVote[]
   notifications         Notification[]
+  civic_issues          CivicIssue[]
   user_poll_assignments UserPollAssignment[]
   user_engagements      UserEngagement[]
   poll_predictions       PollPrediction[]
@@ -121,6 +123,7 @@ model Poll {
   votes                 Vote[]
   opinions              Opinion[]
   guest_votes           GuestVote[]
+  poll_insight          PollInsight?
   user_poll_assignments UserPollAssignment[]
   ad_placements         AdPlacement[]
   user_engagements      UserEngagement[]
@@ -403,11 +406,28 @@ model CivicIssue {
   created_at  DateTime  @default(now()) @db.Timestamp(6)
   reviewed_at DateTime? @db.Timestamp(6)
 
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
   @@index([status])
   @@index([city])
   @@index([state])
   @@index([created_at])
   @@map("civic_issues")
+}
+
+model PollInsight {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  poll_id             String   @unique @db.Uuid
+  headline            String   @db.VarChar(200)
+  content             String   @db.Text
+  demographics_summary Json?
+  is_published        Boolean  @default(false)
+  created_at          DateTime @default(now()) @db.Timestamp(6)
+
+  poll Poll @relation(fields: [poll_id], references: [id], onDelete: Cascade)
+
+  @@index([is_published])
+  @@map("poll_insights")
 }
 
 // ============================================

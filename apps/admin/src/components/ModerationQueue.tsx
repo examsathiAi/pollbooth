@@ -125,7 +125,7 @@ export function ModerationQueue() {
                         {flag.created_at ? new Date(flag.created_at).toLocaleDateString() : 'Recent'}
                       </span>
                     </div>
-                    <p className="text-sm font-medium text-slate-900 mb-3">"{flag.content}"</p>
+                    <p className="text-sm font-medium text-slate-900 mb-3">“{flag.content}”</p>
                     <p className="text-xs text-rose-700 mb-4 border-l-2 border-rose-300 pl-2">Reason: {flag.flagged_reason}</p>
                     
                     <div className="flex gap-2">

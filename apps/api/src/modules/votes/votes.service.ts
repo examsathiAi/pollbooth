@@ -3,6 +3,7 @@ import { logger } from "../../common/interceptors/logger";
 import { redis } from "../../config/redis";
 import { notificationsService } from "../notifications/notifications.service";
 import { badgesService } from "../badges/badges.service";
+import { io } from "../../gateway/socket";
 import type { VoteInput, GuestVoteInput } from "./votes.types";
 
 const prisma = new PrismaClient();
@@ -76,6 +77,55 @@ export class VotesService {
     }
 
     logger.info("Vote recorded", { userId, pollId, optionIndex: input.option_index });
+
+    // --- REAL-TIME WEBSOCKET BROADCAST ---
+    try {
+      if (io) {
+        // 1. Get the updated vote distribution for the percentages
+        const voteCounts = await prisma.vote.groupBy({
+          by: ["option_index"],
+          where: { poll_id: pollId },
+          _count: { option_index: true },
+        });
+
+        const totalOpinions = await prisma.opinion.count({ where: { poll_id: pollId } });
+
+        // 2. Map results exactly to the LivePollUpdate interface your Next.js hook expects
+        const optionsArray = Array.isArray(poll.options) ? poll.options : [];
+        const results = optionsArray.map((optionText, index) => {
+          const countRecord = voteCounts.find((v) => v.option_index === index);
+          const count = countRecord ? countRecord._count.option_index : 0;
+          const percentage = pollVoteCount > 0 ? Math.round((count / pollVoteCount) * 100) : 0;
+          
+          return { option: String(optionText), index, count, percentage };
+        });
+
+        const liveUpdate = {
+          pollId,
+          totalVotes: pollVoteCount,
+          results,
+          totalOpinions,
+          velocity: 15, // Base velocity
+          isLive: true,
+        };
+
+        // 3. Broadcast directly to users currently viewing this specific poll
+        io.to(`poll_${pollId}`).emit("poll_updated", liveUpdate);
+
+        // 4. Broadcast global activity to all users for the feed ticker
+        io.emit("new_activity", {
+          id: vote.id,
+          type: "vote",
+          message: `A new vote was just cast on "${poll.question.substring(0, 30)}..."`,
+          timestamp: new Date(),
+          pollId,
+        });
+      }
+    } catch (wsError) {
+      logger.error("WebSocket broadcast failed", wsError);
+    }
+    // --- END BROADCAST ---
+
     return {
       ...vote,
       user_vote_index: input.option_index,

@@ -1,8 +1,33 @@
 import { PrismaClient } from "@prisma/client";
+import { encrypt, decrypt } from "../../common/utils/crypto";
+import { getFirebaseApp, isFirebaseInitialized } from "../../config/firebase";
+import * as admin from "firebase-admin";
 
 const prisma = new PrismaClient();
 
 export class NotificationsService {
+  private flattenDataForFcm(data: Record<string, any>): Record<string, string> {
+    const flattened: Record<string, string> = {};
+
+    for (const [key, value] of Object.entries(data ?? {})) {
+      if (value === null || value === undefined) continue;
+
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+        flattened[key] = String(value);
+        continue;
+      }
+
+      if (Array.isArray(value)) {
+        flattened[key] = value.map((item) => String(item)).join(",");
+        continue;
+      }
+
+      flattened[key] = JSON.stringify(value);
+    }
+
+    return flattened;
+  }
+
   async getNotifications(userId: string, page: number, limit: number) {
     const [notifications, total, unread_count] = await Promise.all([
       prisma.notification.findMany({
@@ -66,15 +91,179 @@ export class NotificationsService {
     });
   }
 
+  // FCM Token management
+  async setFcmToken(userId: string, fcmToken: string) {
+    const encryptedToken = encrypt(fcmToken);
+    return prisma.user.update({
+      where: { id: userId },
+      data: { fcm_token: encryptedToken },
+    });
+  }
+
+  async getFcmToken(userId: string): Promise<string | null> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { fcm_token: true },
+    });
+    if (!user?.fcm_token) return null;
+    return decrypt(user.fcm_token);
+  }
+
+  async removeFcmToken(userId: string) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { fcm_token: null },
+    });
+  }
+
   // Push notification methods (FCM integration)
   async sendPushNotification(userId: string, title: string, body: string, data?: any) {
-    // In production: integrate with Firebase Cloud Messaging
-    // Store notification and send via FCM
+    // Store in-app notification
     await this.createNotification(userId, "PUSH", title, body, data);
+
+    // Send via FCM if token exists and Firebase is initialized
+    if (!isFirebaseInitialized()) {
+      console.warn("[Notifications] Firebase not initialized, skipping push notification");
+      return;
+    }
+
+    const fcmToken = await this.getFcmToken(userId);
+    if (!fcmToken) return;
+
+    try {
+      const messaging = admin.messaging(getFirebaseApp()!);
+      const message = {
+        token: fcmToken,
+        notification: { title, body },
+        data: data ? this.flattenDataForFcm(data) : undefined,
+        android: {
+          priority: "high" as const,
+          notification: {
+            channelId: "default",
+            sound: "default",
+          },
+        },
+        apns: {
+          payload: {
+            aps: {
+              sound: "default",
+              badge: 1,
+            },
+          },
+        },
+      };
+      await messaging.send(message);
+      console.log(`[Notifications] Push notification sent to user ${userId}`);
+    } catch (error: any) {
+      console.error(`[Notifications] Failed to send push notification to user ${userId}:`, error);
+      // If token is invalid/unregistered, remove it
+      if (error.code === "messaging/invalid-registration-token" || 
+          error.code === "messaging/registration-token-not-registered") {
+        await this.removeFcmToken(userId);
+        console.log(`[Notifications] Removed invalid FCM token for user ${userId}`);
+      }
+    }
+  }
+
+  // Send push notification to multiple users
+  async sendPushNotificationToUsers(userIds: string[], title: string, body: string, data?: any) {
+    if (!isFirebaseInitialized()) {
+      console.warn("[Notifications] Firebase not initialized, skipping push notifications");
+      // Still create in-app notifications
+      for (const userId of userIds) {
+        await this.createNotification(userId, "PUSH", title, body, data);
+      }
+      return;
+    }
+
+    const usersWithTokens = await prisma.user.findMany({
+      where: {
+        id: { in: userIds },
+        fcm_token: { not: null },
+        is_active: true,
+      },
+      select: { id: true, fcm_token: true },
+    });
+
+    const messaging = admin.messaging(getFirebaseApp()!);
+    const tokens: string[] = [];
+    const validUserIds: string[] = [];
+
+    for (const user of usersWithTokens) {
+      if (!user.fcm_token) continue;
+      const fcmToken = decrypt(user.fcm_token);
+      if (fcmToken) {
+        tokens.push(fcmToken);
+        validUserIds.push(user.id);
+      }
+    }
+
+    if (tokens.length === 0) {
+      // Still create in-app notifications for all users
+      for (const userId of userIds) {
+        await this.createNotification(userId, "PUSH", title, body, data);
+      }
+      return;
+    }
+
+    try {
+      // Send multicast message for efficiency
+      const message = {
+        tokens,
+        notification: { title, body },
+        data: data ? this.flattenDataForFcm(data) : undefined,
+        android: {
+          priority: "high" as const,
+          notification: {
+            channelId: "default",
+            sound: "default",
+          },
+        },
+        apns: {
+          payload: {
+            aps: {
+              sound: "default",
+              badge: 1,
+            },
+          },
+        },
+      };
+
+      const response = await messaging.sendEachForMulticast(message);
+      console.log(`[Notifications] Push notifications sent: ${response.successCount} success, ${response.failureCount} failed`);
+
+      // Handle failed tokens
+      if (response.failureCount > 0) {
+        response.responses.forEach((resp, idx) => {
+          if (!resp.success && resp.error) {
+            const failedUserId = validUserIds[idx];
+            const error = resp.error;
+            console.error(`[Notifications] Failed to send to user ${failedUserId}:`, error);
+            // If token is invalid/unregistered, remove it
+            if (error.code === "messaging/invalid-registration-token" || 
+                error.code === "messaging/registration-token-not-registered") {
+              this.removeFcmToken(failedUserId).catch(console.error);
+              console.log(`[Notifications] Removed invalid FCM token for user ${failedUserId}`);
+            }
+          }
+        });
+      }
+
+      // Create in-app notifications for all users (including those without tokens)
+      for (const userId of userIds) {
+        await this.createNotification(userId, "PUSH", title, body, data);
+      }
+    } catch (error) {
+      console.error("[Notifications] Failed to send multicast push notifications:", error);
+      // Fallback: create in-app notifications for all users
+      for (const userId of userIds) {
+        await this.createNotification(userId, "PUSH", title, body, data);
+      }
+    }
   }
 
   // Notification triggers for various events
-  async notifyOpinionReacted(opinionId: string, reactionType: string, agreeCount: number, disagreeCount: number) {
+  async notifyOpinionReacted(opinionId: string, reactionType: string, agreeCount: number, _disagreeCount: number) {
     const opinion = await prisma.opinion.findUnique({
       where: { id: opinionId },
       select: { user_id: true, content: true },
@@ -171,5 +360,6 @@ export class NotificationsService {
       { badge_name: badgeName }
     );
   }
+}
 
 export const notificationsService = new NotificationsService();

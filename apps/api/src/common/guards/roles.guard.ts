@@ -16,10 +16,16 @@ function hasMinimumRole(userRole: string | undefined, minimumRole: RoleLevel): b
   return currentLevel >= requiredLevel;
 }
 
-export function roleGuard(minimumRole: RoleLevel = "ADMIN") {
+export function roleGuard(...minimumRoles: RoleLevel[]) {
+  const required = minimumRoles.length > 0 ? minimumRoles : ["ADMIN"];
+
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    if (!hasMinimumRole(req.user?.role, minimumRole)) {
-      return res.status(403).json({ error: "Forbidden", message: `This action requires ${minimumRole} access` });
+    const userRole = (req.user?.role as RoleLevel | undefined) ?? "USER";
+    const hasAccess = required.some((role) => hasMinimumRole(userRole, role as RoleLevel));
+
+    if (!hasAccess) {
+      const joinRoles = required.join(" or ");
+      return res.status(403).json({ error: "Forbidden", message: `This action requires ${joinRoles} access` });
     }
     next();
   };

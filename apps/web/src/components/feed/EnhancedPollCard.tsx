@@ -175,7 +175,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       }
     };
     void loadOpinions();
-  }, [poll.id, showComments]);
+  }, [poll.id, poll.total_opinions, showComments]);
 
   const handleVote = async (index: number) => {
     setIsVoting(true);

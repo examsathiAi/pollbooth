@@ -22,6 +22,7 @@ const envSchema = z.object({
   FIREBASE_PROJECT_ID: z.string().optional(),
   FIREBASE_PRIVATE_KEY: z.string().optional(),
   FIREBASE_CLIENT_EMAIL: z.string().optional(),
+  FIREBASE_DATABASE_URL: z.string().optional(),
   RAZORPAY_KEY_ID: z.string().optional(),
   RAZORPAY_KEY_SECRET: z.string().optional(),
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
@@ -31,6 +32,7 @@ const envSchema = z.object({
   ADMOB_APP_ID: z.string().optional(),
   RATE_LIMIT_WINDOW_MS: z.string().default("60000"),
   RATE_LIMIT_MAX_REQUESTS: z.string().default("100"),
+  ENCRYPTION_KEY: z.string().min(32),
   CORS_ALLOWED_ORIGINS: z.string().optional(),
   ENABLE_WHATSAPP_NOTIFICATIONS: z.string().default("false"),
   ENABLE_ADS: z.string().default("false"),
@@ -54,9 +56,26 @@ if (!parsed.success) {
   process.exit(1);
 }
 
-if (parsed.data.NODE_ENV === "production" && !parsed.data.CORS_ALLOWED_ORIGINS) {
-  console.error("Production environment requires CORS_ALLOWED_ORIGINS to be set to trusted origins.");
-  process.exit(1);
+const hasPlaceholderSecret = (value?: string) => {
+  if (!value) return true;
+  return /dev-|placeholder|example|demo|changeme|test-secret/i.test(value);
+};
+
+if (parsed.data.NODE_ENV === "production") {
+  if (!parsed.data.CORS_ALLOWED_ORIGINS) {
+    console.error("Production environment requires CORS_ALLOWED_ORIGINS to be set to trusted origins.");
+    process.exit(1);
+  }
+
+  if (parsed.data.CORS_ALLOWED_ORIGINS.includes("*")) {
+    console.error("Production environment must not use a wildcard CORS origin.");
+    process.exit(1);
+  }
+
+  if (hasPlaceholderSecret(parsed.data.JWT_SECRET) || hasPlaceholderSecret(parsed.data.ENCRYPTION_KEY)) {
+    console.error("Production environment requires non-placeholder JWT_SECRET and ENCRYPTION_KEY values.");
+    process.exit(1);
+  }
 }
 
 export const config = {
@@ -77,6 +96,7 @@ export const config = {
   firebaseProjectId: parsed.data.FIREBASE_PROJECT_ID,
   firebasePrivateKey: parsed.data.FIREBASE_PRIVATE_KEY,
   firebaseClientEmail: parsed.data.FIREBASE_CLIENT_EMAIL,
+  firebaseDatabaseUrl: parsed.data.FIREBASE_DATABASE_URL,
   razorpayKeyId: parsed.data.RAZORPAY_KEY_ID,
   razorpayKeySecret: parsed.data.RAZORPAY_KEY_SECRET,
   razorpayWebhookSecret: parsed.data.RAZORPAY_WEBHOOK_SECRET,
@@ -86,6 +106,7 @@ export const config = {
   admobAppId: parsed.data.ADMOB_APP_ID,
   rateLimitWindowMs: parseInt(parsed.data.RATE_LIMIT_WINDOW_MS, 10),
   rateLimitMaxRequests: parseInt(parsed.data.RATE_LIMIT_MAX_REQUESTS, 10),
+  encryptionKey: parsed.data.ENCRYPTION_KEY,
   enableWhatsappNotifications: parsed.data.ENABLE_WHATSAPP_NOTIFICATIONS === "true",
   enableAds: parsed.data.ENABLE_ADS === "true",
   enableProSubscription: parsed.data.ENABLE_PRO_SUBSCRIPTION === "true",

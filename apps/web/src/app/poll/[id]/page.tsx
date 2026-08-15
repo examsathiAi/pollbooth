@@ -1,6 +1,6 @@
 ﻿import type { Metadata } from "next";
 import { PollDetailClient } from "@/components/poll/PollDetailClient";
-import { Script } from "next/script";
+import Script from "next/script";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";

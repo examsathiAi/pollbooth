@@ -33,7 +33,7 @@ Input: ${JSON.stringify(batch)}`;
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": config.geminiApiKey,
+        ...(config.geminiApiKey ? { "x-goog-api-key": config.geminiApiKey } : {}),
       },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
@@ -43,7 +43,7 @@ Input: ${JSON.stringify(batch)}`;
 
     if (!response.ok) throw new Error("Auto-Moderator Gemini API request failed");
 
-    const payload = await response.json();
+    const payload = (await response.json()) as any;
     const text = payload.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "[]";
     const cleanJson = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/, "").trim();
 
