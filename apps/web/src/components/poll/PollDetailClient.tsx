@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -83,7 +83,7 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const saved = window.localStorage.getItem(`pulse-cohort:${pollId}`);
+      const saved = window.localStorage.getItem(`pollbooth-cohort:${pollId}`);
       if (saved) {
         setCohort(saved);
       }
@@ -150,7 +150,7 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
     if (!user) return;
     try {
       await api.post(`/api/v1/moderation/${opinionId}/report`, {});
-      alert("Report submitted. Thank you for keeping Pulse safe.");
+      alert("Report submitted. Thank you for keeping PollBooth safe.");
     } catch (err: any) {
       alert(err.response?.data?.message || "Failed to report");
     }

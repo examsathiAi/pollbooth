@@ -8,7 +8,7 @@ export default function ConsentPage() {
           <p className="text-sm uppercase tracking-[0.3em] text-blue-600">Data privacy</p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-900">Manage your consent preferences</h1>
           <p className="mt-4 text-sm leading-7 text-slate-600">
-            Pulse is built to respect your choices. This page explains how your data is used and how you can withdraw optional consent whenever you want.
+            PollBooth is built to respect your choices. This page explains how your data is used and how you can withdraw optional consent whenever you want.
           </p>
         </div>
 
@@ -17,7 +17,7 @@ export default function ConsentPage() {
           <ul className="mt-4 list-disc space-y-3 pl-5 text-sm leading-7 text-slate-600">
             <li>Sign-up consent for Terms, Privacy, and minimum age verification.</li>
             <li>Optional analytics and product improvement tracking.</li>
-            <li>How your profile and referral data are used in the Pulse experience.</li>
+            <li>How your profile and referral data are used in the PollBooth experience.</li>
             <li>How to request data access, correction, or deletion.</li>
           </ul>
         </section>
@@ -31,7 +31,7 @@ export default function ConsentPage() {
 
         <section className="rounded-[32px] border border-slate-200 bg-slate-50 p-6 text-sm leading-7 text-slate-700">
           <p className="font-semibold text-slate-900">Need help with a data request?</p>
-          <p className="mt-3">Visit the grievance page to request access, correction, or deletion of your Pulse account data.</p>
+          <p className="mt-3">Visit the grievance page to request access, correction, or deletion of your PollBooth account data.</p>
           <Link href="/grievance" className="mt-4 inline-flex rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
             Go to grievance page
           </Link>

@@ -16,6 +16,6 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @pulse/api typecheck
-      - run: pnpm --filter @pulse/web typecheck
-      - run: pnpm --filter @pulse/admin typecheck
+      - run: pnpm --filter @pollbooth/api typecheck
+      - run: pnpm --filter @pollbooth/web typecheck
+      - run: pnpm --filter @pollbooth/admin typecheck

@@ -29,7 +29,7 @@ export default async function TopicsPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-blue-600">Topics</p>
           <h1 className="mt-4 text-3xl font-semibold text-slate-900">Explore public topic communities</h1>
           <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
-            Browse Pulse topics and jump straight to polls, trending discussions, and the latest opinion snapshots.
+            Browse PollBooth topics and jump straight to polls, trending discussions, and the latest opinion snapshots.
           </p>
         </div>
 

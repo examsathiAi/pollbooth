@@ -1,4 +1,4 @@
-﻿import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { generatePollInsight } from "./src/modules/ai/journalist.service";
 
 const prisma = new PrismaClient();

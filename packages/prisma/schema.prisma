@@ -441,7 +441,7 @@ model PartnerSurvey {
   survey_description    String?
   target_criteria       Json?
   incentive_amount      Int
-  pulse_referral_fee    Int
+  pollbooth_referral_fee    Int
   survey_url            String
   callback_url          String
   sample_size_needed    Int

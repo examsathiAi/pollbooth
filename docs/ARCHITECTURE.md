@@ -1,4 +1,4 @@
-# Pulse — Architecture Reference
+# PollBooth — Architecture Reference
 
 ## Overall shape
 
@@ -19,7 +19,7 @@ rewrite.
 - **`auth`** — Phone OTP send/verify, JWT access + refresh token issuance and rotation.
 - **`users`** — User profile, progressive demographic profiling (age bracket, gender,
   state, education, income, employment, vehicle — collected one field at a time,
-  contextually, per the gating design in `PULSE.txt`).
+  contextually, per the gating design in `POLLBOOTH.txt`).
 - **`polls`** — Poll CRUD, targeting-filter logic, estimated-reach calculation,
   auto-assignment of targeted polls to matching users, election blackout enforcement,
   sponsored/organic separation in listing queries.
@@ -45,7 +45,7 @@ rewrite.
   real Firebase credentials to actually deliver; currently a documented no-op in dev).
 - **`payments`** — Earnings tracking, withdrawal, subscription handling.
 - **`analytics`** — Aggregated reporting with minimum-cohort-size enforcement, matching the
-  "never sell individual data" commitment in `PULSE.txt`.
+  "never sell individual data" commitment in `POLLBOOTH.txt`.
 
 ## Background workers (`apps/api/src/jobs`)
 

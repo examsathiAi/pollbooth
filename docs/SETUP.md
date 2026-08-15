@@ -1,4 +1,4 @@
-# Pulse — Setup Guide
+# PollBooth — Setup Guide
 
 For a new developer, or a new AI coding agent, picking this project up cold.
 
@@ -13,7 +13,7 @@ For a new developer, or a new AI coding agent, picking this project up cold.
 ## 1. Clone / open the repo
 
 ```
-cd pulse-final/pulse
+cd pollbooth-final/pollbooth
 ```
 
 ## 2. Install dependencies
@@ -92,7 +92,7 @@ Don't assume it's fine just because the terminal shows no red text — check the
 - **Admin app**: open `http://localhost:3002` — should render the admin dashboard shell.
 
 If any of these don't respond, check the terminal output for the specific app
-(`@pulse/api:dev:`, `@pulse/web:dev:`, `@pulse/admin:dev:` prefixes distinguish them in
+(`@pollbooth/api:dev:`, `@pollbooth/web:dev:`, `@pollbooth/admin:dev:` prefixes distinguish them in
 the combined Turbo output) rather than assuming the whole thing is broken — it's common
 for one app to fail while the others succeed.
 

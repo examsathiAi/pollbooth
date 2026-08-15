@@ -41,7 +41,7 @@ export default function AdminLoginPage() {
 
       const token = res.data?.tokens?.access_token;
       if (token) {
-        localStorage.setItem("pulse_token", token);
+        localStorage.setItem("pollbooth_token", token);
       }
 
       const user = res.data?.user;
@@ -50,7 +50,7 @@ export default function AdminLoginPage() {
         return;
       }
 
-      localStorage.setItem("pulse_user_role", user.role);
+      localStorage.setItem("pollbooth_user_role", user.role);
 
       router.replace("/");
     } catch (err: any) {
@@ -64,7 +64,7 @@ export default function AdminLoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-slate-950 px-4 text-slate-100">
       <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl shadow-black/30">
         <p className="text-sm uppercase tracking-[0.3em] text-cyan-400">Admin access</p>
-        <h1 className="mt-2 text-2xl font-semibold">Sign in to Pulse Admin</h1>
+        <h1 className="mt-2 text-2xl font-semibold">Sign in to PollBooth Admin</h1>
         <p className="mt-2 text-sm text-slate-400">Use the seeded admin phone number and OTP 123456 in development.</p>
 
         <div className="mt-6 space-y-4">

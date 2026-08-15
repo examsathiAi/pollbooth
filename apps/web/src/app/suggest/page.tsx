@@ -56,7 +56,7 @@ export default function SuggestPage() {
       <div className="mx-auto max-w-3xl px-4 py-16">
         <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
           <h1 className="text-2xl font-semibold text-slate-900">Suggest a Poll</h1>
-          <p className="mt-3 text-sm leading-7 text-slate-600">Please sign in to submit a poll suggestion for the Pulse community.</p>
+          <p className="mt-3 text-sm leading-7 text-slate-600">Please sign in to submit a poll suggestion for the PollBooth community.</p>
           <Link href="/auth/login?redirect=/suggest" className="mt-5 inline-flex rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Sign in</Link>
         </div>
       </div>
@@ -81,7 +81,7 @@ export default function SuggestPage() {
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-800" htmlFor="question">Poll question</label>
-            <textarea id="question" value={question} onChange={(e) => setQuestion(e.target.value)} rows={3} required minLength={10} maxLength={200} className="w-full rounded-2xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500" placeholder="What should Pulse ask the community next?" />
+            <textarea id="question" value={question} onChange={(e) => setQuestion(e.target.value)} rows={3} required minLength={10} maxLength={200} className="w-full rounded-2xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500" placeholder="What should PollBooth ask the community next?" />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>

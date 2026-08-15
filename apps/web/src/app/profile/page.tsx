@@ -57,7 +57,7 @@ export default function ProfilePage() {
     setDeleting(true);
     try {
       await api.delete("/api/v1/users/me");
-      localStorage.removeItem("pulse_token");
+      localStorage.removeItem("pollbooth_token");
       window.location.href = "/auth/login";
     } catch (err: unknown) {
       const errorInfo = err as {

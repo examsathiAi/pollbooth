@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    image: pulse-api:prod
+    image: pollbooth-api:prod
     environment:
       NODE_ENV: production
       PORT: 3001
@@ -22,7 +22,7 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-    image: pulse-web:prod
+    image: pollbooth-web:prod
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
@@ -35,7 +35,7 @@ services:
     build:
       context: .
       dockerfile: apps/admin/Dockerfile
-    image: pulse-admin:prod
+    image: pollbooth-admin:prod
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}

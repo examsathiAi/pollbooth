@@ -49,7 +49,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const topic = await fetchTopic(params.slug);
   if (!topic) {
     return {
-      title: "Topic not found | Pulse",
+      title: "Topic not found | PollBooth",
       description: "The requested topic could not be found.",
       alternates: {
         canonical: `${SITE_URL}/topics/${params.slug}`,
@@ -58,10 +58,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   }
 
   return {
-    title: `${topic.name} | Pulse Topics`,
+    title: `${topic.name} | PollBooth Topics`,
     description: topic.description || `Latest polls and opinions for ${topic.name}.`,
     openGraph: {
-      title: `${topic.name} | Pulse Topics`,
+      title: `${topic.name} | PollBooth Topics`,
       description: topic.description || `Latest polls and opinions for ${topic.name}.`,
       type: "website",
       images: ["/og-card.png"],

@@ -10,7 +10,7 @@ export const logger = winston.createLogger({
     winston.format.errors({ stack: true }),
     winston.format.json()
   ),
-  defaultMeta: { service: "pulse-api", environment: config.nodeEnv },
+  defaultMeta: { service: "pollbooth-api", environment: config.nodeEnv },
   transports: [
     new winston.transports.Console({
       format: config.isDevelopment

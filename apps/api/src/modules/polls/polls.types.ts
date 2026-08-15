@@ -1,4 +1,4 @@
-﻿import { z } from "zod";
+import { z } from "zod";
 
 export const CreatePollSchema = z.object({
   question: z.string().min(5).max(1000),

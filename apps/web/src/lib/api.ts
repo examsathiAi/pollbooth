@@ -10,13 +10,13 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = typeof window !== "undefined" ? localStorage.getItem("pulse_token") : null;
+  const token = typeof window !== "undefined" ? localStorage.getItem("pollbooth_token") : null;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   } else if (typeof window !== "undefined") {
-    const guestSessionId = localStorage.getItem("pulse_guest_session");
+    const guestSessionId = localStorage.getItem("pollbooth_guest_session");
     if (guestSessionId) {
-      config.headers["x-pulse-guest-session"] = guestSessionId;
+      config.headers["x-pollbooth-guest-session"] = guestSessionId;
     }
   }
   return config;
@@ -28,19 +28,19 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      const refreshToken = localStorage.getItem("pulse_refresh_token");
+      const refreshToken = localStorage.getItem("pollbooth_refresh_token");
       if (refreshToken) {
         try {
           const res = await axios.post(`${API_URL}/api/v1/auth/refresh`, {
             refresh_token: refreshToken,
           });
-          localStorage.setItem("pulse_token", res.data.access_token);
-          localStorage.setItem("pulse_refresh_token", res.data.refresh_token);
+          localStorage.setItem("pollbooth_token", res.data.access_token);
+          localStorage.setItem("pollbooth_refresh_token", res.data.refresh_token);
           originalRequest.headers.Authorization = `Bearer ${res.data.access_token}`;
           return api(originalRequest);
         } catch {
-          localStorage.removeItem("pulse_token");
-          localStorage.removeItem("pulse_refresh_token");
+          localStorage.removeItem("pollbooth_token");
+          localStorage.removeItem("pollbooth_refresh_token");
           window.location.href = "/auth/login";
         }
       }

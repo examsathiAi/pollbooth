@@ -33,7 +33,7 @@ export default function RewardsPage() {
           <Gift className="h-4 w-4" /> Rewards wallet
         </div>
         <h1 className="mt-3 text-2xl font-semibold text-slate-900">Your referral engine is live.</h1>
-        <p className="mt-3 text-sm leading-7 text-slate-600">Track your invites, viral shares, and the credits you’ve earned for bringing new voices into Pulse.</p>
+        <p className="mt-3 text-sm leading-7 text-slate-600">Track your invites, viral shares, and the credits you’ve earned for bringing new voices into PollBooth.</p>
       </div>
 
       <section className="grid gap-4 md:grid-cols-3">
@@ -57,10 +57,10 @@ export default function RewardsPage() {
         </div>
         <p className="mt-3 text-sm leading-7 text-blue-50">Share your favorite poll with WhatsApp or Telegram and keep the loop moving with a referral parameter attached.</p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <a href="https://wa.me/?text=Join%20Pulse%20and%20vote%20with%20me%3A%20https%3A//pulse.app%2Ffeed%3Fref%3Dyou" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-2xl bg-white/15 px-4 py-2 text-sm font-semibold backdrop-blur">
+          <a href="https://wa.me/?text=Join%20PollBooth%20and%20vote%20with%20me%3A%20https%3A//pollbooth.app%2Ffeed%3Fref%3Dyou" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-2xl bg-white/15 px-4 py-2 text-sm font-semibold backdrop-blur">
             <Share2 className="h-4 w-4" /> WhatsApp
           </a>
-          <a href="https://t.me/share/url?url=https%3A//pulse.app%2Ffeed%3Fref%3Dyou&text=Join%20Pulse%20and%20vote%20with%20me" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-2xl bg-white/15 px-4 py-2 text-sm font-semibold backdrop-blur">
+          <a href="https://t.me/share/url?url=https%3A//pollbooth.app%2Ffeed%3Fref%3Dyou&text=Join%20PollBooth%20and%20vote%20with%20me" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-2xl bg-white/15 px-4 py-2 text-sm font-semibold backdrop-blur">
             <Share2 className="h-4 w-4" /> Telegram
           </a>
         </div>

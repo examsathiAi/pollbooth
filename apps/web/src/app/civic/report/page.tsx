@@ -65,7 +65,7 @@ export default function CivicReportPage() {
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <p className="text-sm font-semibold uppercase tracking-[0.24em] text-cyan-600">Community reporting</p>
         <h1 className="mt-2 text-3xl font-semibold text-slate-900">Report a Civic Issue</h1>
-        <p className="mt-3 text-sm leading-7 text-slate-600">Let local authorities and the Pulse community know about issues affecting your city or state.</p>
+        <p className="mt-3 text-sm leading-7 text-slate-600">Let local authorities and the PollBooth community know about issues affecting your city or state.</p>
 
         {submitted ? (
           <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">

@@ -1,4 +1,4 @@
-﻿import { z } from "zod";
+import { z } from "zod";
 
 const faqItemSchema = z.object({
   question: z.string().trim().min(1),

@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+﻿import { PrismaClient } from "@prisma/client";
 import type { UpdateProfileInput } from "./users.types";
 
 const prisma = new PrismaClient();
@@ -101,7 +101,7 @@ export class UsersService {
       });
 
       if (completedPercentage === 100) {
-        await this.awardBadgeIfNotExists(userId, "PULSE_INSIDER");
+        await this.awardBadgeIfNotExists(userId, "POLLBOOTH_INSIDER");
       }
     }
 
@@ -152,7 +152,7 @@ export class UsersService {
       gender: { field: "gender", question: "How do you identify?", options: ["Male", "Female", "Non-binary", "Prefer not to say"] },
       state: { field: "state", question: "Which state represents you?", options: [] },
       education: { field: "education", question: "What's your highest qualification?", options: ["High School", "Bachelor's", "Master's", "PhD", "Other"] },
-      income_bracket: { field: "income_bracket", question: "Which tax slab do you fall under?", options: ["< ₹3L", "₹3L-₹6L", "₹6L-₹9L", "₹9L-₹12L", "₹12L-₹15L", "> ₹15L"] },
+      income_bracket: { field: "income_bracket", question: "Which tax slab do you fall under?", options: ["< â‚¹3L", "â‚¹3L-â‚¹6L", "â‚¹6L-â‚¹9L", "â‚¹9L-â‚¹12L", "â‚¹12L-â‚¹15L", "> â‚¹15L"] },
       employment: { field: "employment", question: "What's your work status?", options: ["Employed", "Self-employed", "Student", "Unemployed", "Retired"] },
       vehicle: { field: "vehicle", question: "What do you currently drive?", options: ["Two-wheeler", "Hatchback", "Sedan", "SUV", "EV", "None"] },
       diet: { field: "diet", question: "Veg, Non-veg, or Vegan?", options: ["Veg", "Non-veg", "Vegan"] },
@@ -229,6 +229,44 @@ export class UsersService {
     });
     
     return { ok: true, message: "User PII successfully scrubbed per DPDP mandate." };
+  }
+
+  // --- REFERRAL ENGINE ---
+  async getReferralStats(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { referral_code: true }
+    });
+
+    if (!user) throw new Error("User not found");
+
+    let refCode = user.referral_code;
+    if (!refCode) {
+      // Generate a unique 8-character referral code on the fly
+      refCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+      await prisma.user.update({
+        where: { id: userId },
+        data: { referral_code: refCode }
+      });
+    }
+
+    const totalReferred = await prisma.user.count({
+      where: { referred_by: userId }
+    });
+
+    const earnings = await prisma.userEarning.findMany({
+      where: { user_id: userId, source_type: 'REFERRAL' },
+      orderBy: { created_at: 'desc' }
+    });
+
+    const totalEarned = earnings.reduce((sum, e) => sum + e.amount, 0);
+
+    return {
+      referral_code: refCode,
+      total_referred: totalReferred,
+      total_earned: totalEarned,
+      history: earnings
+    };
   }
 }
 

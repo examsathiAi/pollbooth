@@ -1,5 +1,5 @@
 {
-  "name": "@pulse/web",
+  "name": "@pollbooth/web",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -11,8 +11,8 @@
     "clean": "rm -rf .next node_modules"
   },
   "dependencies": {
-    "@pulse/shared-types": "workspace:*",
-    "@pulse/utils": "workspace:*",
+    "@pollbooth/shared-types": "workspace:*",
+    "@pollbooth/utils": "workspace:*",
     "axios": "^1.7.0",
     "clsx": "^2.1.0",
     "date-fns": "^3.6.0",

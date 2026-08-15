@@ -141,10 +141,10 @@ export default function FeedPage() {
         params.category = categoryFilter;
       }
 
-      const guestSessionId = typeof window !== "undefined" ? window.localStorage.getItem("pulse_guest_session") || undefined : undefined;
+      const guestSessionId = typeof window !== "undefined" ? window.localStorage.getItem("pollbooth_guest_session") || undefined : undefined;
       const headers: Record<string, string> = {};
       if (guestSessionId) {
-        headers["x-pulse-guest-session"] = guestSessionId;
+        headers["x-pollbooth-guest-session"] = guestSessionId;
       }
 
       const res = await api.get("/api/v1/polls/feed", { params, headers });
@@ -207,7 +207,7 @@ export default function FeedPage() {
       <header ref={headerRef} className="sticky top-0 z-50 border-b-2 border-ink bg-paper-bg text-ink paper-texture">
         <div className="mx-auto max-w-[1600px] px-4 sm:px-8 py-4">
           <div className="flex items-center justify-between gap-4">
-            <div className="text-4xl font-headline font-bold text-maroon">Pulse Times</div>
+            <div className="text-4xl font-headline font-bold text-maroon">PollBooth Times</div>
 
             <div className="flex-1 max-w-md">
               <input

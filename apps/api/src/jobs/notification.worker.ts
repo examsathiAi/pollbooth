@@ -37,8 +37,8 @@ export async function runNotificationWorker(job?: Job<{ type?: string; title?: s
       data: {
         user_id: recipient.id,
         type: payload.type ?? "PUSH",
-        title: payload.title ?? "Pulse update",
-        body: payload.body ?? "You have a new update from Pulse.",
+        title: payload.title ?? "PollBooth update",
+        body: payload.body ?? "You have a new update from PollBooth.",
         data: (payload.data ?? {}) as Prisma.InputJsonValue,
         sent_at: new Date(),
       },

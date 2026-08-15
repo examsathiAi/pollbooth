@@ -1,20 +1,20 @@
-# Pulse — Terms and Conditions
+# PollBooth — Terms and Conditions
 
 _Last updated: [DATE OF LAUNCH]_
 
-## 1. About Pulse
+## 1. About PollBooth
 
-Pulse ("we", "us", "the Platform") is a public opinion polling platform operated in India.
+PollBooth ("we", "us", "the Platform") is a public opinion polling platform operated in India.
 Users can vote on polls, share opinions, suggest polls, report civic issues, and (where
 enabled) create their own polls subject to review. These Terms govern your use of the
-Pulse website and mobile applications.
+PollBooth website and mobile applications.
 
-By creating an account or otherwise using Pulse, you agree to these Terms, our Privacy
+By creating an account or otherwise using PollBooth, you agree to these Terms, our Privacy
 Policy, and our Community Guidelines.
 
 ## 2. Eligibility
 
-You must be at least 16 years old to create a Pulse account. By signing up, you confirm
+You must be at least 16 years old to create a PollBooth account. By signing up, you confirm
 you meet this minimum age requirement. If we learn that an account belongs to someone
 below this age, we reserve the right to suspend or terminate it.
 
@@ -49,14 +49,14 @@ below this age, we reserve the right to suspend or terminate it.
   identified as active election blackout windows for a given region, in line with
   applicable election law. This is enforced by the Platform and is not adjustable by any
   user, including poll creators.
-- Pulse does not host or permit exit polls (asking how someone already voted in a real
+- PollBooth does not host or permit exit polls (asking how someone already voted in a real
   election) during any legally restricted period.
 
 ## 6. User-Created Polls (Paid or Credit-Based Poll Creation)
 
 Where this feature is enabled for your account:
 - You may create your own poll by paying a fee or using credits earned on the Platform.
-- Every user-created poll is subject to review and approval by Pulse before it goes live.
+- Every user-created poll is subject to review and approval by PollBooth before it goes live.
   We may reject any poll for any reason, including but not limited to violation of these
   Terms, applicable law, or our editorial standards, without obligation to refund credits
   already spent on rejected content, except where required by law.
@@ -71,9 +71,9 @@ Where this feature is enabled for your account:
     individual.
   - You bear full legal and civil responsibility for any consequences arising from a
     poll you create, including but not limited to claims of defamation, harassment, or
-    violation of any person's rights. Pulse's review and approval of a poll does not
-    transfer this responsibility to Pulse or constitute an endorsement of its content.
-  - Pulse may remove your poll at any time, including after approval, if it is later
+    violation of any person's rights. PollBooth's review and approval of a poll does not
+    transfer this responsibility to PollBooth or constitute an endorsement of its content.
+  - PollBooth may remove your poll at any time, including after approval, if it is later
     found to violate these Terms or applicable law, and may suspend your ability to
     create further polls.
 - Payment for poll creation (where made in cash rather than credits) is subject to our
@@ -101,7 +101,7 @@ summary:
 
 ## 9. Grievance Redressal
 
-If you have a complaint about content on Pulse, believe your rights have been violated,
+If you have a complaint about content on PollBooth, believe your rights have been violated,
 or wish to request data deletion or correction, you may contact our Grievance Officer:
 
 **Grievance Officer**: [NAME]
@@ -112,14 +112,14 @@ Rules, 2021 and the Digital Personal Data Protection Act, 2023).
 
 ## 10. Limitation of Liability
 
-Pulse provides the Platform on an "as is" basis. We are not liable for content posted by
+PollBooth provides the Platform on an "as is" basis. We are not liable for content posted by
 users (including user-created polls, opinions, or civic reports), except as required by
 applicable law. Our liability for any claim arising from your use of the Platform is
 limited to the maximum extent permitted by Indian law.
 
 ## 11. Changes to These Terms
 
-We may update these Terms from time to time. Continued use of Pulse after changes take
+We may update these Terms from time to time. Continued use of PollBooth after changes take
 effect constitutes acceptance of the updated Terms. Material changes will be notified to
 users through the Platform.
 
@@ -130,7 +130,7 @@ exclusive jurisdiction of the courts of [CITY], India.
 
 ---
 
-_This document is a starting draft based on Pulse's actual features as designed. Sections
+_This document is a starting draft based on PollBooth's actual features as designed. Sections
 marked with [BRACKETS] require a specific decision or a lawyer's input before publishing
 live. This is not a substitute for review by a qualified Indian technology/data-privacy
 lawyer before real users' data is collected under these terms._

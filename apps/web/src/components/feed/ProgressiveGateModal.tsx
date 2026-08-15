@@ -55,7 +55,7 @@ export function ProgressiveGateModal({ isOpen, onClose, onSelect }: ProgressiveG
               {statusLabel}
             </div>
             <h3 className="mt-2 text-lg font-semibold text-white">Which generation speaks for you?</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-400">This helps Pulse surface more relevant local voices without blocking your vote.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">This helps PollBooth surface more relevant local voices without blocking your vote.</p>
           </div>
           <button onClick={onClose} className="rounded-full border border-slate-700 p-2 text-slate-300 transition hover:border-slate-500 hover:text-white">
             <X className="h-4 w-4" />

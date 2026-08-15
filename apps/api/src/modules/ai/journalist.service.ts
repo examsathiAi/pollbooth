@@ -1,4 +1,4 @@
-﻿import cron from "node-cron";
+import cron from "node-cron";
 import { PrismaClient } from "@prisma/client";
 import { config } from "../../config";
 
@@ -54,7 +54,7 @@ export async function generatePollInsight(pollId: string) {
     );
 
     // 3. Build the Data Journalist Prompt
-    const prompt = `You are an elite data journalist and political analyst working for 'Pulse Times'. 
+    const prompt = `You are an elite data journalist and political analyst working for 'PollBooth Times'. 
 Your task is to write a highly engaging, 3-4 minute read "Exit Poll Analysis" based on real user voting data, demographics, and comments.
 
 POLL CONTEXT:
@@ -76,7 +76,7 @@ MANDATE:
 1. Write a punchy, click-worthy 'headline'.
 2. Write the 'content' (3-4 paragraphs, roughly 400 words) in the style of Inshorts or Firstpost. Analyze *why* people voted the way they did. Call out interesting demographic splits (e.g., "Gen Z overwhelmingly favored X, while Tier 1 cities were split..."). Quote the provided user comments naturally. 
 3. You MUST append this exact disclaimer at the very end of the 'content' string: 
-   "<br><br><em>*Disclaimer: This analysis was AI-generated based on real-time platform voting data and public comments. It reflects user sentiment on Pulse Times, not necessarily broader societal facts.</em>"
+   "<br><br><em>*Disclaimer: This analysis was AI-generated based on real-time platform voting data and public comments. It reflects user sentiment on PollBooth Times, not necessarily broader societal facts.</em>"
 4. Summarize the key demographic takeaways in a short 'demographics_summary' object.
 
 Return strictly valid JSON matching this schema:

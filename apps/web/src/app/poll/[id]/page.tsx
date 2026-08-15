@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { PollDetailClient } from "@/components/poll/PollDetailClient";
 import Script from "next/script";
 
@@ -31,10 +31,10 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 
   if (!poll) {
     return {
-      title: "Pulse poll | Pulse",
+      title: "PollBooth poll | PollBooth",
       description: "Vote on the poll and see live public opinion.",
       openGraph: {
-        title: "Pulse poll | Pulse",
+        title: "PollBooth poll | PollBooth",
         description: "Vote on the poll and see live public opinion.",
         type: "website",
         images: ["/og-card.png"],
@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     };
   }
 
-  const title = poll.seo_title?.trim() || `${poll.question} | Pulse`;
+  const title = poll.seo_title?.trim() || `${poll.question} | PollBooth`;
   const description = poll.meta_description?.trim() || `Vote on this poll and see live results for ${poll.category}.`;
   const openGraphTitle = poll.og_title?.trim() || poll.seo_title?.trim() || title;
   const openGraphDescription = poll.og_description?.trim() || poll.meta_description?.trim() || description;
@@ -83,7 +83,7 @@ export default async function PollDetailPage({ params }: { params: { id: string 
     url: `${SITE_URL}/poll/${params.id}`,
     author: {
       "@type": "Organization",
-      name: "Pulse",
+      name: "PollBooth",
       url: SITE_URL,
     },
     image: {

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useRef, useState } from "react";
 import { toBlob } from "html-to-image";
@@ -67,10 +67,10 @@ export function ShareCardGenerator({
       const blob = await generateCardBlob();
       const shareText = platformCaption
         ? `${platformCaption}\n\nVote here: ${shareLink}`
-        : `${headline || title}\n\nCast your vote on Pulse: ${shareLink}`;
+        : `${headline || title}\n\nCast your vote on PollBooth: ${shareLink}`;
 
-      if (blob && navigator.canShare && navigator.canShare({ files: [new File([blob], "pulse-card.png", { type: "image/png" })] })) {
-        const file = new File([blob], "pulse-poll-card.png", { type: "image/png" });
+      if (blob && navigator.canShare && navigator.canShare({ files: [new File([blob], "pollbooth-card.png", { type: "image/png" })] })) {
+        const file = new File([blob], "pollbooth-poll-card.png", { type: "image/png" });
         await navigator.share({
           title: title,
           text: shareText,
@@ -146,7 +146,7 @@ export function ShareCardGenerator({
       {/* Hidden Card Render Container */}
       <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-950 p-4">
         <div ref={cardRef} className="space-y-3 bg-slate-950 p-4 text-white">
-          <div className="text-xs font-bold uppercase tracking-wider text-violet-400">PULSE PUBLIC OPINION</div>
+          <div className="text-xs font-bold uppercase tracking-wider text-violet-400">POLLBOOTH PUBLIC OPINION</div>
           <div className="text-lg font-bold text-slate-100">{title}</div>
           {subtitle && <div className="text-xs text-slate-400">{subtitle}</div>}
           

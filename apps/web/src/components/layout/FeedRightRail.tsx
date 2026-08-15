@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -72,7 +72,7 @@ export function FeedRightRail() {
         <div className="rounded-2xl border border-paper-border/30 bg-paper-bg shadow-sm p-4">
           <div className="mb-3 flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-ink-muted" />
-            <h3 className="text-sm font-sans uppercase tracking-widest text-ink border-b-2 border-ink">Pulse platform stats</h3>
+            <h3 className="text-sm font-sans uppercase tracking-widest text-ink border-b-2 border-ink">PollBooth platform stats</h3>
           </div>
           <div className="space-y-3">
             <div className="rounded-xl border border-paper-border/30 bg-paper-card shadow-sm p-3">

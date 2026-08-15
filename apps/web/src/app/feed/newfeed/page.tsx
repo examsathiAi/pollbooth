@@ -64,7 +64,7 @@ export default function NewFeedPage() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Welcome to Pulse</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Welcome to PollBooth</h1>
           <p className="text-gray-600 mb-6">India&apos;s Opinion Platform</p>
           <Link
             href="/auth/login"

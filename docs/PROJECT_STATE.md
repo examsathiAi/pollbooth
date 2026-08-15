@@ -1,15 +1,15 @@
-# Pulse — Project State
+# PollBooth — Project State
 
 _Last updated: 2026-08-02, after end-to-end verification._
 
 ## What this is
 
-Pulse is a public sentiment and polling platform for India — admin-authored polls across
+PollBooth is a public sentiment and polling platform for India — admin-authored polls across
 categories (Politics/Civic, Bollywood, Sports, Current Events), with a vote → optional
 private reason → public 280-character opinion → agree/disagree reaction loop. No
 anonymous messaging, no reply threads, no profile visits on opinions — by deliberate
 design, to avoid the harassment patterns that sank comparable apps (Sarahah, Yolo, Kik).
-Full vision, feature list, and rationale: see `PULSE.txt` in the repo root — treat that
+Full vision, feature list, and rationale: see `POLLBOOTH.txt` in the repo root — treat that
 as the source of truth for product intent.
 
 ## Tech stack
@@ -37,7 +37,7 @@ as the source of truth for product intent.
    - Admin dashboard: `http://localhost:3002`
 
 **Current known setup note**: during development, the project ended up running against a
-standalone Postgres container (`pulse-postgres`, `postgres:15`, port 5433) rather than the
+standalone Postgres container (`pollbooth-postgres`, `postgres:15`, port 5433) rather than the
 one defined in `docker-compose.yml` (port 5432). Before deploying or handing this off,
 confirm which database is actually the source of truth and consolidate to one — see
 "Known issues" below.
@@ -69,7 +69,7 @@ confirm which database is actually the source of truth and consolidate to one �
 
 1. **Database consolidation**: the project has, at various points, connected to more than
    one local Postgres instance (a `docker-compose.yml`-defined one on 5432, and a
-   standalone `pulse-postgres` container on 5433). Confirm which is authoritative before
+   standalone `pollbooth-postgres` container on 5433). Confirm which is authoritative before
    any further schema changes, to avoid migration drift.
 2. **`.gitignore` / secrets**: confirm `.env` files are excluded from version control
    before this repo is ever pushed to a remote (GitHub, etc.) — they were created locally

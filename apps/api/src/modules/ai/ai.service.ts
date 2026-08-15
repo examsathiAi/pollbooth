@@ -1,4 +1,4 @@
-﻿import { config } from "../../config";
+import { config } from "../../config";
 import {
   GeminiPollContentWithSourcesSchema,
   type GeminiPollContentWithSources,
@@ -27,7 +27,7 @@ export async function generatePollContent(question: string, category: string): P
         .join("\n");
     }
 
-    const prompt = `You are an expert news researcher, viral social media strategist, and SEO editor for a public opinion platform (Pulse).
+    const prompt = `You are an expert news researcher, viral social media strategist, and SEO editor for a public opinion platform (PollBooth).
 
 MANDATE:
 1. Rephrase 'improved_question' to be sentiment-driven, punchy, and compelling to drive maximum user engagement while remaining objective.

@@ -1,4 +1,4 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import { authGuard, optionalAuthGuard } from "../../common/guards/auth.guard";
 import { rateLimiter } from "../../common/interceptors/rate-limiter";
 import { roleGuard } from "../../common/guards/roles.guard";
@@ -31,7 +31,7 @@ router.get("/review", authGuard, roleGuard("ADMIN"), validateQuery(PollQuerySche
 router.get("/feed", optionalAuthGuard, validateQuery(PollQuerySchema), async (req, res, next) => {
   try {
     const userId = (req as any).user?.id;
-    const guestSessionId = typeof req.headers["x-pulse-guest-session"] === "string" ? req.headers["x-pulse-guest-session"] as string : undefined;
+    const guestSessionId = typeof req.headers["x-pollbooth-guest-session"] === "string" ? req.headers["x-pollbooth-guest-session"] as string : undefined;
     const result = await pollsService.getPolls(req.query as any, userId, guestSessionId);
     res.json(result);
   } catch (err) {
@@ -51,7 +51,7 @@ router.get("/estimated-reach", async (req, res, next) => {
 router.get("/:id", optionalAuthGuard, validateParams(PollIdSchema), async (req, res, next) => {
   try {
     const userId = (req as any).user?.id;
-    const guestSessionId = typeof req.headers["x-pulse-guest-session"] === "string" ? req.headers["x-pulse-guest-session"] as string : undefined;
+    const guestSessionId = typeof req.headers["x-pollbooth-guest-session"] === "string" ? req.headers["x-pollbooth-guest-session"] as string : undefined;
     const result = await pollsService.getPollById(req.params.id, userId, guestSessionId);
     res.json(result);
   } catch (err) {
@@ -62,6 +62,25 @@ router.get("/:id", optionalAuthGuard, validateParams(PollIdSchema), async (req, 
 router.post("/:id/predict", authGuard, validateParams(PollIdSchema), validateBody(PredictPollSchema), async (req, res, next) => {
   try {
     const result = await pollsService.savePrediction(req.user!.id, req.params.id, req.body);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// --- VIRAL LOOP ROUTES (Corrected for Express) ---
+router.post("/:id/share", authGuard, validateParams(PollIdSchema), async (req, res, next) => {
+  try {
+    const result = await pollsService.recordShare(req.user!.id, req.params.id);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/:id/unlock-status", authGuard, validateParams(PollIdSchema), async (req, res, next) => {
+  try {
+    const result = await pollsService.checkUnlockStatus(req.user!.id, req.params.id);
     res.json(result);
   } catch (err) {
     next(err);

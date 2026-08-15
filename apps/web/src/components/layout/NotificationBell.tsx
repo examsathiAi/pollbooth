@@ -113,7 +113,7 @@ export function NotificationBell() {
           <div className="mb-2 flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-slate-800">Notifications</p>
-              <p className="text-xs text-slate-500">{user?.username ? `Hey ${user.username}, here’s what’s new.` : "Your live Pulse activity"}</p>
+              <p className="text-xs text-slate-500">{user?.username ? `Hey ${user.username}, here’s what’s new.` : "Your live PollBooth activity"}</p>
               {unreadCount > 0 ? <p className="text-xs text-slate-500">{unreadCount} new update{unreadCount === 1 ? "" : "s"}</p> : null}
             </div>
             {unreadCount > 0 ? (

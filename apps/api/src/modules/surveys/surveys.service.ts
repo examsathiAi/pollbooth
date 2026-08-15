@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+﻿import { PrismaClient } from "@prisma/client";
 import type { CreateSurveySuggestionInput } from "./surveys.types";
 import { notificationsService } from "../notifications/notifications.service";
 
@@ -21,7 +21,7 @@ export class SurveysService {
       userId,
       "SUGGESTION_RECEIVED",
       "Suggestion received",
-      "Thanks for your idea — we’ve received your poll suggestion and will notify you when the team reviews it.",
+      "Thanks for your idea â€” weâ€™ve received your poll suggestion and will notify you when the team reviews it.",
       { suggestion_id: suggestion.id, category: suggestion.category }
     );
 
@@ -142,6 +142,63 @@ export class SurveysService {
       });
     }
   }
-}
 
-export const surveysService = new SurveysService();
+  // --- B2B PARTNER SURVEYS ---
+  async getAvailableSurveys(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true }
+    });
+    
+    if (!user) throw new Error("User not found");
+
+    const profileCompleteness = user.profile?.completed_percentage || 0;
+
+    // Find active surveys that need samples
+    const allActiveSurveys = await prisma.partnerSurvey.findMany({
+      where: {
+        is_active: true,
+        OR: [
+          { end_date: null },
+          { end_date: { gt: new Date() } }
+        ]
+      },
+      orderBy: { incentive_amount: 'desc' } // Show highest paying first
+    });
+
+    // Get surveys user has already consented to/completed
+    const userConsents = await prisma.surveyConsent.findMany({
+      where: { user_id: userId }
+    });
+    const takenSurveyIds = userConsents.map(c => c.survey_id);
+
+    // Filter out taken surveys and ones that reached sample limit
+    const availableSurveys = allActiveSurveys.filter(survey => 
+      !takenSurveyIds.includes(survey.id) && 
+      survey.sample_size_completed < survey.sample_size_needed
+    );
+
+    return {
+      surveys: availableSurveys,
+      profile_completeness: profileCompleteness,
+      needs_profile_completion: profileCompleteness < 100 && availableSurveys.length > 0
+    };
+  }
+
+  async consentToSurvey(userId: string, surveyId: string) {
+    const survey = await prisma.partnerSurvey.findUnique({ where: { id: surveyId }});
+    if (!survey || !survey.is_active) throw new Error("Survey not available");
+    if (survey.sample_size_completed >= survey.sample_size_needed) throw new Error("Survey sample limit reached");
+
+    const consent = await prisma.surveyConsent.create({
+      data: {
+        user_id: userId,
+        survey_id: surveyId,
+        partner_name: survey.partner_name,
+        is_active: true
+      }
+    });
+
+    return { consent, redirect_url: survey.survey_url };
+  }
+}

@@ -107,4 +107,16 @@ router.get("/topics/:topicSlugs", authGuard, async (req, res, next) => {
   }
 });
 
+
+// --- DISCOVER ROUTE ---
+router.get("/discover", authGuard, async (req, res, next) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+    const result = await feedService.getDiscoverFeed(req.user!.id, page, limit);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
 export { router as feedRouter };

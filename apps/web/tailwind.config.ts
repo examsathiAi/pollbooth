@@ -13,7 +13,7 @@ const config: Config = {
         sans: ["var(--font-sans)", "-apple-system", "sans-serif"],
       },
       colors: {
-        pulse: {
+        pollbooth: {
           50: "#eff6ff",
           100: "#dbeafe",
           500: "#3b82f6",

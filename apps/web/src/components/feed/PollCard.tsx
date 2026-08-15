@@ -49,7 +49,7 @@ export function PollCard({ poll, onVoteComplete }: PollCardProps) {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const saved = window.localStorage.getItem(`pulse-cohort:${poll.id}`);
+      const saved = window.localStorage.getItem(`pollbooth-cohort:${poll.id}`);
       if (saved) {
         setCohort(saved);
       }
@@ -103,8 +103,8 @@ export function PollCard({ poll, onVoteComplete }: PollCardProps) {
 
   const handleShare = async () => {
     const shareData = {
-      title: "Pulse Poll",
-      text: `${poll.question} · Join the debate on Pulse`,
+      title: "PollBooth Poll",
+      text: `${poll.question} · Join the debate on PollBooth`,
       url: `${window.location.origin}/poll/${poll.id}?ref=${user?.id || "guest"}`,
     };
     if (navigator.share) {
@@ -117,7 +117,7 @@ export function PollCard({ poll, onVoteComplete }: PollCardProps) {
 
   const handleReferralShare = (platform: "whatsapp" | "telegram") => {
     const url = `${window.location.origin}/poll/${poll.id}?ref=${user?.id || "guest"}`;
-    const text = encodeURIComponent(`${poll.question} · Join the conversation on Pulse`);
+    const text = encodeURIComponent(`${poll.question} · Join the conversation on PollBooth`);
     const encodedUrl = encodeURIComponent(url);
     if (platform === "whatsapp") {
       window.open(`https://wa.me/?text=${text}%20${encodedUrl}`, "_blank", "noopener,noreferrer");
@@ -256,7 +256,7 @@ export function PollCard({ poll, onVoteComplete }: PollCardProps) {
         onSelect={(value) => {
           setCohort(value);
           if (typeof window !== "undefined") {
-            window.localStorage.setItem(`pulse-cohort:${poll.id}`, value);
+            window.localStorage.setItem(`pollbooth-cohort:${poll.id}`, value);
           }
         }}
       />

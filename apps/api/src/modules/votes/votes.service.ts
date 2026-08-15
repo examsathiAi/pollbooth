@@ -365,7 +365,7 @@ export class VotesService {
       await this.awardBadgeIfNotExists(userId, "CONSISTENT_VOICE");
     }
     if (newStreak >= 30) {
-      await this.awardBadgeIfNotExists(userId, "PULSE_PATRIOT");
+      await this.awardBadgeIfNotExists(userId, "POLLBOOTH_PATRIOT");
     }
   }
 

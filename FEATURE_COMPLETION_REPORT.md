@@ -1,4 +1,4 @@
-# PULSE Platform - Feature Completion Report
+# POLLBOOTH Platform - Feature Completion Report
 **Date: 2026-08-14**
 
 ## Executive Summary

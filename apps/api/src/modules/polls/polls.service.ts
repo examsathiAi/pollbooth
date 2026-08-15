@@ -475,6 +475,20 @@ export class PollsService {
 
     logger.info(`Assigned poll ${pollId} to ${assignments.length} users`);
   }
-}
 
-export const pollsService = new PollsService();
+  // --- VIRAL LOOP METHODS ---
+  async recordShare(userId: string, pollId: string) {
+    return prisma.pollShareUnlock.upsert({
+      where: { user_id_poll_id: { user_id: userId, poll_id: pollId } },
+      update: { shared_at: new Date() },
+      create: { user_id: userId, poll_id: pollId, platform: 'native' }
+    });
+  }
+
+  async checkUnlockStatus(userId: string, pollId: string) {
+    const unlock = await prisma.pollShareUnlock.findUnique({
+      where: { user_id_poll_id: { user_id: userId, poll_id: pollId } }
+    });
+    return { unlocked: !!unlock };
+  }
+}

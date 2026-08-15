@@ -1,4 +1,4 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import { authGuard } from "../../common/guards/auth.guard";
 import { rateLimiter } from "../../common/interceptors/rate-limiter";
 import { validateBody } from "../../common/pipes/validation.pipe";
@@ -43,4 +43,14 @@ router.delete("/me", authGuard, async (req, res, next) => {
   }
 });
 
+
+// --- REFERRAL ENGINE ROUTES ---
+router.get("/referrals", authGuard, async (req, res, next) => {
+  try {
+    const result = await usersService.getReferralStats(req.user!.id);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
 export { router as userRouter };

@@ -232,10 +232,10 @@ importers:
 
   apps/web:
     dependencies:
-      '@pulse/shared-types':
+      '@pollbooth/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
-      '@pulse/utils':
+      '@pollbooth/utils':
         specifier: workspace:*
         version: link:../../packages/utils
       axios:

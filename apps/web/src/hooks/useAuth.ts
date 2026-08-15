@@ -22,7 +22,7 @@ export function useAuth() {
   const [isLoading, setIsLoading] = useState(true);
 
   const refreshUser = async () => {
-    const token = typeof window !== "undefined" ? window.localStorage.getItem("pulse_token") : null;
+    const token = typeof window !== "undefined" ? window.localStorage.getItem("pollbooth_token") : null;
     if (!token) {
       setUser(null);
       setIsLoading(false);
@@ -36,8 +36,8 @@ export function useAuth() {
       return res.data;
     } catch {
       if (typeof window !== "undefined") {
-        window.localStorage.removeItem("pulse_token");
-        window.localStorage.removeItem("pulse_refresh_token");
+        window.localStorage.removeItem("pollbooth_token");
+        window.localStorage.removeItem("pollbooth_refresh_token");
       }
       setUser(null);
       return null;
@@ -66,8 +66,8 @@ export function useAuth() {
       ...options,
     });
     if (typeof window !== "undefined") {
-      window.localStorage.setItem("pulse_token", res.data.tokens.access_token);
-      window.localStorage.setItem("pulse_refresh_token", res.data.tokens.refresh_token);
+      window.localStorage.setItem("pollbooth_token", res.data.tokens.access_token);
+      window.localStorage.setItem("pollbooth_refresh_token", res.data.tokens.refresh_token);
     }
     setUser(res.data.user);
     return res.data;
@@ -75,8 +75,8 @@ export function useAuth() {
 
   const logout = () => {
     if (typeof window !== "undefined") {
-      window.localStorage.removeItem("pulse_token");
-      window.localStorage.removeItem("pulse_refresh_token");
+      window.localStorage.removeItem("pollbooth_token");
+      window.localStorage.removeItem("pollbooth_refresh_token");
     }
     setUser(null);
     window.location.href = "/feed";

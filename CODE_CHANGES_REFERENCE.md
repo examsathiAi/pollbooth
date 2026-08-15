@@ -1,4 +1,4 @@
-# PULSE Platform - Code Changes Reference
+# POLLBOOTH Platform - Code Changes Reference
 **Detailed List of All Modifications**
 
 ---

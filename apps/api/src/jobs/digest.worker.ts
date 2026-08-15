@@ -104,14 +104,14 @@ export async function runDigestWorker(job?: Job<{ date?: string }>) {
   const digest = await prisma.dailyDigest.upsert({
     where: { date: new Date(`${dateKey}T00:00:00.000Z`) },
     update: {
-      title: `Pulse digest for ${dateKey}`,
+      title: `PollBooth digest for ${dateKey}`,
       content,
       is_published: true,
       published_at: new Date(),
     },
     create: {
       date: new Date(`${dateKey}T00:00:00.000Z`),
-      title: `Pulse digest for ${dateKey}`,
+      title: `PollBooth digest for ${dateKey}`,
       content,
       is_published: true,
       published_at: new Date(),

@@ -1,4 +1,4 @@
-# PULSE Platform - SEO Metadata & Crawler Discoverability
+# POLLBOOTH Platform - SEO Metadata & Crawler Discoverability
 **Verification & Implementation Report**
 
 ---
@@ -97,10 +97,10 @@ export async function generateMetadata({ params }) {
   "@type": "WebPage",
   "name": "Should crypto be regulated?",
   "description": "Vote and see live results...",
-  "url": "https://pulse.app/poll/123",
+  "url": "https://pollbooth.app/poll/123",
   "author": {
     "@type": "Organization",
-    "name": "Pulse"
+    "name": "PollBooth"
   },
   "mainEntity": {
     "@type": "Poll",
@@ -124,7 +124,7 @@ export async function generateMetadata({ params }) {
 ### 5. **Social Media Card Generation**
 ✅ When polls shared on Twitter/LinkedIn/Facebook:
 ```
-Link: https://pulse.app/poll/crypto-regulation
+Link: https://pollbooth.app/poll/crypto-regulation
 ↓
 Card Title: "Crypto Regulation - What Indians Think" (og_title)
 Card Description: "See real-time voting results..." (og_description)
@@ -164,7 +164,7 @@ Card Preview: Generated from SEO metadata
 ### 1. **Meta Tags (Traditional SEO)**
 ```html
 <!-- Rendered by Next.js from generateMetadata() -->
-<title>Should crypto be regulated? - Pulse</title>
+<title>Should crypto be regulated? - PollBooth</title>
 <meta name="description" content="Vote on crypto regulation...">
 <meta name="keywords" content="crypto,regulation,india,policy">
 
@@ -173,7 +173,7 @@ Card Preview: Generated from SEO metadata
 <meta property="og:description" content="See real-time voting results...">
 <meta property="og:type" content="article">
 <meta property="og:image" content="/og-card.png">
-<meta property="og:url" content="https://pulse.app/poll/123">
+<meta property="og:url" content="https://pollbooth.app/poll/123">
 ```
 
 ### 2. **JSON-LD Structured Data**
@@ -184,7 +184,7 @@ Card Preview: Generated from SEO metadata
   "@type": "Poll",
   "name": "Should crypto be regulated?",
   "interactionCount": "12500",
-  "url": "https://pulse.app/poll/123"
+  "url": "https://pollbooth.app/poll/123"
 }
 </script>
 ```
@@ -193,7 +193,7 @@ Card Preview: Generated from SEO metadata
 Crawlers use `sitemap.xml` to find all pages:
 ```xml
 <url>
-  <loc>https://pulse.app/poll/poll-123</loc>
+  <loc>https://pollbooth.app/poll/poll-123</loc>
   <lastmod>2026-08-14</lastmod>
   <changefreq>daily</changefreq>
 </url>

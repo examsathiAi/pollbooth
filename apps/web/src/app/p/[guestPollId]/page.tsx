@@ -13,14 +13,14 @@ export async function generateMetadata({ params }: { params: { guestPollId: stri
   const poll = await fetchPoll(params.guestPollId);
   if (!poll) {
     return {
-      title: "Guest poll invite | Pulse",
-      description: "Vote as a guest on Pulse and join the community conversation.",
+      title: "Guest poll invite | PollBooth",
+      description: "Vote as a guest on PollBooth and join the community conversation.",
     };
   }
 
   return {
     title: `Vote on: ${poll.question}`,
-    description: `Guest voting invitation for Pulse poll: ${poll.question}`,
+    description: `Guest voting invitation for PollBooth poll: ${poll.question}`,
     openGraph: {
       title: `Vote on: ${poll.question}`,
       description: `Vote as a guest and see live results.`,

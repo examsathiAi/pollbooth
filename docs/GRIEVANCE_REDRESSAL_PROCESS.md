@@ -1,8 +1,8 @@
-# Pulse — Grievance Redressal Process (Internal Operating Document)
+# PollBooth — Grievance Redressal Process (Internal Operating Document)
 
 This document describes the actual internal process for handling grievances, complaints,
 and data-rights requests, matching the commitments made in the Terms and Conditions and
-Privacy Policy. It is intended for whoever operates the Pulse admin panel (currently: the
+Privacy Policy. It is intended for whoever operates the PollBooth admin panel (currently: the
 SUPER_ADMIN role), not for public users (they should be directed to the public-facing
 contact details instead).
 

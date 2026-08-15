@@ -1,8 +1,8 @@
-# Pulse — Privacy Policy
+# PollBooth — Privacy Policy
 
 _Last updated: [DATE OF LAUNCH]_
 
-This Privacy Policy explains how Pulse collects, uses, stores, and protects your personal
+This Privacy Policy explains how PollBooth collects, uses, stores, and protects your personal
 data, in accordance with India's Digital Personal Data Protection Act, 2023 (DPDP Act)
 and the Information Technology Act, 2000 and its rules.
 
@@ -46,7 +46,7 @@ core features. You can decline to answer any optional field.
 
 At signup, you will be asked to explicitly consent to:
 - Processing your phone number and account data to operate the Platform (required to use
-  Pulse).
+  PollBooth).
 - (Separately, optional) Use of your anonymized, aggregated activity data for research
   and analytics purposes.
 
@@ -107,7 +107,7 @@ India as provided under the DPDP Act.
 
 ## 9. Children's Data
 
-Pulse is not intended for use by anyone under 16. We do not knowingly collect data from
+PollBooth is not intended for use by anyone under 16. We do not knowingly collect data from
 children under this age. If we become aware that we have inadvertently collected data
 from a user under 16, we will delete it promptly.
 
@@ -118,7 +118,7 @@ changes through the Platform before they take effect.
 
 ---
 
-_This document is a starting draft based on Pulse's actual data practices as designed in
+_This document is a starting draft based on PollBooth's actual data practices as designed in
 this conversation. Sections marked with [BRACKETS] require a specific decision. This is
 not a substitute for review by a qualified Indian data-privacy lawyer before real user
 data is collected under this policy — DPDP Act rules and enforcement guidance were still

@@ -40,8 +40,8 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const storedRole = localStorage.getItem("pulse_user_role") || null;
-      const token = localStorage.getItem("pulse_token");
+      const storedRole = localStorage.getItem("pollbooth_user_role") || null;
+      const token = localStorage.getItem("pollbooth_token");
       setUserRole(storedRole);
 
       if (!token) {
@@ -57,8 +57,8 @@ export default function AdminPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("pulse_token");
-    localStorage.removeItem("pulse_user_role");
+    localStorage.removeItem("pollbooth_token");
+    localStorage.removeItem("pollbooth_user_role");
     router.replace("/login");
   };
 
@@ -94,7 +94,7 @@ export default function AdminPage() {
         {/* Professional Light Sidebar */}
         <aside className="w-full shrink-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:w-72 h-fit">
           <div className="mb-6 rounded-xl border border-indigo-100 bg-indigo-50/50 p-4">
-            <p className="text-xs font-bold uppercase tracking-widest text-indigo-600">Pulse HQ</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-indigo-600">PollBooth HQ</p>
             <h1 className="mt-1 text-lg font-bold text-slate-900">Operations Console</h1>
             <p className="mt-1 text-xs text-slate-500">Enterprise Administration</p>
           </div>

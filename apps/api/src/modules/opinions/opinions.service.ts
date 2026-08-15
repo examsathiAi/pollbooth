@@ -171,7 +171,7 @@ export class OpinionsService {
         edited_at: op.edited_at,
         demographic_hint: this.buildDemographicHint(op.user),
         user_reaction: userReactions.get(op.id) || null,
-        user_display_name: op.user?.username || op.user?.phone_number || "Pulse user",
+        user_display_name: op.user?.username || op.user?.phone_number || "PollBooth user",
         user_city: op.user?.city || null,
       })),
       pagination: {

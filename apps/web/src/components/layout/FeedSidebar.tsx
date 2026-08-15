@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { Home, Flame, Landmark, Newspaper, Tv, Trophy, MapPin, Shield, HelpCircle, Lightbulb, AlertTriangle } from "lucide-react";

@@ -1,6 +1,6 @@
-# Pulse Platform Standard — Non-Negotiable Baseline
+# PollBooth Platform Standard — Non-Negotiable Baseline
 
-**Scope of this standard**: Pulse is being built for a real, small-scale public launch —
+**Scope of this standard**: PollBooth is being built for a real, small-scale public launch —
 real first users, on a single (or small) server, with the explicit goal that those users
 feel they're using a genuinely professional, complete product and want to share it. This
 document does NOT cover millions-of-concurrent-users infrastructure (load balancers,
@@ -10,7 +10,7 @@ waste budget on problems that don't exist yet. What follows is the complete stan
 "small-scale, professional-grade, launch-ready" — nothing in this scope is optional or
 deferred to "later."
 
-This document is referenced by short name ("apply the Pulse Platform Standard") in every
+This document is referenced by short name ("apply the PollBooth Platform Standard") in every
 build prompt, so it never needs to be re-explained.
 
 ## 1. User Experience — must never feel unfinished

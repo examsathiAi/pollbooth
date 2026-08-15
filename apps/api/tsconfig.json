@@ -18,9 +18,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@pulse/prisma": ["../../packages/prisma"],
-      "@pulse/shared-types": ["../../packages/shared-types"],
-      "@pulse/utils": ["../../packages/utils"],
+      "@pollbooth/prisma": ["../../packages/prisma"],
+      "@pollbooth/shared-types": ["../../packages/shared-types"],
+      "@pollbooth/utils": ["../../packages/utils"],
       "@prisma/client": ["../../packages/prisma/node_modules/@prisma/client"]
     }
   },

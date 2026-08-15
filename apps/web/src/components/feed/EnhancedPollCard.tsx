@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckCircle2, MessageCircle, Share2, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react";
+import { CheckCircle2, MessageCircle, Share2, Sparkles, ThumbsDown, ThumbsUp, Lock, CornerDownRight } from "lucide-react";
 import { ProgressiveGateModal } from "./ProgressiveGateModal";
 import { ShareCardGenerator } from "./ShareCardGenerator";
 
@@ -38,6 +38,7 @@ interface OpinionRecord {
   created_at: string;
   demographic_hint?: string | null;
   user_reaction?: "AGREE" | "DISAGREE" | null;
+  parent_id?: string | null;
 }
 
 const STRAWPOLL_COLORS = [
@@ -71,10 +72,9 @@ function extractCityFromHint(hint: string | null | undefined) {
   if (!hint) return null;
   const parts = hint.split(/[;,]/).map((part) => part.trim()).filter(Boolean);
   if (parts.length === 0) return null;
-  const last = parts[parts.length - 1];
   const ageHints = ["GEN Z", "MILLENNIAL", "GEN X", "BOOMER", "GEN-Z", "GEN_X"];
-  if (ageHints.includes(last.toUpperCase())) return null;
-  return last;
+  if (ageHints.includes(parts[parts.length - 1].toUpperCase())) return null;
+  return parts[parts.length - 1];
 }
 
 export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteComplete }: EnhancedPollCardProps) {
@@ -88,7 +88,6 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
   const [totalVotes, setTotalVotes] = useState(poll.total_votes || 0);
   const [animatedVotes, setAnimatedVotes] = useState(poll.total_votes || 0);
   const [totalOpinions, setTotalOpinions] = useState(poll.total_opinions || 0);
-  const [animatedOpinions, setAnimatedOpinions] = useState(poll.total_opinions || 0);
   const [opinionText, setOpinionText] = useState("");
   const [opinions, setOpinions] = useState<OpinionRecord[]>([]);
   const [opinionsTotal, setOpinionsTotal] = useState(poll.total_opinions || 0);
@@ -98,17 +97,18 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
   const [opinionFeedback, setOpinionFeedback] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
   const rootRef = useRef<HTMLElement | null>(null);
-  const [inViewHighlight, setInViewHighlight] = useState(false);
   const [pressedReaction, setPressedReaction] = useState<string | null>(null);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
   const [showVoteToast, setShowVoteToast] = useState(false);
   const [showSharePrompt, setShowSharePrompt] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
-  const [lastUpdatedAt, setLastUpdatedAt] = useState(Date.now());
   const [showGate, setShowGate] = useState(false);
-  const [gateMessage, setGateMessage] = useState<string | null>(null);
-  const [liveTick, setLiveTick] = useState(Date.now());
   const [barRevealReady, setBarRevealReady] = useState(false);
+
+  // VIRAL LOOP STATES
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
 
   useEffect(() => {
     setHasVoted(Boolean(poll.has_voted));
@@ -118,18 +118,12 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
     setTotalVotes(poll.total_votes || 0);
     setTotalOpinions(poll.total_opinions || 0);
     setAnimatedVotes(poll.total_votes || 0);
-    setAnimatedOpinions(poll.total_opinions || 0);
   }, [poll]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setVisible(true), index * 90);
     return () => window.clearTimeout(timer);
   }, [index]);
-
-  useEffect(() => {
-    const intervalId = window.setInterval(() => setLiveTick(Date.now()), 1000);
-    return () => window.clearInterval(intervalId);
-  }, []);
 
   useEffect(() => {
     if (!hasVoted) {
@@ -159,12 +153,20 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
   }, [animatedVotes, totalVotes]);
 
   useEffect(() => {
+    if (user && poll.id) {
+      api.get(`/api/v1/polls/${poll.id}/unlock-status`)
+        .then(res => setIsUnlocked(res.data.unlocked))
+        .catch(() => {});
+    }
+  }, [user, poll.id]);
+
+  useEffect(() => {
     if (!showComments) return;
     const loadOpinions = async () => {
       setIsLoadingOpinions(true);
       try {
         const res = await api.get(`/api/v1/opinions/${poll.id}/opinions`, {
-          params: { page: 1, limit: 8, sort: "TOP" },
+          params: { page: 1, limit: 15, sort: "TOP" },
         });
         setOpinions(res.data.opinions || []);
         setOpinionsTotal(res.data.pagination?.total ?? poll.total_opinions ?? 0);
@@ -177,6 +179,41 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
     void loadOpinions();
   }, [poll.id, poll.total_opinions, showComments]);
 
+  // VIRAL LOOP LOGIC
+  const handleReplyClick = async (opinionId: string) => {
+    if (!user) {
+      window.location.href = `/auth/login?redirect=/poll/${poll.id}`;
+      return;
+    }
+    if (isUnlocked) {
+      setActiveReplyId(activeReplyId === opinionId ? null : opinionId);
+      return;
+    }
+
+    try {
+      const shareData = {
+        title: poll.question,
+        text: "Join the debate on PollBooth!",
+        url: `${window.location.origin}/poll/${poll.id}?ref=${user.id}`,
+      };
+
+      if (navigator.share) {
+        await navigator.share(shareData);
+        await api.post(`/api/v1/polls/${poll.id}/share`);
+        setIsUnlocked(true);
+        setActiveReplyId(opinionId);
+      } else {
+        await navigator.clipboard.writeText(shareData.url);
+        alert("Link copied! Share it with a friend to unlock all replies.");
+        await api.post(`/api/v1/polls/${poll.id}/share`);
+        setIsUnlocked(true);
+        setActiveReplyId(opinionId);
+      }
+    } catch (err) {
+      console.log("Share cancelled", err);
+    }
+  };
+
   const handleVote = async (index: number) => {
     setIsVoting(true);
     setFeedback(null);
@@ -184,23 +221,17 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
 
     const prevResults = results.slice();
     const prevTotalVotes = totalVotes;
-    
-    // Build Optimistic UI Data
+
     const builtResults = poll.options.map((opt, i) => {
       const found = results.find((rr) => rr.index === i);
-      return {
-        option: opt,
-        index: i,
-        count: found ? found.count : 0,
-        percentage: found ? found.percentage : 0,
-      };
+      return { option: opt, index: i, count: found ? found.count : 0, percentage: found ? found.percentage : 0 };
     });
-    
+
     builtResults[index].count = (builtResults[index].count || 0) + 1;
     const optimisticTotal = (prevTotalVotes || 0) + 1;
-    const optimisticResults = builtResults.map((r) => ({ 
-      ...r, 
-      percentage: optimisticTotal > 0 ? Number(((r.count / optimisticTotal) * 100).toFixed(2)) : 0 
+    const optimisticResults = builtResults.map((r) => ({
+      ...r,
+      percentage: optimisticTotal > 0 ? Number(((r.count / optimisticTotal) * 100).toFixed(2)) : 0
     }));
 
     setResults(optimisticResults);
@@ -212,8 +243,8 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
 
     try {
       if (!user) {
-        const sessionId = typeof window !== "undefined" ? window.localStorage.getItem("pulse_guest_session") || `guest-${Date.now()}` : `guest-${Date.now()}`;
-        if (typeof window !== "undefined") window.localStorage.setItem("pulse_guest_session", sessionId);
+        const sessionId = typeof window !== "undefined" ? window.localStorage.getItem("pollbooth_guest_session") || `guest-${Date.now()}` : `guest-${Date.now()}`;
+        if (typeof window !== "undefined") window.localStorage.setItem("pollbooth_guest_session", sessionId);
         await api.post(`/api/v1/votes/${poll.id}/guest-vote`, { session_id: sessionId, option_index: index });
       } else {
         await api.post(`/api/v1/votes/${poll.id}/vote`, { option_index: index });
@@ -222,28 +253,22 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       const pollRes = await api.get(`/api/v1/polls/${poll.id}`);
       setHasOpinion(false);
       setUserVoteIndex(pollRes.data.user_vote_index ?? index);
-      setFeedback("✓ Your vote is recorded");
       setShowVoteToast(true);
       setShowSharePrompt(true);
       window.setTimeout(() => setShowVoteToast(false), 1400);
       onVoteComplete?.(index);
-      
-      // Strict guard against database lag resetting optimistic UI to 0
+
       const serverTotal = pollRes.data.total_votes || 0;
       if (serverTotal >= optimisticTotal) {
         setResults(pollRes.data.results || []);
         setTotalVotes(serverTotal);
       }
       setTotalOpinions(pollRes.data.total_opinions || 0);
-      setLastUpdatedAt(Date.now());
-      
+
       try {
         if (user) {
           const gateRes = await api.get(`/api/v1/users/profile/gate/${poll.category}`);
-          if (gateRes?.data?.required) {
-            setShowGate(true);
-            setGateMessage("We need one quick detail to keep your vote relevant.");
-          }
+          if (gateRes?.data?.required) setShowGate(true);
         }
       } catch (err) {}
     } catch (err: any) {
@@ -258,31 +283,41 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
     }
   };
 
-  const handleOpinionSubmit = async () => {
+  const handleOpinionSubmit = async (parentId?: string) => {
     if (!user) {
-      setOpinionFeedback("Sign up to share your opinion on this poll.");
+      setOpinionFeedback("Sign up to join the conversation.");
       return;
     }
     if (!hasVoted) {
-      setOpinionFeedback("Vote on this poll first to add your opinion.");
+      setOpinionFeedback("Vote on this poll first to unlock opinions.");
       return;
     }
-    if (hasOpinion) {
+    if (!parentId && hasOpinion) {
       setOpinionFeedback("You already shared your view on this poll.");
       return;
     }
-    if (!opinionText.trim() || opinionText.length > 280) return;
+    
+    const content = parentId ? replyText : opinionText;
+    if (!content.trim() || content.length > 280) return;
 
     setIsPostingOpinion(true);
     setOpinionFeedback(null);
     try {
-      await api.post(`/api/v1/opinions/${poll.id}/opinion`, { content: opinionText.trim() });
-      setOpinionText("");
-      setOpinionFeedback("✓ Your opinion is now live.");
-      setHasOpinion(true);
+      await api.post(`/api/v1/opinions/${poll.id}/opinion`, { 
+        content: content.trim(),
+        parent_id: parentId || undefined
+      });
+      
+      if (parentId) {
+        setReplyText("");
+        setActiveReplyId(null);
+      } else {
+        setOpinionText("");
+        setHasOpinion(true);
+      }
+      
       setShowComments(true);
-      setTotalOpinions((prev) => prev + 1);
-      const res = await api.get(`/api/v1/opinions/${poll.id}/opinions`, { params: { page: 1, limit: 8, sort: "TOP" } });
+      const res = await api.get(`/api/v1/opinions/${poll.id}/opinions`, { params: { page: 1, limit: 15, sort: "TOP" } });
       setOpinions(res.data.opinions || []);
       setOpinionsTotal(res.data.pagination?.total || 0);
     } catch (err: any) {
@@ -301,7 +336,6 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
     window.setTimeout(() => setPressedReaction(null), 220);
     try {
       await api.post(`/api/v1/opinions/${opinionId}/react`, { reaction_type: reactionType });
-      // UI Optimistic logic remains identical
       setOpinions((current) => current.map((op) => {
         if (op.id !== opinionId) return op;
         const previousReaction = op.user_reaction;
@@ -319,9 +353,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         }
         return { ...op, agree_count: nextAgree, disagree_count: nextDisagree, user_reaction: nextReaction };
       }));
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Failed to react");
-    }
+    } catch (err: any) {}
   };
 
   const relativeTime = poll.created_at ? formatRelativeTime(poll.created_at) : "just now";
@@ -342,11 +374,11 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
           <button onClick={() => setShowShareMenu(!showShareMenu)} className="rounded-full p-1.5 text-ink-muted hover:bg-ink/5 hover:text-ink transition-colors duration-200">
             <Share2 className="h-4 w-4" />
           </button>
-          {showShareMenu ? (
+          {showShareMenu && (
             <div className="absolute right-5 top-12 z-30 w-48 rounded-2xl border border-paper-border bg-paper-bg shadow-lg py-1.5 overflow-hidden transition-all duration-200">
               <button onClick={async () => { try { const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`; await navigator.clipboard.writeText(url); setShowSharePrompt(true); setTimeout(() => setShowSharePrompt(false), 2000); } catch {} }} className="flex w-full items-center gap-2.5 px-4 py-2 text-sm font-medium text-ink hover:bg-ink/5 transition-colors">Copy link</button>
             </div>
-          ) : null}
+          )}
         </div>
       </div>
 
@@ -390,7 +422,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
                 <div key={r.index} className="mb-4 last:mb-0">
                   <div className="flex justify-between items-end mb-1.5 px-1">
                     <span className={`text-sm font-medium flex items-center gap-2 ${isUserChoice ? 'text-ink font-bold' : 'text-ink/90'}`}>
-                      {r.option} 
+                      {r.option}
                       {isUserChoice && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
                     </span>
                     <span className="text-xs text-ink-muted whitespace-nowrap ml-4">
@@ -430,17 +462,19 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         </div>
 
         {isLoadingOpinions ? (
-          <p className="text-sm text-ink-muted animate-pulse">Loading comments…</p>
+          <p className="text-sm text-ink-muted">Loading comments…</p>
         ) : opinions.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-paper-border bg-transparent px-4 py-3 text-sm text-ink-muted text-center font-medium">
              Be the first to share your thoughts.
           </div>
         ) : (
           <div className="space-y-3">
-            {opinions.slice(0, 3).map((opinion) => {
+            {/* Render Only Parent Opinions */}
+            {opinions.filter(o => !o.parent_id).slice(0, 3).map((opinion) => {
               const city = extractCityFromHint(opinion.demographic_hint);
-              const initials = getAvatarInitials(city || "Pulse");
+              const initials = getAvatarInitials(city || "PollBooth");
               const isPressed = pressedReaction === `${opinion.id}:AGREE` || pressedReaction === `${opinion.id}:DISAGREE`;
+              
               return (
                 <div key={opinion.id} className="rounded-2xl border border-paper-border/50 bg-paper-bg p-3.5 transition-all hover:border-paper-border hover:shadow-sm">
                   <div className="flex items-start gap-3">
@@ -449,10 +483,12 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <p className="text-sm font-semibold text-ink">{city || "Pulse"}</p>
+                        <p className="text-sm font-semibold text-ink">{city || "PollBooth"}</p>
                         <span className="text-xs text-ink-muted">{formatRelativeTime(opinion.created_at)}</span>
                       </div>
                       <p className="text-sm leading-relaxed text-ink/90">{opinion.content}</p>
+                      
+                      {/* REACTIONS & VIRAL REPLY BUTTON */}
                       <div className="mt-2.5 flex items-center gap-2">
                         <button onClick={() => void handleReaction(opinion.id, "AGREE")} className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-all duration-200 ${opinion.user_reaction === "AGREE" ? "bg-ink/10 text-ink" : "bg-transparent text-ink-muted hover:bg-ink/5"} ${isPressed ? "scale-95" : ""}`}>
                           <ThumbsUp className="h-3.5 w-3.5" /> {opinion.agree_count}
@@ -460,7 +496,41 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
                         <button onClick={() => void handleReaction(opinion.id, "DISAGREE")} className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-all duration-200 ${opinion.user_reaction === "DISAGREE" ? "bg-ink/10 text-ink" : "bg-transparent text-ink-muted hover:bg-ink/5"} ${isPressed ? "scale-95" : ""}`}>
                           <ThumbsDown className="h-3.5 w-3.5" /> {opinion.disagree_count}
                         </button>
+                        
+                        <button onClick={() => void handleReplyClick(opinion.id)} className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-ink-muted hover:bg-ink/5 transition-all ml-auto">
+                          {!isUnlocked ? <><Lock className="h-3.5 w-3.5" /> Unlock Reply</> : <><MessageCircle className="h-3.5 w-3.5" /> Reply</>}
+                        </button>
                       </div>
+
+                      {/* REPLY TEXT BOX (IF ACTIVE & UNLOCKED) */}
+                      {activeReplyId === opinion.id && (
+                         <div className="mt-3 border-l-2 border-paper-border/60 pl-3">
+                           <div className="relative flex gap-2 items-start">
+                             <textarea
+                               value={replyText}
+                               onChange={(e) => setReplyText(e.target.value)}
+                               placeholder="Write a reply..."
+                               maxLength={280}
+                               rows={1}
+                               disabled={isPostingOpinion}
+                               className="w-full resize-none rounded-xl border border-paper-border bg-transparent px-3 py-2 text-sm text-ink placeholder:text-ink-muted/50 outline-none transition-all focus:border-ink focus:ring-1 focus:ring-ink min-h-[38px]"
+                             />
+                             <button onClick={() => void handleOpinionSubmit(opinion.id)} disabled={!replyText.trim() || isPostingOpinion} className="rounded-xl bg-ink px-3 py-2 text-sm font-medium text-paper-bg transition-all hover:bg-ink/90 shrink-0">Post</button>
+                           </div>
+                         </div>
+                      )}
+
+                      {/* RENDER NESTED REPLIES */}
+                      {opinions.filter(reply => reply.parent_id === opinion.id).map(reply => (
+                         <div key={reply.id} className="mt-3 border-l-2 border-paper-border/60 pl-3 pt-1">
+                           <div className="flex items-center gap-2 mb-1">
+                             <CornerDownRight className="w-3 h-3 text-ink-muted" />
+                             <p className="text-xs font-semibold text-ink">{extractCityFromHint(reply.demographic_hint) || "PollBooth"}</p>
+                             <span className="text-[10px] text-ink-muted">{formatRelativeTime(reply.created_at)}</span>
+                           </div>
+                           <p className="text-sm text-ink/90">{reply.content}</p>
+                         </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -469,6 +539,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
           </div>
         )}
 
+        {/* MAIN OPINION INPUT BOX */}
         <div className="mt-4">
           {!user ? (
             <div className="rounded-2xl border border-paper-border bg-transparent p-4 text-sm transition-all">
@@ -488,7 +559,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
                 maxLength={280}
                 rows={1}
                 disabled={isPostingOpinion}
-                className={`w-full resize-none rounded-2xl border border-paper-border bg-transparent px-4 py-3 text-sm text-ink placeholder:text-ink-muted/50 outline-none transition-all duration-200 focus:border-ink focus:ring-1 focus:ring-ink disabled:opacity-60 overflow-hidden min-h-[46px]`}
+                className="w-full resize-none rounded-2xl border border-paper-border bg-transparent px-4 py-3 text-sm text-ink placeholder:text-ink-muted/50 outline-none transition-all duration-200 focus:border-ink focus:ring-1 focus:ring-ink disabled:opacity-60 overflow-hidden min-h-[46px]"
               />
               <button onClick={() => void handleOpinionSubmit()} disabled={!opinionText.trim() || isPostingOpinion} className="rounded-2xl bg-ink px-4 py-3 text-sm font-medium text-paper-bg transition-all duration-200 hover:bg-ink/90 active:scale-[0.97] disabled:opacity-40 shrink-0 h-[46px]">Post</button>
             </div>
@@ -497,7 +568,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       </div>
       )}
 
-      <ProgressiveGateModal isOpen={showGate} onClose={() => setShowGate(false)} onSelect={(value) => { if (typeof window !== "undefined") window.localStorage.setItem(`pulse-cohort:${poll.id}`, value); setShowGate(false); }} />
+      <ProgressiveGateModal isOpen={showGate} onClose={() => setShowGate(false)} onSelect={(value) => { if (typeof window !== "undefined") window.localStorage.setItem(`pollbooth-cohort:${poll.id}`, value); setShowGate(false); }} />
     </article>
   );
 }

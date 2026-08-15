@@ -47,7 +47,7 @@ export function TrendingHeader({ activeCategory = "For You" }: { activeCategory?
       <div className="mx-auto max-w-7xl px-4 py-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-600">Pulse feed</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-600">PollBooth feed</p>
             <h1 className="text-xl font-semibold text-gray-900">{activeCategory}</h1>
             <p className="text-sm text-gray-600">Live polls and opinions from the database.</p>
           </div>
@@ -60,7 +60,7 @@ export function TrendingHeader({ activeCategory = "For You" }: { activeCategory?
                     {user.username?.slice(0, 1)?.toUpperCase() || "P"}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">{user.username || user.phone_number || "Pulse member"}</p>
+                    <p className="text-sm font-semibold text-gray-900">{user.username || user.phone_number || "PollBooth member"}</p>
                     <p className="text-xs text-gray-500">{streak !== null ? `${streak} day streak` : "New member"}</p>
                   </div>
                 </Link>

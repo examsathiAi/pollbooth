@@ -1,4 +1,4 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import { authGuard } from "../../common/guards/auth.guard";
 import { rateLimiter } from "../../common/interceptors/rate-limiter";
 import { validateBody } from "../../common/pipes/validation.pipe";
@@ -29,4 +29,23 @@ router.get("/suggestions", async (req, res, next) => {
   }
 });
 
+
+  // --- B2B PARTNER SURVEYS ---
+  router.get("/available", authGuard, async (req, res, next) => {
+    try {
+      const result = await surveysService.getAvailableSurveys(req.user!.id);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/:id/consent", authGuard, async (req, res, next) => {
+    try {
+      const result = await surveysService.consentToSurvey(req.user!.id, req.params.id);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  });
 export { router as surveyRouter };

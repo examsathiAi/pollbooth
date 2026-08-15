@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Pulse Admin',
-  description: 'Administration dashboard for Pulse moderation and community operations',
+  title: 'PollBooth Admin',
+  description: 'Administration dashboard for PollBooth moderation and community operations',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

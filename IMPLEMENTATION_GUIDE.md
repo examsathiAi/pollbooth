@@ -1,4 +1,4 @@
-# PULSE Platform - Feature Implementation Guide
+# POLLBOOTH Platform - Feature Implementation Guide
 **Quick Reference for Using Completed Features**
 
 ---

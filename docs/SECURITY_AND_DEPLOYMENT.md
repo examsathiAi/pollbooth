@@ -1,4 +1,4 @@
-# Pulse — Security, Deployment, Scaling & Maintenance Guide
+# PollBooth — Security, Deployment, Scaling & Maintenance Guide
 
 _This document exists so that anyone — a new developer, a hired team, or another AI
 agent — can pick this project up without needing the original build conversation. It
@@ -22,7 +22,7 @@ already closed.
 ## 1. Security Checklist
 
 Status of each item, matched against the project's own pre-launch standard (see
-`PULSE.txt`, section 12):
+`POLLBOOTH.txt`, section 12):
 
 | Item | Status | Notes |
 |---|---|---|
@@ -48,7 +48,7 @@ Status of each item, matched against the project's own pre-launch standard (see
 
 ---
 
-## 2. Compliance Status (India-specific, from `PULSE.txt` section 5)
+## 2. Compliance Status (India-specific, from `POLLBOOTH.txt` section 5)
 
 | Requirement | Status |
 |---|---|
@@ -82,7 +82,7 @@ Nothing below has been executed yet — this is the path forward, not a record o
    free tier) rather than self-hosting, once past pure local development — self-hosting
    Postgres is fine for now, but the backup/failover risk is not worth it once real users
    depend on the data.
-3. **Data residency**: per `PULSE.txt`, all user data must be stored in India
+3. **Data residency**: per `POLLBOOTH.txt`, all user data must be stored in India
    (AWS `ap-south-1`, Mumbai) with backups in `ap-south-2` (Hyderabad) — this is a
    DPDP-related decision, not just a performance one. Factor this into hosting choice.
 4. **HTTPS**: Let's Encrypt (free) via the hosting provider or a reverse proxy (Caddy or
@@ -98,7 +98,7 @@ Nothing below has been executed yet — this is the path forward, not a record o
 
 ### Phase 1+ — Growth
 
-See `PULSE.txt` section 10 ("Bootstrapped Scaling Roadmap") for the full phase-by-phase
+See `POLLBOOTH.txt` section 10 ("Bootstrapped Scaling Roadmap") for the full phase-by-phase
 cost table (Phase 0 through Phase 3, roughly ₹3K/month through ₹1.5L+/month). The
 short version: add a read replica when API latency exceeds 500ms, add Multi-AZ after
 the first real downtime incident, and do not introduce Kubernetes or microservices
@@ -110,24 +110,14 @@ delay that need, not avoid it forever.
 ## 4. Monitoring & Observability
 
 **Currently in place**: structured JSON logging via Winston (visible in local dev
-output — e.g., `{"environment":"development","service":"pulse-api",...}`).
-
-**Database Monitoring:**
-See [DATABASE_SECURITY_AND_SCALING.md](./DATABASE_SECURITY_AND_SCALING.md) for
-comprehensive production database setup, including connection pooling, scaling for peak
-users, B2B configurations, backup/restore procedures, and DPDP compliance.
-
-**Key database metrics to monitor in production:**
-- CPU utilization > 80%, connections > 90% of max, replication lag > 10 seconds
-- Query execution time (p95), full-table scans, temp file creation
-- Storage space remaining, failed authentication attempts
+output — e.g., `{"environment":"development","service":"pollbooth-api",...}`).
 
 **Not yet in place, needed before real launch**:
 - Error tracking (Sentry free tier is the standard starting point)
 - API metrics dashboard (Grafana + self-hosted Prometheus, or CloudWatch if on AWS)
 - Business metrics tracking (e.g., Mixpanel)
 - Alerting — specifically, an alert when the **moderation queue** exceeds a defined
-  threshold (PULSE.txt suggests 50 items) is a safety-critical alert, not a nice-to-have,
+  threshold (POLLBOOTH.txt suggests 50 items) is a safety-critical alert, not a nice-to-have,
   given this platform's content-moderation commitments
 - A defined on-call process — even if it's a single person, this should be written down
 
@@ -153,7 +143,7 @@ Priority order for adding tests, based on where a silent bug would be most damag
 
 ## 6. Maintenance Notes for Whoever Picks This Up Next
 
-- **Read `PULSE.txt` first.** It is the full product vision and the reason behind every
+- **Read `POLLBOOTH.txt` first.** It is the full product vision and the reason behind every
   non-obvious design decision (e.g., why there's no reply button on opinions, why
   election polls have a blackout window, why sponsored polls are kept structurally
   separate from organic ones). Don't "simplify" these away without understanding why

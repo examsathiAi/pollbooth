@@ -145,7 +145,7 @@ export default function NotificationsPage() {
 
         <div className="rounded-[32px] border border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">
           <Sparkles className="inline h-4 w-4 text-blue-500" />
-          <span className="ml-2">This page is part of the visibility improvements for Pulse’s consent, notifications, and accountability flows.</span>
+          <span className="ml-2">This page is part of the visibility improvements for PollBooth’s consent, notifications, and accountability flows.</span>
         </div>
       </div>
     </main>

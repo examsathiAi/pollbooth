@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -42,7 +42,7 @@ export function InsightsSlider() {
     return (
       <div className="mb-6 rounded-2xl border border-paper-border/30 bg-paper-bg p-6 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="h-4 w-4 text-maroon animate-pulse" />
+          <Sparkles className="h-4 w-4 text-maroon animate-pollbooth" />
           <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-ink-muted">Loading Intelligence Briefs…</h3>
         </div>
       </div>
@@ -56,7 +56,7 @@ export function InsightsSlider() {
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-maroon" />
-          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-ink">Pulse Intelligence & Exit Polls</h3>
+          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-ink">PollBooth Intelligence & Exit Polls</h3>
         </div>
         <span className="text-[11px] uppercase tracking-wider text-ink-muted">3-min reads</span>
       </div>

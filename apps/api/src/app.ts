@@ -50,7 +50,7 @@ export function createApp(): Application {
     origin: config.corsOrigins,
     credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization", "x-pulse-guest-session"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-pollbooth-guest-session"],
   }));
 
   app.use(compression());

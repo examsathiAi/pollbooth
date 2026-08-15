@@ -4,15 +4,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: pulse
-      POSTGRES_PASSWORD: pulse_local
-      POSTGRES_DB: pulse_dev
+      POSTGRES_USER: pollbooth
+      POSTGRES_PASSWORD: pollbooth_local
+      POSTGRES_DB: pollbooth_dev
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pulse -d pulse_dev"]
+      test: ["CMD-SHELL", "pg_isready -U pollbooth -d pollbooth_dev"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -38,7 +38,7 @@ services:
       - "3001:3001"
     environment:
       - NODE_ENV=development
-      - DATABASE_URL=postgresql://pulse:pulse_local@postgres:5432/pulse_dev
+      - DATABASE_URL=postgresql://pollbooth:pollbooth_local@postgres:5432/pollbooth_dev
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=dev-jwt-secret-min-32-chars-long-ok
       - JWT_EXPIRES_IN=7d
@@ -52,7 +52,7 @@ services:
       - AWS_REGION=ap-south-1
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - S3_BUCKET_NAME=pulse-assets-ap-south-1
+      - S3_BUCKET_NAME=pollbooth-assets-ap-south-1
       - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
       - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
       - ADMOB_APP_ID=${ADMOB_APP_ID}

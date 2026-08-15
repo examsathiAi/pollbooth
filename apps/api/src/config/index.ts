@@ -18,7 +18,7 @@ const envSchema = z.object({
   AWS_REGION: z.string().default("ap-south-1"),
   AWS_ACCESS_KEY_ID: z.string().optional(),
   AWS_SECRET_ACCESS_KEY: z.string().optional(),
-  S3_BUCKET_NAME: z.string().default("pulse-assets-ap-south-1"),
+  S3_BUCKET_NAME: z.string().default("pollbooth-assets-ap-south-1"),
   FIREBASE_PROJECT_ID: z.string().optional(),
   FIREBASE_PRIVATE_KEY: z.string().optional(),
   FIREBASE_CLIENT_EMAIL: z.string().optional(),

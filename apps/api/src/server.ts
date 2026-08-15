@@ -34,7 +34,7 @@ async function bootstrap() {
 
   server.listen(PORT, () => {
     initAutoModeratorCron();
-    logger.info(`Pulse API running on port ${PORT} in ${config.nodeEnv} mode`);
+    logger.info(`PollBooth API running on port ${PORT} in ${config.nodeEnv} mode`);
   });
 
   // Graceful shutdown
