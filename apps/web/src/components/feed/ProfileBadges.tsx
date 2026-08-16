@@ -19,40 +19,40 @@ export function ProfileBadges({ streak = 12, level = 4, nextLevelProgress = 72, 
       ];
 
   return (
-    <section className="rounded-[28px] border border-slate-800 bg-slate-900/80 p-4 text-slate-100 shadow-xl shadow-black/20">
+    <section className="rounded-[28px] border border-[#d8ceb8] bg-[#fffdf9] p-4 text-[#1f1b18] shadow-sm">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-violet-400">Profile level</p>
-          <h3 className="mt-1 text-lg font-semibold text-white">Level {level}</h3>
+          <p className="text-xs uppercase tracking-[0.3em] text-maroon">Profile level</p>
+          <h3 className="mt-1 text-lg font-semibold text-[#1f1b18]">Level {level}</h3>
         </div>
-        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm font-medium text-amber-300">
+        <div className="rounded-2xl border border-maroon/20 bg-maroon/5 px-3 py-2 text-sm font-medium text-maroon">
           <div className="flex items-center gap-2">
             <Flame className="h-4 w-4" /> {streak} day streak
           </div>
         </div>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950/70 p-3">
-        <div className="mb-2 flex items-center justify-between text-sm text-slate-400">
+      <div className="mt-4 rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-3">
+        <div className="mb-2 flex items-center justify-between text-sm text-[#625a50]">
           <span>Level progress</span>
           <span>{nextLevelProgress}%</span>
         </div>
-        <div className="h-2.5 overflow-hidden rounded-full bg-slate-800">
-          <div className="h-full rounded-full bg-gradient-to-r from-violet-600 to-cyan-400" style={{ width: `${nextLevelProgress}%` }} />
+        <div className="h-2.5 overflow-hidden rounded-full bg-[#d8ceb8]">
+          <div className="h-full rounded-full bg-gradient-to-r from-maroon to-maroon/70" style={{ width: `${nextLevelProgress}%` }} />
         </div>
       </div>
 
       <div className="mt-4 grid gap-2">
         {badgeList.map((badge) => (
-          <div key={badge.id} className={`flex items-center justify-between rounded-2xl border px-3 py-3 ${badge.earned ? "border-emerald-500/20 bg-emerald-500/10" : "border-slate-800 bg-slate-950/70"}`}>
+          <div key={badge.id} className={`flex items-center justify-between rounded-2xl border px-3 py-3 ${badge.earned ? "border-emerald-500/20 bg-emerald-50" : "border-[#d8ceb8] bg-[#f4efe7]"}`}>
             <div className="flex items-center gap-2">
-              {badge.earned ? <Trophy className="h-4 w-4 text-emerald-300" /> : <Sparkles className="h-4 w-4 text-slate-500" />}
+              {badge.earned ? <Trophy className="h-4 w-4 text-emerald-600" /> : <Sparkles className="h-4 w-4 text-[#625a50]" />}
               <div>
-                <p className="text-sm font-medium text-white">{badge.name}</p>
-                <p className="text-xs text-slate-400">{badge.description}</p>
+                <p className="text-sm font-medium text-[#1f1b18]">{badge.name}</p>
+                <p className="text-xs text-[#625a50]">{badge.description}</p>
               </div>
             </div>
-            <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${badge.earned ? "bg-emerald-600/20 text-emerald-300" : "bg-slate-800 text-slate-400"}`}>
+            <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${badge.earned ? "bg-emerald-100 text-emerald-700" : "bg-[#d8ceb8] text-[#625a50]"}`}>
               {badge.earned ? "Unlocked" : "Next"}
             </span>
           </div>

@@ -139,7 +139,7 @@ export default function LoginPage() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+91 98765 43210"
-                  className="flex h-11 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+                  className="flex h-11 w-full rounded-md border border-[#d8ceb8] bg-white px-3 py-2 text-sm placeholder:text-[#625a50] focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent transition-all"
                 />
               </div>
 
@@ -171,7 +171,7 @@ export default function LoginPage() {
               <button
                 onClick={sendOtp}
                 disabled={isLoading}
-                className="inline-flex w-full items-center justify-center rounded-md bg-slate-900 h-11 px-8 text-sm font-medium text-white transition-colors hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                className="inline-flex w-full items-center justify-center rounded-md bg-maroon h-11 px-8 text-sm font-medium text-white transition-colors hover:bg-[#5c1709] focus:outline-none focus:ring-2 focus:ring-maroon focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
               >
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : mode === "signup" ? "Sign up" : "Sign in"}
               </button>
@@ -185,7 +185,7 @@ export default function LoginPage() {
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   placeholder="000000"
-                  className="flex h-12 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-center text-2xl tracking-[0.5em] font-mono placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+                  className="flex h-12 w-full rounded-md border border-[#d8ceb8] bg-white px-3 py-2 text-center text-2xl tracking-[0.5em] font-mono placeholder:text-[#d8ceb8] focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent transition-all"
                   maxLength={6}
                 />
                 <p className="text-xs text-slate-500 pt-1">Sent to {phone}</p>
@@ -196,7 +196,7 @@ export default function LoginPage() {
               <button
                 onClick={verifyOtp}
                 disabled={isLoading}
-                className="inline-flex w-full items-center justify-center rounded-md bg-slate-900 h-11 px-8 text-sm font-medium text-white transition-colors hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                className="inline-flex w-full items-center justify-center rounded-md bg-maroon h-11 px-8 text-sm font-medium text-white transition-colors hover:bg-[#5c1709] focus:outline-none focus:ring-2 focus:ring-maroon focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
               >
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify & Continue"}
               </button>

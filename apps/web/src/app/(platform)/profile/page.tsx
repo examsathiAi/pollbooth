@@ -244,8 +244,8 @@ export default function ProfilePage() {
                     <option value="Chandigarh">Chandigarh</option>
                   </select>
                 </label>
-                <label className="text-sm text-slate-300">
-                  <span className="mb-1 block">City</span>
+                <label className="text-sm text-[#1f1b18]">
+                  <span className="mb-1 block text-[#625a50]">City</span>
                   <select value={form.city} onChange={(event) => setForm((value) => ({ ...value, city: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]">
                     <option value="">Select city</option>
                     {form.state === "Delhi" ? (["Delhi", "Noida", "Gurgaon", "Faridabad"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
@@ -269,8 +269,8 @@ export default function ProfilePage() {
                     {!form.state ? (["Mumbai", "Delhi", "Bengaluru", "Chennai", "Hyderabad", "Kolkata", "Pune", "Jaipur", "Ahmedabad", "Lucknow"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
                   </select>
                 </label>
-                <label className="text-sm text-slate-300">
-                  <span className="mb-1 block">Age bracket</span>
+                <label className="text-sm text-[#1f1b18]">
+                  <span className="mb-1 block text-[#625a50]">Age bracket</span>
                   <select value={form.age_bracket} onChange={(event) => setForm((value) => ({ ...value, age_bracket: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]">
                     <option value="">Select</option>
                     <option value="GEN_Z">Gen Z</option>
@@ -279,8 +279,8 @@ export default function ProfilePage() {
                     <option value="BOOMER">Boomer</option>
                   </select>
                 </label>
-                <label className="text-sm text-slate-300">
-                  <span className="mb-1 block">Gender</span>
+                <label className="text-sm text-[#1f1b18]">
+                  <span className="mb-1 block text-[#625a50]">Gender</span>
                   <select value={form.gender} onChange={(event) => setForm((value) => ({ ...value, gender: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]">
                     <option value="">Select</option>
                     <option value="MALE">Male</option>
@@ -289,26 +289,26 @@ export default function ProfilePage() {
                     <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
                   </select>
                 </label>
-                <label className="text-sm text-slate-300">
-                  <span className="mb-1 block">Education</span>
+                <label className="text-sm text-[#1f1b18]">
+                  <span className="mb-1 block text-[#625a50]">Education</span>
                   <input value={form.education} onChange={(event) => setForm((value) => ({ ...value, education: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]" />
                 </label>
-                <label className="text-sm text-slate-300">
-                  <span className="mb-1 block">Income bracket</span>
+                <label className="text-sm text-[#1f1b18]">
+                  <span className="mb-1 block text-[#625a50]">Income bracket</span>
                   <input value={form.income_bracket} onChange={(event) => setForm((value) => ({ ...value, income_bracket: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]" />
                 </label>
-                <label className="text-sm text-slate-300">
-                  <span className="mb-1 block">Employment</span>
+                <label className="text-sm text-[#1f1b18]">
+                  <span className="mb-1 block text-[#625a50]">Employment</span>
                   <input value={form.employment} onChange={(event) => setForm((value) => ({ ...value, employment: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]" />
                 </label>
-                <label className="text-sm text-slate-300 md:col-span-2">
-                  <span className="mb-1 block">Interests / topics</span>
+                <label className="text-sm text-[#1f1b18] md:col-span-2">
+                  <span className="mb-1 block text-[#625a50]">Interests / topics</span>
                   <input value={form.streaming_platforms} onChange={(event) => setForm((value) => ({ ...value, streaming_platforms: event.target.value }))} placeholder="Politics, Bollywood, Tech" className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]" />
                 </label>
               </div>
-              {feedback ? <p className="mt-3 text-sm text-cyan-400">{feedback}</p> : null}
+              {feedback ? <p className="mt-3 text-sm text-maroon">{feedback}</p> : null}
               <div className="mt-4 flex justify-end">
-                <button onClick={() => void handleSave()} disabled={saving} className="rounded-2xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-60">
+                <button onClick={() => void handleSave()} disabled={saving} className="rounded-2xl bg-maroon px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#5c1709] disabled:opacity-60">
                   {saving ? "Saving..." : "Save profile"}
                 </button>
               </div>

@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+﻿import { PrismaClient } from "@prisma/client";
 import { logger } from "../../common/interceptors/logger";
 import { redis } from "../../config/redis";
 import { notificationsService } from "../notifications/notifications.service";
@@ -10,11 +10,22 @@ const prisma = new PrismaClient();
 
 export class VotesService {
   async vote(userId: string, pollId: string, input: VoteInput) {
-    // Check if poll is active
-    const poll = await prisma.poll.findUnique({
-      where: { id: pollId },
-      select: { is_active: true, status: true, options: true, question: true },
-    });
+    // 1. REDIS CACHE: Offload read traffic from the main database
+    const cacheKey = `poll_cache:${pollId}`;
+    let pollStr = await redis.get(cacheKey);
+    let poll;
+
+    if (pollStr) {
+      poll = JSON.parse(pollStr);
+    } else {
+      poll = await prisma.poll.findUnique({
+        where: { id: pollId },
+        select: { id: true, is_active: true, status: true, options: true, question: true },
+      });
+      if (poll) {
+        await redis.setex(cacheKey, 60, JSON.stringify(poll));
+      }
+    }
 
     if (!poll || !poll.is_active || poll.status !== "ACTIVE") {
       throw new Error("Poll is not active");
@@ -24,110 +35,106 @@ export class VotesService {
       throw new Error("Invalid option index");
     }
 
-    // Check for existing vote (one vote per user per poll)
-    const existingVote = await prisma.vote.findUnique({
-      where: { user_id_poll_id: { user_id: userId, poll_id: pollId } },
-    });
+    let createdVote;
 
-    if (existingVote) {
-      throw new Error("You have already voted on this poll");
-    }
-
-    // Create vote
-    const vote = await prisma.vote.create({
-      data: {
-        user_id: userId,
-        poll_id: pollId,
-        option_index: input.option_index,
-      },
-    });
-
-    // Update assignment as voted
-    await prisma.userPollAssignment.updateMany({
-      where: { user_id: userId, poll_id: pollId },
-      data: { is_voted: true },
-    });
-
-    // Record engagement
-    await prisma.userEngagement.create({
-      data: {
-        user_id: userId,
-        poll_id: pollId,
-        action: "VOTE",
-      },
-    });
-
-    // Update streak
-    await this.updateVoteStreak(userId);
-
-    const pollVoteCount = await prisma.vote.count({ where: { poll_id: pollId } });
-    if ([25, 50, 100].includes(pollVoteCount)) {
-      await notificationsService.createNotification(userId, "POLL_TRENDING", "Your vote is part of a rising poll", `Your vote on “${poll.question}” helped this poll reach ${pollVoteCount} votes.`, {
-        poll_id: pollId,
-        vote_count: pollVoteCount,
-      });
-    }
-
-    // Check for First Vote and streak-based badges on real activity
-    await badgesService.evaluateBadges(userId);
-
-    // Store private reason if provided
-    if (input.reason) {
-      await redis.setex(`vote_reason:${userId}:${pollId}`, 86400 * 30, input.reason);
-    }
-
-    logger.info("Vote recorded", { userId, pollId, optionIndex: input.option_index });
-
-    // --- REAL-TIME WEBSOCKET BROADCAST ---
+    // 2. ATOMIC WRITE: Prevents race conditions using DB-level constraints
     try {
-      if (io) {
-        // 1. Get the updated vote distribution for the percentages
-        const voteCounts = await prisma.vote.groupBy({
-          by: ["option_index"],
-          where: { poll_id: pollId },
-          _count: { option_index: true },
-        });
-
-        const totalOpinions = await prisma.opinion.count({ where: { poll_id: pollId } });
-
-        // 2. Map results exactly to the LivePollUpdate interface your Next.js hook expects
-        const optionsArray = Array.isArray(poll.options) ? poll.options : [];
-        const results = optionsArray.map((optionText, index) => {
-          const countRecord = voteCounts.find((v) => v.option_index === index);
-          const count = countRecord ? countRecord._count.option_index : 0;
-          const percentage = pollVoteCount > 0 ? Math.round((count / pollVoteCount) * 100) : 0;
-          
-          return { option: String(optionText), index, count, percentage };
-        });
-
-        const liveUpdate = {
-          pollId,
-          totalVotes: pollVoteCount,
-          results,
-          totalOpinions,
-          velocity: 15, // Base velocity
-          isLive: true,
-        };
-
-        // 3. Broadcast directly to users currently viewing this specific poll
-        io.to(`poll_${pollId}`).emit("poll_updated", liveUpdate);
-
-        // 4. Broadcast global activity to all users for the feed ticker
-        io.emit("new_activity", {
-          id: vote.id,
-          type: "vote",
-          message: `A new vote was just cast on "${poll.question.substring(0, 30)}..."`,
-          timestamp: new Date(),
-          pollId,
-        });
+      const [vote] = await prisma.$transaction([
+        prisma.vote.create({
+          data: {
+            user_id: userId,
+            poll_id: pollId,
+            option_index: input.option_index,
+          },
+        }),
+        prisma.userPollAssignment.updateMany({
+          where: { user_id: userId, poll_id: pollId },
+          data: { is_voted: true },
+        })
+      ]);
+      createdVote = vote;
+    } catch (error: any) {
+      if (error.code === "P2002") {
+        throw new Error("You have already voted on this poll");
       }
-    } catch (wsError) {
-      logger.error("WebSocket broadcast failed", wsError);
+      throw error;
     }
-    // --- END BROADCAST ---
 
+    // 3. FIRE AND FORGET WITH REDIS LOCK
+    Promise.resolve().then(async () => {
+      try {
+        // Fast, individual tasks run immediately
+        await Promise.allSettled([
+          prisma.userEngagement.create({
+            data: { user_id: userId, poll_id: pollId, action: "VOTE" },
+          }),
+          this.updateVoteStreak(userId),
+          input.reason ? redis.setex(`vote_reason:${userId}:${pollId}`, 86400 * 30, input.reason) : Promise.resolve(),
+        ]);
+
+        // REDIS SHIELD: 2-Second Lock to prevent database CPU exhaustion
+        const lockKey = `lock:poll_update:${pollId}`;
+        const acquired = await redis.set(lockKey, "1", "EX", 2, "NX");
+
+        // Only ONE concurrent thread per 2 seconds is allowed to do the heavy math
+        if (acquired === "OK") {
+          const pollVoteCount = await prisma.vote.count({ where: { poll_id: pollId } });
+          
+          if ([25, 50, 100].includes(pollVoteCount)) {
+            await notificationsService.createNotification(userId, "POLL_TRENDING", "Your vote is part of a rising poll", `Your vote on "${poll.question}" helped this poll reach ${pollVoteCount} votes.`, {
+              poll_id: pollId,
+              vote_count: pollVoteCount,
+            });
+          }
+
+          await badgesService.evaluateBadges(userId);
+
+          if (io) {
+            const voteCounts = await prisma.vote.groupBy({
+              by: ["option_index"],
+              where: { poll_id: pollId },
+              _count: { option_index: true },
+            });
+
+            const totalOpinions = await prisma.opinion.count({ where: { poll_id: pollId } });
+            const optionsArray = Array.isArray(poll.options) ? poll.options : [];
+            
+            const results = optionsArray.map((optionText: any, index: number) => {
+              const countRecord = voteCounts.find((v) => v.option_index === index);
+              const count = countRecord ? countRecord._count.option_index : 0;
+              const percentage = pollVoteCount > 0 ? Math.round((count / pollVoteCount) * 100) : 0;
+              return { option: String(optionText), index, count, percentage };
+            });
+
+            const liveUpdate = {
+              pollId,
+              totalVotes: pollVoteCount,
+              results,
+              totalOpinions,
+              velocity: 15,
+              isLive: true,
+            };
+
+            // Broadcast batched updates safely
+            io.to(`poll_${pollId}`).emit("poll_updated", liveUpdate);
+            io.emit("new_activity", {
+              id: createdVote.id,
+              type: "vote",
+              message: `A new vote was just cast on "${poll.question.substring(0, 30)}..."`,
+              timestamp: new Date(),
+              pollId,
+            });
+          }
+        }
+        
+      } catch (backgroundError) {
+        logger.error("Background processing failed after successful vote", backgroundError);
+      }
+    });
+
+    // 4. INSTANT RETURN
     return {
-      ...vote,
+      ...createdVote,
       user_vote_index: input.option_index,
     };
   }
@@ -286,7 +293,6 @@ export class VotesService {
     });
 
     for (const gv of guestVotes) {
-      // Check if user hasn't already voted on this poll
       const existing = await prisma.vote.findUnique({
         where: { user_id_poll_id: { user_id: userId, poll_id: gv.poll_id } },
       });
@@ -333,16 +339,13 @@ export class VotesService {
     let recoveryUsed = streak.recovery_used;
 
     if (lastVote && lastVote.getTime() === today.getTime()) {
-      // Already voted today, no change
       return;
     } else if (lastVote && lastVote.getTime() === yesterday.getTime()) {
-      // Voted yesterday, increment streak
       newStreak += 1;
     } else if (lastVote && lastVote.getTime() < yesterday.getTime()) {
-      // Streak broken - check recovery
       if (!streak.recovery_used) {
         newStreak = 1;
-        recoveryUsed = true; // Use recovery
+        recoveryUsed = true;
       } else {
         newStreak = 1;
       }
@@ -360,7 +363,6 @@ export class VotesService {
       },
     });
 
-    // Check streak badges
     if (newStreak >= 7) {
       await this.awardBadgeIfNotExists(userId, "CONSISTENT_VOICE");
     }

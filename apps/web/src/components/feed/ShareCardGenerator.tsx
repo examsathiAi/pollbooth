@@ -174,21 +174,21 @@ export function ShareCardGenerator({
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         <button
           onClick={shareToWhatsApp}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600/20 px-3 py-2.5 text-xs font-semibold text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600/30"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-xs font-semibold text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
         >
           <MessageCircle className="h-4 w-4" /> WhatsApp
         </button>
 
         <button
           onClick={shareToX}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-800 px-3 py-2.5 text-xs font-semibold text-slate-200 border border-slate-700 hover:bg-slate-700"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#f4efe7] px-3 py-2.5 text-xs font-semibold text-[#1f1b18] border border-[#d8ceb8] hover:border-maroon hover:text-maroon"
         >
-          <Sparkles className="h-4 w-4 text-cyan-400" /> X / Twitter
+          <Sparkles className="h-4 w-4 text-maroon" /> X / Twitter
         </button>
 
         <button
           onClick={shareToFacebook}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600/20 px-3 py-2.5 text-xs font-semibold text-blue-300 border border-blue-500/30 hover:bg-blue-600/30"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-50 px-3 py-2.5 text-xs font-semibold text-blue-700 border border-blue-200 hover:bg-blue-100"
         >
           <Share2 className="h-4 w-4" /> Facebook
         </button>
@@ -196,7 +196,7 @@ export function ShareCardGenerator({
         <button
           onClick={() => handleNativeShare(captions?.whatsapp || captions?.x)}
           disabled={isGenerating}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-3 py-2.5 text-xs font-semibold text-white hover:bg-violet-500"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-maroon px-3 py-2.5 text-xs font-semibold text-white hover:bg-[#5c1709]"
         >
           <Download className="h-4 w-4" /> Native Card Share
         </button>

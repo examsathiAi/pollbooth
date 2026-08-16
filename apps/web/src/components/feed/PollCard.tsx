@@ -135,7 +135,7 @@ export function PollCard({ poll, onVoteComplete }: PollCardProps) {
         <span className="rounded-full border border-slate-200 px-2.5 py-1 text-[11px] text-slate-500">
           {poll.total_votes?.toLocaleString()} votes
         </span>
-        <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-medium text-slate-100">
+        <span className="rounded-full bg-[#f4efe7] px-2.5 py-1 text-[11px] font-medium text-[#1f1b18] border border-[#d8ceb8]">
           {cohort}
         </span>
         {poll.is_commercial && (
