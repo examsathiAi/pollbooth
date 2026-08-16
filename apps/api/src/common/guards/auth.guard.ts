@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+﻿import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { config } from "../../config";
 import { prisma } from "../../config/database";
@@ -7,12 +7,24 @@ export interface AuthenticatedRequest extends Request {}
 
 export async function authGuard(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   try {
+    let token: string | undefined;
+
+    // 1. Mobile App Strategy: Check Authorization Header
     const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.substring(7);
+    } 
+    // 2. Web Strategy: Fallback to Cookies
+    else if (req.headers.cookie) {
+      const cookies = req.headers.cookie.split(";").map(c => c.trim());
+      const accessCookie = cookies.find(c => c.startsWith("accessToken="));
+      if (accessCookie) token = accessCookie.split("=")[1];
+    }
+
+    if (!token) {
       return res.status(401).json({ error: "Unauthorized", message: "Missing or invalid token" });
     }
 
-    const token = authHeader.substring(7);
     const decoded = jwt.verify(token, config.jwtSecret) as { userId: string; type: string };
 
     if (decoded.type !== "access") {
@@ -46,11 +58,6 @@ export async function authGuard(req: AuthenticatedRequest, res: Response, next: 
 }
 
 export function optionalAuthGuard(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith("Bearer ")) {
-    return next();
-  }
-
   authGuard(req, res, (err?: any) => {
     if (err) return next();
     next();
