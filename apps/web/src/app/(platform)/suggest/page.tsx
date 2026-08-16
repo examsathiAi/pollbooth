@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -48,7 +48,7 @@ export default function SuggestPage() {
   };
 
   if (isLoading) {
-    return <div className="mx-auto max-w-3xl px-4 py-16 text-sm text-slate-600">Loading…</div>;
+    return <div className="mx-auto max-w-3xl px-4 py-16 text-sm text-slate-600">Loadingâ€¦</div>;
   }
 
   if (!user) {

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -160,54 +160,54 @@ export default function ProfilePage() {
   ], [profile]);
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100">
+    <main className="w-full bg-[#f4efe7] px-4 py-6 text-[#1f1b18]">
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
         <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-cyan-400">Profile</p>
-          <h1 className="text-3xl font-semibold">Your account</h1>
+          <p className="text-sm uppercase tracking-[0.3em] text-maroon">Profile</p>
+          <h1 className="text-3xl font-semibold text-[#1f1b18]">Your account</h1>
         </div>
 
-        <section className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6">
+        <section className="rounded-3xl border border-[#d8ceb8] bg-[#fffdf9] p-6 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="text-sm text-slate-400">Display name</p>
-              <p className="text-xl font-semibold">{profile?.username || profile?.city || "Add your display name"}</p>
+              <p className="text-sm text-[#625a50]">Display name</p>
+              <p className="text-xl font-semibold text-[#1f1b18]">{profile?.username || profile?.city || "Add your display name"}</p>
             </div>
             <div className="flex items-center gap-2">
-              <div className="rounded-2xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-300">
+              <div className="rounded-2xl border border-maroon/20 bg-maroon/5 px-3 py-2 text-sm text-maroon">
                 {completion}% complete
               </div>
-              <button onClick={() => setEditing((value) => !value)} className="rounded-2xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-slate-200 transition hover:border-cyan-500/50 hover:text-white">
+              <button onClick={() => setEditing((value) => !value)} className="rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] px-3 py-2 text-sm text-[#1f1b18] transition hover:border-maroon/40 hover:text-maroon">
                 {editing ? "Cancel" : "Edit Profile"}
               </button>
             </div>
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-              <p className="text-sm text-slate-400">City</p>
-              <p className="mt-1 font-medium">{profile?.city || "Add city"}</p>
+            <div className="rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-4">
+              <p className="text-sm text-[#625a50]">City</p>
+              <p className="mt-1 font-medium text-[#1f1b18]">{profile?.city || "Add city"}</p>
             </div>
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-              <p className="text-sm text-slate-400">Streak</p>
-              <p className="mt-1 font-medium">{loading ? "—" : streak !== null ? `${streak} days` : "No streak yet"}</p>
+            <div className="rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-4">
+              <p className="text-sm text-[#625a50]">Streak</p>
+              <p className="mt-1 font-medium text-[#1f1b18]">{loading ? "—" : streak !== null ? `${streak} days` : "No streak yet"}</p>
             </div>
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-              <p className="text-sm text-slate-400">Badges</p>
-              <p className="mt-1 font-medium">{badges.length} earned</p>
+            <div className="rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-4">
+              <p className="text-sm text-[#625a50]">Badges</p>
+              <p className="mt-1 font-medium text-[#1f1b18]">{badges.length} earned</p>
             </div>
           </div>
 
           {editing ? (
-            <div className="mt-5 rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+            <div className="mt-5 rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-4">
               <div className="grid gap-3 md:grid-cols-2">
-                <label className="text-sm text-slate-300">
+                <label className="text-sm text-[#1f1b18]">
                   <span className="mb-1 block">Display name</span>
-                  <input value={form.username} onChange={(event) => setForm((value) => ({ ...value, username: event.target.value }))} className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white" />
+                  <input value={form.username} onChange={(event) => setForm((value) => ({ ...value, username: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]" />
                 </label>
-                <label className="text-sm text-slate-300">
+                <label className="text-sm text-[#1f1b18]">
                   <span className="mb-1 block">State</span>
-                  <select value={form.state} onChange={(event) => setForm((value) => ({ ...value, state: event.target.value, city: "" }))} className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white">
+                  <select value={form.state} onChange={(event) => setForm((value) => ({ ...value, state: event.target.value, city: "" }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]">
                     <option value="">Select state</option>
                     <option value="Andhra Pradesh">Andhra Pradesh</option>
                     <option value="Arunachal Pradesh">Arunachal Pradesh</option>
@@ -246,7 +246,7 @@ export default function ProfilePage() {
                 </label>
                 <label className="text-sm text-slate-300">
                   <span className="mb-1 block">City</span>
-                  <select value={form.city} onChange={(event) => setForm((value) => ({ ...value, city: event.target.value }))} className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white">
+                  <select value={form.city} onChange={(event) => setForm((value) => ({ ...value, city: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]">
                     <option value="">Select city</option>
                     {form.state === "Delhi" ? (["Delhi", "Noida", "Gurgaon", "Faridabad"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
                     {form.state === "Maharashtra" ? (["Mumbai", "Pune", "Nagpur", "Nashik"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
@@ -271,7 +271,7 @@ export default function ProfilePage() {
                 </label>
                 <label className="text-sm text-slate-300">
                   <span className="mb-1 block">Age bracket</span>
-                  <select value={form.age_bracket} onChange={(event) => setForm((value) => ({ ...value, age_bracket: event.target.value }))} className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white">
+                  <select value={form.age_bracket} onChange={(event) => setForm((value) => ({ ...value, age_bracket: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]">
                     <option value="">Select</option>
                     <option value="GEN_Z">Gen Z</option>
                     <option value="MILLENNIAL">Millennial</option>
@@ -281,7 +281,7 @@ export default function ProfilePage() {
                 </label>
                 <label className="text-sm text-slate-300">
                   <span className="mb-1 block">Gender</span>
-                  <select value={form.gender} onChange={(event) => setForm((value) => ({ ...value, gender: event.target.value }))} className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white">
+                  <select value={form.gender} onChange={(event) => setForm((value) => ({ ...value, gender: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]">
                     <option value="">Select</option>
                     <option value="MALE">Male</option>
                     <option value="FEMALE">Female</option>
@@ -291,19 +291,19 @@ export default function ProfilePage() {
                 </label>
                 <label className="text-sm text-slate-300">
                   <span className="mb-1 block">Education</span>
-                  <input value={form.education} onChange={(event) => setForm((value) => ({ ...value, education: event.target.value }))} className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white" />
+                  <input value={form.education} onChange={(event) => setForm((value) => ({ ...value, education: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]" />
                 </label>
                 <label className="text-sm text-slate-300">
                   <span className="mb-1 block">Income bracket</span>
-                  <input value={form.income_bracket} onChange={(event) => setForm((value) => ({ ...value, income_bracket: event.target.value }))} className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white" />
+                  <input value={form.income_bracket} onChange={(event) => setForm((value) => ({ ...value, income_bracket: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]" />
                 </label>
                 <label className="text-sm text-slate-300">
                   <span className="mb-1 block">Employment</span>
-                  <input value={form.employment} onChange={(event) => setForm((value) => ({ ...value, employment: event.target.value }))} className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white" />
+                  <input value={form.employment} onChange={(event) => setForm((value) => ({ ...value, employment: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]" />
                 </label>
                 <label className="text-sm text-slate-300 md:col-span-2">
                   <span className="mb-1 block">Interests / topics</span>
-                  <input value={form.streaming_platforms} onChange={(event) => setForm((value) => ({ ...value, streaming_platforms: event.target.value }))} placeholder="Politics, Bollywood, Tech" className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white" />
+                  <input value={form.streaming_platforms} onChange={(event) => setForm((value) => ({ ...value, streaming_platforms: event.target.value }))} placeholder="Politics, Bollywood, Tech" className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]" />
                 </label>
               </div>
               {feedback ? <p className="mt-3 text-sm text-cyan-400">{feedback}</p> : null}
@@ -316,71 +316,71 @@ export default function ProfilePage() {
           ) : null}
         </section>
 
-        <section className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6">
+        <section className="rounded-3xl border border-[#d8ceb8] bg-[#fffdf9] p-6 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Progressive profile</h2>
+            <h2 className="text-lg font-semibold text-[#1f1b18]">Progressive profile</h2>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             {profileFields.map((field) => (
-              <div key={field.key} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-                <p className="text-sm text-slate-400">{field.label}</p>
-                {field.value ? <p className="mt-1 font-medium text-white">{field.value}</p> : <p className="mt-1 text-sm text-cyan-400">Add {field.label.toLowerCase()}</p>}
+              <div key={field.key} className="rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-4">
+                <p className="text-sm text-[#625a50]">{field.label}</p>
+                {field.value ? <p className="mt-1 font-medium text-[#1f1b18]">{field.value}</p> : <p className="mt-1 text-sm text-maroon">Add {field.label.toLowerCase()}</p>}
               </div>
             ))}
           </div>
         </section>
 
-        <section className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6">
+        <section className="rounded-3xl border border-[#d8ceb8] bg-[#fffdf9] p-6 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">This Week</h2>
+            <h2 className="text-lg font-semibold text-[#1f1b18]">This Week</h2>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-              <p className="text-sm text-slate-400">Polls voted</p>
-              <p className="mt-1 font-medium">{weekly?.polls_voted ?? 0}</p>
+            <div className="rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-4">
+              <p className="text-sm text-[#625a50]">Polls voted</p>
+              <p className="mt-1 font-medium text-[#1f1b18]">{weekly?.polls_voted ?? 0}</p>
             </div>
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-              <p className="text-sm text-slate-400">Opinions shared</p>
-              <p className="mt-1 font-medium">{weekly?.opinions_shared ?? 0}</p>
+            <div className="rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-4">
+              <p className="text-sm text-[#625a50]">Opinions shared</p>
+              <p className="mt-1 font-medium text-[#1f1b18]">{weekly?.opinions_shared ?? 0}</p>
             </div>
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-              <p className="text-sm text-slate-400">Agrees received</p>
-              <p className="mt-1 font-medium">{weekly?.total_agrees_received ?? 0}</p>
+            <div className="rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-4">
+              <p className="text-sm text-[#625a50]">Agrees received</p>
+              <p className="mt-1 font-medium text-[#1f1b18]">{weekly?.total_agrees_received ?? 0}</p>
             </div>
           </div>
         </section>
 
-        <section className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6">
+        <section className="rounded-3xl border border-[#d8ceb8] bg-[#fffdf9] p-6 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Earned badges</h2>
-            <Link href="/badges" className="text-sm text-cyan-400">View all</Link>
+            <h2 className="text-lg font-semibold text-[#1f1b18]">Earned badges</h2>
+            <Link href="/badges" className="text-sm text-maroon">View all</Link>
           </div>
           {loading ? (
-            <p className="mt-4 text-sm text-slate-400">Loading badges…</p>
+            <p className="mt-4 text-sm text-[#625a50]">Loading badges…</p>
           ) : badges.length === 0 ? (
-            <p className="mt-4 text-sm text-slate-400">No badges earned yet.</p>
+            <p className="mt-4 text-sm text-[#625a50]">No badges earned yet.</p>
           ) : (
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {badges.map((badge) => (
-                <div key={badge.id} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-                  <p className="font-medium text-white">{badge.name}</p>
-                  <p className="mt-1 text-sm text-slate-400">{badge.description}</p>
+                <div key={badge.id} className="rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-4">
+                  <p className="font-medium text-[#1f1b18]">{badge.name}</p>
+                  <p className="mt-1 text-sm text-[#625a50]">{badge.description}</p>
                 </div>
               ))}
             </div>
           )}
         </section>
 
-        <section className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6">
-          <h2 className="text-lg font-semibold">Settings & Data Protection</h2>
+        <section className="rounded-3xl border border-[#d8ceb8] bg-[#fffdf9] p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-[#1f1b18]">Settings & Data Protection</h2>
           <div className="mt-4 flex flex-col sm:flex-row gap-3">
-            <Link href="/consent" className="inline-flex items-center justify-center rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-cyan-500/50 hover:text-white">
+            <Link href="/consent" className="inline-flex items-center justify-center rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] px-4 py-3 text-sm font-medium text-[#1f1b18] transition hover:border-maroon/40 hover:text-maroon">
               Manage consent settings
             </Link>
             <button 
               onClick={() => void handleDeleteAccount()} 
               disabled={deleting} 
-              className="inline-flex items-center justify-center rounded-2xl border border-rose-900/50 bg-rose-950/30 px-4 py-3 text-sm font-medium text-rose-400 transition hover:bg-rose-900/50 hover:text-rose-300 disabled:opacity-50"
+              className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
             >
               {deleting ? "Scrubbing Data..." : "Delete Account & Data"}
             </button>

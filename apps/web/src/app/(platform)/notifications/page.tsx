@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -72,7 +72,7 @@ export default function NotificationsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f4efe7] py-10 px-4 text-[#1f1b18] sm:px-6 lg:px-8">
+    <main className="w-full bg-[#f4efe7] py-10 px-4 text-[#1f1b18] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl space-y-6">
         <div className="rounded-[32px] border border-[#d8ceb8] bg-[#fffdf9] p-8 shadow-sm">
           <div className="flex items-center gap-3">
@@ -101,7 +101,7 @@ export default function NotificationsPage() {
 
         <section className="rounded-[32px] border border-[#d8ceb8] bg-[#fffdf9] p-6 shadow-sm">
           {loading ? (
-            <div className="text-center text-[#625a50]">Loading notifications…</div>
+            <div className="text-center text-[#625a50]">Loading notificationsâ€¦</div>
           ) : error ? (
             <div className="space-y-3">
               <p className="text-sm text-rose-600">{error}</p>
@@ -145,7 +145,7 @@ export default function NotificationsPage() {
 
         <div className="rounded-[32px] border border-[#d8ceb8] bg-[#f7f1e8] p-6 text-sm text-[#625a50]">
           <Sparkles className="inline h-4 w-4 text-[#7a1f10]" />
-          <span className="ml-2">This page is part of the visibility improvements for PollBooth’s consent, notifications, and accountability flows.</span>
+          <span className="ml-2">This page is part of the visibility improvements for PollBoothâ€™s consent, notifications, and accountability flows.</span>
         </div>
       </div>
     </main>

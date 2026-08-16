@@ -1,6 +1,8 @@
-"use client";
+﻿"use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { Home, Flame, Landmark, Newspaper, Tv, Trophy, MapPin, Shield, HelpCircle, Lightbulb, AlertTriangle } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -14,11 +16,35 @@ const NAV_ITEMS = [
 ];
 
 interface FeedSidebarProps {
-  activeCategory: string;
-  onCategoryChange: (category: string, categoryFilter?: string) => void;
+  activeCategory?: string;
+  onCategoryChange?: (category: string, categoryFilter?: string) => void;
 }
 
-export function FeedSidebar({ activeCategory, onCategoryChange }: FeedSidebarProps) {
+export function FeedSidebar({ activeCategory: propActive, onCategoryChange }: FeedSidebarProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [localActive, setLocalActive] = useState(propActive || "for-you");
+
+  const currentActive = propActive !== undefined ? propActive : localActive;
+
+  const handleNav = (id: string, category?: string) => {
+    // Strictly ensure it's a function before calling to prevent TypeErrors
+    if (typeof onCategoryChange === "function") {
+      onCategoryChange(id, category);
+      return;
+    }
+    
+    setLocalActive(id);
+    if (pathname !== "/feed") {
+      router.push("/feed");
+      setTimeout(() => {
+        try { window.dispatchEvent(new CustomEvent("globalCategoryChange", { detail: { id, category } })); } catch(e) {}
+      }, 300);
+    } else {
+      try { window.dispatchEvent(new CustomEvent("globalCategoryChange", { detail: { id, category } })); } catch(e) {}
+    }
+  };
+
   return (
     <aside className="hidden w-full space-y-3 lg:block lg:max-h-full lg:overflow-y-auto scrollbar-auto-hide pr-2">
       <div className="space-y-1">
@@ -26,13 +52,13 @@ export function FeedSidebar({ activeCategory, onCategoryChange }: FeedSidebarPro
         <nav className="space-y-0.5">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
-            const isActive = activeCategory === item.id;
+            const isActive = currentActive === item.id;
             return (
               <button
                 key={item.id}
-                onClick={() => onCategoryChange(item.id, item.category)}
+                onClick={() => handleNav(item.id, item.category)}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold transition-all duration-200 ${
-                  isActive ? "border-l-4 border-maroon bg-paper-card text-maroon" : "border-l-4 border-transparent text-ink hover:bg-paper-card"
+                  isActive ? "border-l-4 border-maroon bg-paper-card text-maroon shadow-sm" : "border-l-4 border-transparent text-ink hover:bg-paper-card"
                 }`}
               >
                 <Icon className={`h-[24px] w-[24px] shrink-0 ${isActive ? "text-maroon" : "text-ink-muted"}`} />

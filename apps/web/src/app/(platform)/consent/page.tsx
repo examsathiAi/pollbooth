@@ -1,8 +1,8 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 export default function ConsentPage() {
   return (
-    <main className="min-h-screen bg-[#f4efe7] py-10 px-4 text-[#1f1b18] sm:px-6 lg:px-8">
+    <main className="w-full bg-[#f4efe7] py-10 px-4 text-[#1f1b18] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl space-y-6">
         <div className="rounded-[32px] border border-[#d8ceb8] bg-[#fffdf9] p-8 shadow-sm">
           <p className="text-sm uppercase tracking-[0.3em] text-[#7a1f10]">Data privacy</p>

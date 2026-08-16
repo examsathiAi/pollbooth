@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -55,6 +55,17 @@ export default function FeedPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<PollSummary[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+
+      useEffect(() => {
+        const handleCat = (e: any) => { try { if (typeof handleCategoryChange === "function") handleCategoryChange(e.detail.id, e.detail.category); } catch(err) {} };
+        const handleSrch = (e: any) => { try { if (typeof handleSearch === "function") handleSearch(e.detail.query); } catch(err) {} };
+        window.addEventListener("globalCategoryChange", handleCat);
+        window.addEventListener("globalSearch", handleSrch);
+        return () => {
+          window.removeEventListener("globalCategoryChange", handleCat);
+          window.removeEventListener("globalSearch", handleSrch);
+        };
+      }, []);
 
   const handleCategoryChange = (category: string, categoryApiFilter?: string) => {
     setActiveCategory(category);
@@ -204,67 +215,7 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header ref={headerRef} className="sticky top-0 z-50 border-b-2 border-ink bg-paper-bg text-ink paper-texture">
-        <div className="mx-auto max-w-[1600px] px-4 sm:px-8 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <Link href="/feed" className="flex shrink-0 items-center pr-6" aria-label="pollbooth.it home">
-              <Image
-                src="/icon.png"
-                alt="pollbooth.it"
-                width={320}
-                height={100}
-                priority
-                className="h-20 w-auto object-contain sm:h-24"
-              />
-            </Link>
-
-            <div className="flex-1 max-w-md">
-              <input
-                type="text"
-                placeholder="Search polls..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="w-full border border-paper-border/50 bg-paper-card px-4 py-2 text-sm font-sans rounded-full focus:outline-none focus:border-maroon/50 focus:ring-1 focus:ring-maroon/20 shadow-inner"
-              />
-            </div>
-
-            <div className="flex items-center gap-3">
-              {user ? (
-                <>
-                  <Link href="/profile" className="text-sm font-sans uppercase tracking-widest text-ink-muted">{user.username || "User"}</Link>
-                  <button onClick={() => logout()} className="px-3 py-1 text-xs font-sans uppercase tracking-widest text-ink-muted hover:bg-paper-card/60">
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link href="/auth/login?mode=login&redirect=/feed" className="px-3 py-1 text-xs font-sans uppercase tracking-widest text-ink-muted border border-transparent hover:border-paper-border">
-                    Login
-                  </Link>
-                  <Link href="/auth/login?mode=signup&redirect=/feed" className="px-3 py-1 text-xs font-sans uppercase tracking-widest text-white bg-maroon hover:bg-maroon-dark">
-                    Sign up
-                  </Link>
-                </>
-              )}
-              <NotificationBell />
-            </div>
-          </div>
-
-          <div className="mt-2 border-t border-paper-border pt-2">
-            <div className="flex items-center justify-end">
-              <div className="text-xs font-sans uppercase tracking-widest text-ink-muted">{todayStr}</div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-[1600px] px-4 sm:px-8 py-6 lg:grid lg:grid-cols-[260px,minmax(0,1fr),340px] lg:gap-10 min-h-screen">
-        <div className="hidden lg:block lg:self-start overflow-y-auto overscroll-contain pb-6 scrollbar-paper" style={{ position: "sticky", top: `${headerHeight}px`, height: `calc(100vh - ${headerHeight}px)` }}>
-          <FeedSidebar activeCategory={activeCategory} onCategoryChange={handleCategoryChange} />
-        </div>
-
-        <main className="min-w-0">
+    <main className="min-w-0 w-full animate-in fade-in duration-300">
           <div className="mx-auto max-w-2xl pb-12">
             {isSearching && searchQuery ? (
               <div className="mb-6">
@@ -323,12 +274,6 @@ export default function FeedPage() {
             )}
           </div>
         </main>
-
-        <div className="hidden lg:block lg:self-start overflow-y-auto overscroll-contain pb-6 scrollbar-paper" style={{ position: "sticky", top: `${headerHeight}px`, height: `calc(100vh - ${headerHeight}px)` }}>
-          <FeedRightRail />
-        </div>
-      </div>
-    </div>
   );
 }
 

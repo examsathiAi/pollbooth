@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
@@ -27,23 +27,23 @@ export default function RewardsPage() {
   const credits = Math.max(0, referralCount * 25);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-4 bg-slate-50 px-4 py-6 text-slate-700 sm:px-6 lg:px-8">
+    <main className="mx-auto flex w-full max-w-4xl flex-col gap-4 bg-slate-50 px-4 py-6 text-slate-700 sm:px-6 lg:px-8">
       <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.3em] text-blue-600">
           <Gift className="h-4 w-4" /> Rewards wallet
         </div>
         <h1 className="mt-3 text-2xl font-semibold text-slate-900">Your referral engine is live.</h1>
-        <p className="mt-3 text-sm leading-7 text-slate-600">Track your invites, viral shares, and the credits you’ve earned for bringing new voices into PollBooth.</p>
+        <p className="mt-3 text-sm leading-7 text-slate-600">Track your invites, viral shares, and the credits youâ€™ve earned for bringing new voices into PollBooth.</p>
       </div>
 
       <section className="grid gap-4 md:grid-cols-3">
         <div className="rounded-[24px] border border-slate-200 bg-white p-5">
           <p className="text-sm text-slate-500">Referral count</p>
-          <p className="mt-2 text-3xl font-semibold text-slate-900">{isLoading ? "—" : referralCount}</p>
+          <p className="mt-2 text-3xl font-semibold text-slate-900">{isLoading ? "â€”" : referralCount}</p>
         </div>
         <div className="rounded-[24px] border border-slate-200 bg-white p-5">
           <p className="text-sm text-slate-500">Earned credits</p>
-          <p className="mt-2 text-3xl font-semibold text-slate-900">{isLoading ? "—" : `${credits} pts`}</p>
+          <p className="mt-2 text-3xl font-semibold text-slate-900">{isLoading ? "â€”" : `${credits} pts`}</p>
         </div>
         <div className="rounded-[24px] border border-slate-200 bg-white p-5">
           <p className="text-sm text-slate-500">Status</p>
@@ -68,7 +68,7 @@ export default function RewardsPage() {
 
       <section className="rounded-[24px] border border-slate-200 bg-white p-6">
         <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-          <Trophy className="h-4 w-4" /> What’s next
+          <Trophy className="h-4 w-4" /> Whatâ€™s next
         </div>
         <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-7 text-slate-600">
           <li>Invite friends to vote and grow your referral count.</li>

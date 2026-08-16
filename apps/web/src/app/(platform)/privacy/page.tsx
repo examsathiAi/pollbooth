@@ -1,8 +1,8 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 export default function PrivacyPage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 bg-[#f4efe7] px-4 py-10 text-[#625a50] sm:px-6 lg:px-8">
+    <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 bg-[#f4efe7] px-4 py-10 text-[#625a50] sm:px-6 lg:px-8">
       <div className="rounded-[32px] border border-[#d8ceb8] bg-[#fffdf9] p-8 shadow-sm">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#7a1f10]">Privacy policy</p>
         <h1 className="mt-3 text-3xl font-semibold text-[#1f1b18]">PollBooth respects consent, privacy, and user control.</h1>

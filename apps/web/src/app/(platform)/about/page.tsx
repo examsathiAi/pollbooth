@@ -1,9 +1,9 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { Activity, Shield, Users, Zap } from "lucide-react";
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen bg-[#f4efe7] pb-24 text-[#1f1b18]">
+    <main className="w-full bg-[#f4efe7] pb-24 text-[#1f1b18]">
       <header className="border-b border-[#d8ceb8] bg-[#fffdf9]">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
           <Link href="/" className="flex items-center gap-2 text-xl font-bold tracking-tight text-[#1f1b18]">
