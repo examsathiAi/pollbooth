@@ -58,44 +58,44 @@ export function CivicIssueReviewPanel() {
   };
 
   return (
-    <section className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-black/20">
+    <section className="rounded-3xl border border-[#d8ceb8] bg-[#fffdf9] p-6 shadow-sm">
       <div className="mb-5 flex items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.25em] text-violet-400">Civic issue review</p>
-          <h2 className="text-xl font-semibold text-white">Review community-reported civic issues</h2>
+          <p className="text-sm font-medium uppercase tracking-[0.25em] text-maroon">Civic issue review</p>
+          <h2 className="text-xl font-semibold text-[#1f1b18]">Review community-reported civic issues</h2>
         </div>
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/80 px-3 py-2 text-sm text-slate-300">
-          <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-cyan-400" /> Review pipeline</div>
+        <div className="rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] px-3 py-2 text-sm text-[#625a50]">
+          <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-maroon" /> Review pipeline</div>
         </div>
       </div>
 
-      {message ? <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">{message}</div> : null}
-      {error ? <div className="mb-4 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">{error}</div> : null}
+      {message ? <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600">Success: {message}</div> : null}
+      {error ? <div className="mb-4 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-600">Error: {error}</div> : null}
 
       {loading ? (
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-8 text-center text-sm text-slate-400">
+        <div className="rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-8 text-center text-sm text-[#625a50]">
           <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin" /> Loading civic issues…
         </div>
       ) : issues.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-700 p-8 text-center text-sm text-slate-400">No civic issues ready for review.</div>
+        <div className="rounded-2xl border border-dashed border-[#d8ceb8] p-8 text-center text-sm text-[#625a50]">No civic issues ready for review.</div>
       ) : (
         <div className="space-y-3">
           {issues.map((issue) => (
-            <article key={issue.id} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+            <article key={issue.id} className="rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <div className="flex items-center gap-2 text-sm text-slate-400">
-                    <AlertCircle className="h-4 w-4 text-amber-400" />
+                  <div className="flex items-center gap-2 text-sm text-[#625a50]">
+                    <AlertCircle className="h-4 w-4 text-amber-600" />
                     <span>{issue.city || "Unknown city"}, {issue.state || "Unknown state"}</span>
                   </div>
-                  <h3 className="mt-2 font-semibold text-white">{issue.title}</h3>
-                  <p className="mt-2 text-sm text-slate-400">{issue.description}</p>
-                  <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-400">
-                    <span className="rounded-full border border-slate-700 px-2.5 py-1">{issue.category || "General"}</span>
-                    <span className="rounded-full border border-slate-700 px-2.5 py-1">{issue.status}</span>
+                  <h3 className="mt-2 font-semibold text-[#1f1b18]">{issue.title}</h3>
+                  <p className="mt-2 text-sm text-[#625a50]">{issue.description}</p>
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs text-[#625a50]">
+                    <span className="rounded-full border border-[#d8ceb8] px-2.5 py-1">{issue.category || "General"}</span>
+                    <span className="rounded-full border border-[#d8ceb8] px-2.5 py-1">{issue.status}</span>
                   </div>
                 </div>
-                <button onClick={() => convertIssue(issue)} className="flex items-center gap-2 rounded-xl bg-cyan-600/90 px-3 py-2 text-sm font-medium text-white transition hover:bg-cyan-500">
+                <button onClick={() => convertIssue(issue)} className="flex items-center gap-2 rounded-xl bg-maroon px-3 py-2 text-sm font-medium text-white transition hover:bg-maroon-dark">
                   <CheckCircle2 className="h-4 w-4" /> Convert to poll
                 </button>
               </div>

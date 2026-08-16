@@ -48,32 +48,32 @@ export default function PollsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-950 p-6 text-slate-100">
+    <main className="min-h-screen bg-[#f4efe7] p-6 text-[#1f1b18]">
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-violet-400">Admin</p>
-            <h1 className="text-3xl font-semibold">Polls</h1>
+            <p className="text-sm uppercase tracking-[0.3em] text-maroon">Admin</p>
+            <h1 className="text-3xl font-semibold text-[#1f1b18]">Polls</h1>
           </div>
-          <button onClick={() => loadPolls()} className="rounded-2xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200">Refresh</button>
+          <button onClick={() => loadPolls()} className="rounded-2xl border border-[#d8ceb8] px-4 py-2.5 text-sm font-semibold text-[#1f1b18]">Refresh</button>
         </div>
 
         <PollCreationPanel />
         <PollReviewQueue />
 
-        {error ? <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-300">{error}</div> : null}
+        {error ? <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-600">Error: {error}</div> : null}
 
         {loading ? (
-          <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-8 text-center text-sm text-slate-400">Loading polls…</div>
+          <div className="rounded-3xl border border-[#d8ceb8] bg-[#fffdf9] p-8 text-center text-sm text-[#625a50]">Loading polls…</div>
         ) : (
           <div className="space-y-3">
             {polls.map((poll) => (
-              <article key={poll.id} className="rounded-3xl border border-slate-800 bg-slate-900/80 p-5">
+              <article key={poll.id} className="rounded-3xl border border-[#d8ceb8] bg-[#fffdf9] p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm text-slate-400">{poll.category}</p>
-                    <h2 className="mt-1 text-lg font-semibold text-white">{poll.question}</h2>
-                    <p className="mt-2 text-sm text-slate-400">Status: {poll.status} • Votes: {poll.total_votes} • Created: {new Date(poll.created_at).toLocaleDateString()}</p>
+                    <p className="text-sm text-[#625a50]">{poll.category}</p>
+                    <h2 className="mt-1 text-lg font-semibold text-[#1f1b18]">{poll.question}</h2>
+                    <p className="mt-2 text-sm text-[#625a50]">Status: {poll.status} • Votes: {poll.total_votes} • Created: {new Date(poll.created_at).toLocaleDateString()}</p>
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => updateStatus(poll.id, 'publish')} className="rounded-2xl bg-emerald-600/90 px-3 py-2 text-sm font-medium text-white">Publish</button>

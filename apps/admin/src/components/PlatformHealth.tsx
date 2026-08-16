@@ -49,32 +49,32 @@ export function PlatformHealth() {
     : [];
 
   return (
-    <section className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-black/20">
+    <section className="rounded-3xl border border-[#d8ceb8] bg-[#fffdf9] p-6 shadow-sm">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.25em] text-violet-400">Platform health</p>
-          <h2 className="text-xl font-semibold text-white">Operational readiness and service status</h2>
+          <p className="text-sm font-medium uppercase tracking-[0.25em] text-maroon">Platform health</p>
+          <h2 className="text-xl font-semibold text-[#1f1b18]">Operational readiness and service status</h2>
         </div>
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/80 px-3 py-2 text-sm text-slate-300">
-          <div className="flex items-center gap-2"><Database className="h-4 w-4 text-cyan-400" /> Live status</div>
+        <div className="rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] px-3 py-2 text-sm text-[#625a50]">
+          <div className="flex items-center gap-2"><Database className="h-4 w-4 text-maroon" /> Live status</div>
         </div>
       </div>
 
-      {error ? <div className="mb-4 rounded-2xl border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-300">{error}</div> : null}
+      {error ? <div className="mb-4 rounded-2xl border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-600">Error: {error}</div> : null}
 
       {loading ? (
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-8 text-center text-sm text-slate-400">Loading platform health…</div>
+        <div className="rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-8 text-center text-sm text-[#625a50]">Loading platform health…</div>
       ) : !data ? null : (
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {statCards.map((item) => {
               const Icon = item.icon;
               return (
-                <div key={item.label} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-                  <div className="flex items-center gap-2 text-sm text-slate-400">
-                    <Icon className="h-4 w-4 text-violet-400" /> {item.label}
+                <div key={item.label} className="rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-4">
+                  <div className="flex items-center gap-2 text-sm text-[#625a50]">
+                    <Icon className="h-4 w-4 text-maroon" /> {item.label}
                   </div>
-                  <p className="mt-3 text-2xl font-semibold text-white">{item.value}</p>
+                  <p className="mt-3 text-2xl font-semibold text-[#1f1b18]">{item.value}</p>
                 </div>
               );
             })}
@@ -82,23 +82,23 @@ export function PlatformHealth() {
 
           <div className="grid gap-4 lg:grid-cols-3">
             {Object.entries(data.services).map(([service, detail]) => (
-              <div key={service} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+              <div key={service} className="rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-300">{service}</p>
-                  <span className={`rounded-full px-2.5 py-1 text-xs ${detail.status === "ok" ? "bg-emerald-600/20 text-emerald-300" : "bg-amber-600/20 text-amber-300"}`}>
+                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#1f1b18]">{service}</p>
+                  <span className={`rounded-full px-2.5 py-1 text-xs ${detail.status === "ok" ? "bg-emerald-600/20 text-emerald-700" : "bg-amber-600/20 text-amber-900"}`}>
                     {detail.status}
                   </span>
                 </div>
-                <p className="mt-3 text-sm text-slate-400">Latency: {detail.latency_ms ?? "n/a"} ms</p>
+                <p className="mt-3 text-sm text-[#625a50]">Latency: {detail.latency_ms ?? "n/a"} ms</p>
               </div>
             ))}
           </div>
 
-          <div className="rounded-2xl border border-dashed border-slate-700 p-4 text-sm text-slate-400">
+          <div className="rounded-2xl border border-dashed border-[#d8ceb8] p-4 text-sm text-[#625a50]">
             Last checked {new Date(data.timestamp).toLocaleString()}
           </div>
         </div>
-      )}
+      )}}
     </section>
   );
 }

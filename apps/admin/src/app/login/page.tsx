@@ -61,19 +61,19 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-4 text-slate-100">
-      <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl shadow-black/30">
-        <p className="text-sm uppercase tracking-[0.3em] text-cyan-400">Admin access</p>
+    <main className="flex min-h-screen items-center justify-center bg-[#f4efe7] px-4 text-[#1f1b18]">
+      <div className="w-full max-w-md rounded-3xl border border-[#d8ceb8] bg-[#fffdf9] p-8 shadow-[0_1px_2px_rgba(0,0,0,0.08),0_8px_24px_rgba(122,31,16,0.08)]">
+        <p className="text-sm uppercase tracking-[0.3em] text-[#7a1f10]">Admin access</p>
         <h1 className="mt-2 text-2xl font-semibold">Sign in to PollBooth Admin</h1>
-        <p className="mt-2 text-sm text-slate-400">Use the seeded admin phone number and OTP 123456 in development.</p>
+        <p className="mt-2 text-sm text-[#625a50]">Use the seeded admin phone number and OTP 123456 in development.</p>
 
         <div className="mt-6 space-y-4">
           <label className="block text-sm">
-            <span className="mb-2 block text-slate-300">Phone number</span>
+            <span className="mb-2 block text-[#1f1b18]">Phone number</span>
             <input
               value={phoneNumber}
               onChange={(event) => setPhoneNumber(event.target.value)}
-              className="w-full rounded-2xl border border-slate-700 bg-slate-950/80 px-4 py-3 text-white outline-none"
+              className="w-full rounded-2xl border border-[#d8ceb8] bg-[#f7f1e8] px-4 py-3 text-[#1f1b18] outline-none"
               placeholder="+91xxxxxxxxxx"
             />
           </label>
@@ -82,7 +82,7 @@ export default function AdminLoginPage() {
             type="button"
             onClick={handleSendOtp}
             disabled={loading}
-            className="w-full rounded-2xl bg-cyan-500 px-4 py-3 font-medium text-slate-950 transition hover:bg-cyan-400 disabled:opacity-60"
+            className="w-full rounded-2xl bg-[#7a1f10] px-4 py-3 font-medium text-white transition hover:bg-[#5c1709] disabled:opacity-60"
           >
             {loading ? "Working..." : "Send OTP"}
           </button>
@@ -90,11 +90,11 @@ export default function AdminLoginPage() {
           {otpSent ? (
             <>
               <label className="block text-sm">
-                <span className="mb-2 block text-slate-300">OTP</span>
+                <span className="mb-2 block text-[#1f1b18]">OTP</span>
                 <input
                   value={otp}
                   onChange={(event) => setOtp(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-950/80 px-4 py-3 text-white outline-none"
+                  className="w-full rounded-2xl border border-[#d8ceb8] bg-[#f7f1e8] px-4 py-3 text-[#1f1b18] outline-none"
                   placeholder="123456"
                 />
               </label>
@@ -102,7 +102,7 @@ export default function AdminLoginPage() {
                 type="button"
                 onClick={handleVerify}
                 disabled={loading}
-                className="w-full rounded-2xl border border-cyan-500/40 bg-slate-950/70 px-4 py-3 font-medium text-cyan-300 transition hover:bg-cyan-500/10 disabled:opacity-60"
+                className="w-full rounded-2xl border border-[#d8ceb8] bg-[#f7f1e8] px-4 py-3 font-medium text-[#7a1f10] transition hover:bg-[#f2e7dc] disabled:opacity-60"
               >
                 {loading ? "Verifying..." : "Verify"}
               </button>

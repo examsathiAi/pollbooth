@@ -16,11 +16,16 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "PollBooth - India's Opinion Platform",
-  description: "Vote, share opinions, and see what India thinks. The front page of public opinion.",
+  title: "pollbooth.it",
+  description: "Vote, share opinions, and see what India thinks.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
   openGraph: {
-    title: "PollBooth - India's Opinion Platform",
+    title: "pollbooth.it",
     description: "Vote, share opinions, and see what India thinks.",
     type: "website",
     images: ["/og-card.png"],
@@ -33,8 +38,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${playfair.variable} ${inter.variable}`}>
-      <body className="min-h-screen bg-gray-50 font-sans">
+    <html lang="en" className={`${playfair.variable} ${inter.variable}`} suppressHydrationWarning>
+      <body className="min-h-screen bg-[#f4efe7] text-[#1f1b18] antialiased">
         <SocketProvider>
           {children}
         </SocketProvider>

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { EnhancedPollCard } from "@/components/feed/EnhancedPollCard";
@@ -207,7 +208,16 @@ export default function FeedPage() {
       <header ref={headerRef} className="sticky top-0 z-50 border-b-2 border-ink bg-paper-bg text-ink paper-texture">
         <div className="mx-auto max-w-[1600px] px-4 sm:px-8 py-4">
           <div className="flex items-center justify-between gap-4">
-            <div className="text-4xl font-headline font-bold text-maroon">PollBooth Times</div>
+            <Link href="/feed" className="flex shrink-0 items-center pr-6" aria-label="pollbooth.it home">
+              <Image
+                src="/icon.png"
+                alt="pollbooth.it"
+                width={320}
+                height={100}
+                priority
+                className="h-20 w-auto object-contain sm:h-24"
+              />
+            </Link>
 
             <div className="flex-1 max-w-md">
               <input
@@ -242,19 +252,7 @@ export default function FeedPage() {
           </div>
 
           <div className="mt-2 border-t border-paper-border pt-2">
-            <div className="flex items-center justify-between">
-              <div className="text-xs font-sans uppercase tracking-widest text-ink-muted">{(function(){
-                const map: Record<string,string> = {
-                  "for-you": "FOR YOU",
-                  "trending": "TRENDING",
-                  "local": "LOCAL",
-                  "news": "NEWS",
-                  "bollywood": "BOLLYWOOD",
-                  "sports": "SPORTS",
-                  "civic": "CIVIC",
-                };
-                return (map[activeCategory] || activeCategory.toUpperCase()) + " EDITION";
-              })()}</div>
+            <div className="flex items-center justify-end">
               <div className="text-xs font-sans uppercase tracking-widest text-ink-muted">{todayStr}</div>
             </div>
           </div>

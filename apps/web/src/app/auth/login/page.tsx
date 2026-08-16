@@ -77,59 +77,55 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-white">
-      {/* Left Panel - Brand / Marketing (Hidden on Mobile) */}
-      <div className="hidden lg:flex w-1/2 bg-slate-950 flex-col justify-between p-12 relative overflow-hidden">
-        {/* Ambient Glow */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-          <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-cyan-600/10 blur-[100px] rounded-full" />
+    <div className="flex min-h-screen bg-[#f4efe7]">
+      <div className="hidden lg:flex w-1/2 flex-col justify-between overflow-hidden bg-[#fffdf9] p-12 shadow-[inset_-1px_0_0_#d8ceb8]">
+        <div className="pointer-events-none absolute inset-0 hidden lg:block">
+          <div className="absolute -left-20 top-12 h-72 w-72 rounded-full bg-[#f2e7dc] blur-3xl" />
+          <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#f7f1e8] blur-3xl" />
         </div>
-        
-        <div className="relative z-10 flex items-center gap-2 text-2xl font-bold tracking-tight text-white">
-          <Activity className="h-6 w-6 text-cyan-400" /> PollBooth
+
+        <div className="relative z-10 flex items-center gap-2 text-2xl font-bold tracking-tight text-[#7a1f10]">
+          <Activity className="h-6 w-6" /> PollBooth
         </div>
 
         <div className="relative z-10 max-w-md">
-          <h2 className="text-4xl font-bold text-white leading-tight">
+          <h2 className="text-4xl font-bold leading-tight text-[#1f1b18]">
             Join the conversation. <br /> Shape the narrative.
           </h2>
-          <p className="mt-4 text-lg text-slate-400">
+          <p className="mt-4 text-lg text-[#625a50]">
             Sign in to securely cast your votes, build your civic streak, and engage with verified cohorts across the platform.
           </p>
-          
+
           <div className="mt-12 space-y-4">
-            <div className="flex items-center gap-3 text-slate-300">
-              <ShieldCheck className="h-5 w-5 text-cyan-400" />
+            <div className="flex items-center gap-3 text-[#1f1b18]">
+              <ShieldCheck className="h-5 w-5 text-[#7a1f10]" />
               <span>Bank-grade OTP authentication</span>
             </div>
-            <div className="flex items-center gap-3 text-slate-300">
-              <ShieldCheck className="h-5 w-5 text-cyan-400" />
+            <div className="flex items-center gap-3 text-[#1f1b18]">
+              <ShieldCheck className="h-5 w-5 text-[#7a1f10]" />
               <span>DPDP compliant data protection</span>
             </div>
           </div>
         </div>
 
-        <div className="relative z-10 text-sm text-slate-500">
+        <div className="relative z-10 text-sm text-[#625a50]">
           © {new Date().getFullYear()} PollBooth Enterprise. All rights reserved.
         </div>
       </div>
 
-      {/* Right Panel - Auth Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12">
-        <div className="w-full max-w-md space-y-8">
-          
-          {/* Mobile Header */}
-          <div className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900 lg:hidden mb-12">
-            <Activity className="h-6 w-6 text-cyan-600" /> PollBooth
+      <div className="flex w-full items-center justify-center p-8 sm:p-12 lg:w-1/2">
+        <div className="w-full max-w-md space-y-8 rounded-[28px] border border-[#d8ceb8] bg-[#fffdf9] p-6 shadow-[0_1px_2px_rgba(0,0,0,0.08),0_8px_24px_rgba(122,31,16,0.08)] sm:p-8">
+          <div className="flex items-center gap-2 text-2xl font-bold tracking-tight text-[#7a1f10] lg:hidden">
+            <Activity className="h-6 w-6" /> PollBooth
           </div>
 
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-3xl font-bold tracking-tight text-[#1f1b18]">
               {mode === "signup" ? "Create an account" : "Welcome back"}
             </h1>
-            <p className="mt-2 text-sm text-slate-500">
-              {mode === "signup" 
-                ? "Enter your phone number below to create your secure account." 
+            <p className="mt-2 text-sm text-[#625a50]">
+              {mode === "signup"
+                ? "Enter your phone number below to create your secure account."
                 : "Enter your phone number to sign in to your account."}
             </p>
           </div>

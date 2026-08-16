@@ -47,7 +47,7 @@ export function TrendingHeader({ activeCategory = "For You" }: { activeCategory?
       <div className="mx-auto max-w-7xl px-4 py-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-600">PollBooth feed</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-maroon">PollBooth feed</p>
             <h1 className="text-xl font-semibold text-gray-900">{activeCategory}</h1>
             <p className="text-sm text-gray-600">Live polls and opinions from the database.</p>
           </div>
@@ -56,7 +56,7 @@ export function TrendingHeader({ activeCategory = "For You" }: { activeCategory?
             {user ? (
               <>
                 <Link href="/profile" className="flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2 transition hover:bg-gray-100">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 font-semibold text-white">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-maroon to-maroon-dark font-semibold text-white">
                     {user.username?.slice(0, 1)?.toUpperCase() || "P"}
                   </div>
                   <div>
@@ -69,20 +69,20 @@ export function TrendingHeader({ activeCategory = "For You" }: { activeCategory?
             ) : (
               <div className="flex items-center gap-2">
                 <Link href="/auth/login?mode=login&redirect=/feed" className="rounded-full border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700">Login</Link>
-                <Link href="/auth/login?mode=signup&redirect=/feed" className="rounded-full bg-blue-600 px-3 py-2 text-sm font-semibold text-white">Sign up</Link>
+                <Link href="/auth/login?mode=signup&redirect=/feed" className="rounded-full bg-maroon px-3 py-2 text-sm font-semibold text-white">Sign up</Link>
               </div>
             )}
             {user ? <NotificationBell /> : null}
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50/70 px-3 py-3">
-          <div className="flex items-center gap-2 rounded-full bg-white px-2.5 py-1 text-sm font-semibold text-blue-700">
+        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-maroon/20 bg-maroon/5 px-3 py-3">
+          <div className="flex items-center gap-2 rounded-full bg-white px-2.5 py-1 text-sm font-semibold text-maroon">
             <Flame className="h-4 w-4" />
             {user ? `${streak ?? 0} day streak` : "Guest access"}
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Sparkles className="h-4 w-4 text-blue-600" />
+            <Sparkles className="h-4 w-4 text-maroon" />
             Verified live polling data
           </div>
         </div>
