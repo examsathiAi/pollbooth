@@ -190,14 +190,8 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
   }
 
   return (
-        <div className="max-w-lg mx-auto min-h-screen bg-transparent transition-colors duration-300">
-      <header className="sticky top-0 bg-white/70 backdrop-blur-xl border-b border-paper-border/50 z-20 px-2 py-2 transition-all duration-300">
-        <Link href="/feed" className="group inline-flex items-center justify-center w-10 h-10 rounded-full bg-transparent hover:bg-ink/5 transition-all duration-200 ease-out active:scale-[0.92]">
-          <svg className="w-5 h-5 text-ink-muted group-hover:text-ink transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-          </svg>
-        </Link>
-      </header>
+        <div className="w-full bg-transparent transition-colors duration-300 pb-12">
+      
 
             <main>
         {(poll as any).ai_summary ? (

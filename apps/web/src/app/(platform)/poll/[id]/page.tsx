@@ -58,13 +58,13 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
       description: openGraphDescription,
       url: `${dynamicSiteUrl}/poll/${params.id}`,
       type: "article",
-      images: [{ url: dynamicOgImage, width: 1200, height: 630, alt: poll.question }],
+      
     },
     twitter: {
       card: "summary_large_image",
       title: openGraphTitle,
       description: openGraphDescription,
-      images: [dynamicOgImage],
+      
     }
   };
 }
