@@ -57,9 +57,39 @@ export async function authGuard(req: AuthenticatedRequest, res: Response, next: 
   }
 }
 
-export function optionalAuthGuard(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  authGuard(req, res, (err?: any) => {
-    if (err) return next();
+export async function optionalAuthGuard(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  try {
+    let token: string | undefined;
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.substring(7);
+    } else if (req.headers.cookie) {
+      const cookies = req.headers.cookie.split(";").map(c => c.trim());
+      const accessCookie = cookies.find(c => c.startsWith("accessToken="));
+      if (accessCookie) token = accessCookie.split("=")[1];
+    }
+
+    if (!token) {
+      return next(); // no token = guest, proceed
+    }
+
+    const decoded = jwt.verify(token, config.jwtSecret) as { userId: string; type: string };
+    if (decoded.type !== "access") {
+      return next(); // bad token type = treat as guest
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, phone_hash: true, username: true, role: true, is_banned: true, is_active: true },
+    });
+
+    if (user && user.is_active && !user.is_banned) {
+      req.user = user; // valid user, attach it
+    }
+    // whether or not user was found, always proceed
     next();
-  });
+  } catch (err) {
+    // any error (expired token, invalid token, etc) = just treat as guest
+    next();
+  }
 }

@@ -23,6 +23,10 @@ interface EnhancedPollCardProps {
     user_opinion?: { id: string; content: string; agree_count: number; disagree_count: number } | null;
     is_commercial?: boolean;
     created_at?: string;
+    whatsapp_share_text?: string | null;
+    x_caption?: string | null;
+    facebook_caption?: string | null;
+    hashtags?: string[] | null;
     end_date?: string | null;
   };
   index?: number;
@@ -260,7 +264,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         await api.post(`/api/v1/votes/${poll.id}/vote`, { option_index: index });
       }
 
-      const pollRes = await api.get(`/api/v1/polls/${poll.id}`);
+      const pollRes = await api.get(`/api/v1/polls/${poll.id}?t=${Date.now()}`);
       setHasOpinion(false);
       setUserVoteIndex(pollRes.data.user_vote_index ?? index);
       setFeedback("✓ Your vote is recorded");
@@ -388,16 +392,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
           <span className="opacity-40">•</span>
           <div className="text-xs font-sans font-medium">{relativeTime}</div>
         </div>
-        <div>
-          <button onClick={() => setShowShareMenu(!showShareMenu)} className="rounded-full p-1.5 text-ink-muted hover:bg-ink/5 hover:text-ink transition-colors duration-200">
-            <Share2 className="h-4 w-4" />
-          </button>
-          {showShareMenu && (
-            <div className="absolute right-5 top-12 z-30 w-48 rounded-2xl border border-paper-border bg-paper-bg shadow-lg py-1.5 overflow-hidden transition-all duration-200">
-              <button onClick={async () => { try { const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`; await navigator.clipboard.writeText(url); setShowSharePrompt(true); setTimeout(() => setShowSharePrompt(false), 2000); } catch {} }} className="flex w-full items-center gap-2.5 px-4 py-2 text-sm font-medium text-ink hover:bg-ink/5 transition-colors">Copy link</button>
-            </div>
-          )}
-        </div>
+        
       </div>
 
       <div className="px-5 pb-4">
@@ -405,6 +400,22 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
           <h3 className="text-xl sm:text-2xl font-sans font-semibold tracking-tight leading-snug text-ink mb-2 line-clamp-4 group-hover:text-maroon transition-colors duration-200">{poll.question}</h3>
         </Link>
       </div>
+      {showShareMenu && (
+        <div className="px-5 pb-4 animate-in fade-in duration-300">
+          <ShareCardGenerator
+            title={poll.question}
+            voteCount={animatedVotes}
+            resultData={results.map((r) => ({ label: r.option, value: r.percentage || 0 }))}
+            shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`}
+            hashtags={poll.hashtags || []}
+            captions={{
+              whatsapp: poll.whatsapp_share_text || undefined,
+              x: poll.x_caption || undefined,
+              facebook: poll.facebook_caption || undefined
+            }}
+          />
+        </div>
+      )}
 
       {!hasVoted ? (
         <div className="px-5 pb-5">
@@ -470,6 +481,13 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
             <MessageCircle className="w-4 h-4" />
             {opinionsTotal.toLocaleString()} {opinionsTotal === 1 ? 'comment' : 'comments'}
           </button>
+          <div className="relative flex items-center">
+            <button onClick={() => setShowShareMenu(!showShareMenu)} className="text-xs font-medium text-ink-muted hover:text-ink flex items-center gap-1.5 transition-colors">
+              <Share2 className="w-4 h-4" />
+              Share
+            </button>
+            
+          </div>
         </div>
       </div>
 

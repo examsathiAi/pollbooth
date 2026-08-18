@@ -6,24 +6,27 @@ const prisma = prismaClient;
 export class AdminService {
   async getDashboardStats() {
     const [
-      totalUsers,
-      activeUsersToday,
-      totalVotes,
-      totalOpinions,
-      pendingModeration,
-      totalPolls,
-      activePolls,
-    ] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({
-        where: { last_active_at: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
-      }),
-      prisma.vote.count(),
-      prisma.opinion.count(),
-      prisma.opinion.count({ where: { is_hidden: true, moderation_status: "FLAGGED" } }),
-      prisma.poll.count(),
-      prisma.poll.count({ where: { is_active: true, status: "ACTIVE" } }),
-    ]);
+        totalUsers,
+        activeUsersToday,
+        regVotes,
+        guestVotes,
+        totalOpinions,
+        pendingModeration,
+        totalPolls,
+        activePolls,
+      ] = await Promise.all([
+        prisma.user.count(),
+        prisma.user.count({
+          where: { last_active_at: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+        }),
+        prisma.vote.count(),
+        prisma.guestVote.count(),
+        prisma.opinion.count(),
+        prisma.opinion.count({ where: { is_hidden: true, moderation_status: "FLAGGED" } }),
+        prisma.poll.count(),
+        prisma.poll.count({ where: { is_active: true, status: "ACTIVE" } }),
+      ]);
+      const totalVotes = regVotes + guestVotes;
 
     return {
       users: { total: totalUsers, active_today: activeUsersToday },

@@ -27,7 +27,7 @@ async function main() {
     });
   }
 
-  const adminPhone = "+911234567890";
+  const adminPhone = "+919876543222";
   const adminPhoneHash = await bcrypt.hash(adminPhone.trim().toLowerCase(), 12);
 
   const existingAdmin = await prisma.user.findFirst({

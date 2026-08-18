@@ -21,6 +21,9 @@ export class FeedService {
       og_description: poll.og_description || null,
       slug: poll.slug || null,
       hashtags: poll.hashtags || [],
+      whatsapp_share_text: poll.whatsapp_share_text || null,
+      x_caption: poll.x_caption || null,
+      facebook_caption: poll.facebook_caption || null,
     };
   }
 
@@ -188,14 +191,16 @@ export class FeedService {
 
   async getPlatformStats() {
     return getCachedOrFetch("platform:stats:global", 120, async () => {
-      const [totalUsers, totalPolls, totalVotes, votesLastHour] = await Promise.all([
+      const [totalUsers, totalPolls, regVotes, guestVotes, regVotesLastHour, guestVotesLastHour] = await Promise.all([
         prisma.user.count(),
         prisma.poll.count(),
         prisma.vote.count(),
-        prisma.vote.count({
-          where: { voted_at: { gte: new Date(Date.now() - 60 * 60 * 1000) } },
-        }),
+        prisma.guestVote.count(),
+        prisma.vote.count({ where: { voted_at: { gte: new Date(Date.now() - 60 * 60 * 1000) } } }),
+        prisma.guestVote.count({ where: { voted_at: { gte: new Date(Date.now() - 60 * 60 * 1000) } } })
       ]);
+      const totalVotes = regVotes + guestVotes;
+      const votesLastHour = regVotesLastHour + guestVotesLastHour;
 
       return {
         totals: {

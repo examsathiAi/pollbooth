@@ -98,7 +98,7 @@ export function PlatformHealth() {
             Last checked {new Date(data.timestamp).toLocaleString()}
           </div>
         </div>
-      )}}
+      )}
     </section>
   );
 }

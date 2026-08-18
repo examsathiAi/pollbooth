@@ -54,6 +54,7 @@ model User {
   user_poll_assignments UserPollAssignment[]
   user_engagements      UserEngagement[]
   poll_predictions       PollPrediction[]
+  poll_share_unlocks     PollShareUnlock[]
   audit_logs            AuditLog[]
 
   @@index([phone_hash])
@@ -128,6 +129,7 @@ model Poll {
   ad_placements         AdPlacement[]
   user_engagements      UserEngagement[]
   poll_predictions      PollPrediction[]
+  poll_share_unlocks    PollShareUnlock[]
   topics                Topic[]
 
   @@index([category])
@@ -199,6 +201,20 @@ model UserPollAssignment {
   @@index([poll_id])
   @@index([is_seen])
   @@map("user_poll_assignments")
+}
+
+model PollShareUnlock {
+  user_id   String   @db.Uuid
+  poll_id   String   @db.Uuid
+  platform  String   @default("native") @db.VarChar(30)
+  shared_at DateTime @default(now()) @db.Timestamp(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  poll Poll @relation(fields: [poll_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, poll_id])
+  @@index([poll_id])
+  @@map("poll_share_unlocks")
 }
 
 // ============================================

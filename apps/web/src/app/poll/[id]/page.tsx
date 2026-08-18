@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { PollDetailClient } from "@/components/poll/PollDetailClient";
 import Script from "next/script";
 
@@ -28,27 +29,25 @@ async function fetchPoll(pollId: string) {
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const poll = await fetchPoll(params.id);
+  
+  // Dynamically resolve the true server domain/IP to prevent Facebook's localhost loopback failure
+  const headersList = headers();
+  const host = headersList.get('host') || 'localhost:3000';
+  const protocol = headersList.get('x-forwarded-proto') || 'http';
+  const dynamicSiteUrl = `${protocol}://${host}`;
 
-  if (!poll) {
-    return {
-      title: "PollBooth poll | PollBooth",
-      description: "Vote on the poll and see live public opinion.",
-      openGraph: {
-        title: "PollBooth poll | PollBooth",
-        description: "Vote on the poll and see live public opinion.",
-        type: "website",
-        images: ["/og-card.png"],
-      },
-      alternates: {
-        canonical: `${SITE_URL}/poll/${params.id}`,
-      },
-    };
-  }
+  if (!poll) return { title: "PollBooth", description: "Vote on PollBooth" };
 
   const title = poll.seo_title?.trim() || `${poll.question} | PollBooth`;
-  const description = poll.meta_description?.trim() || `Vote on this poll and see live results for ${poll.category}.`;
-  const openGraphTitle = poll.og_title?.trim() || poll.seo_title?.trim() || title;
-  const openGraphDescription = poll.og_description?.trim() || poll.meta_description?.trim() || description;
+  
+  // Feed Facebook the rich AI summary for maximum click-through rate
+  const description = (poll as any).ai_summary?.substring(0, 160) || poll.meta_description?.trim() || `Vote on this poll and see live results for ${poll.category}.`;
+  const openGraphTitle = poll.og_title?.trim() || poll.seo_title?.trim() || poll.question;
+  const openGraphDescription = poll.og_description?.trim() || description;
+
+  // We dynamically generate an Open Graph image on the fly with the poll question using a free API (No /api/og file required)
+  const encodedTitle = encodeURIComponent(poll.question.substring(0, 75) + (poll.question.length > 75 ? '...' : ''));
+  const dynamicOgImage = `https://placehold.co/1200x630/fdfbf7/1f1b18.png?text=${encodedTitle}%0A%0A%E2%86%92+Vote+on+PollBooth`;
 
   return {
     title,
@@ -57,9 +56,16 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     openGraph: {
       title: openGraphTitle,
       description: openGraphDescription,
+      url: `${dynamicSiteUrl}/poll/${params.id}`,
       type: "article",
-      images: ["/og-card.png"],
+      images: [{ url: dynamicOgImage, width: 1200, height: 630, alt: poll.question }],
     },
+    twitter: {
+      card: "summary_large_image",
+      title: openGraphTitle,
+      description: openGraphDescription,
+      images: [dynamicOgImage],
+    }
   };
 }
 

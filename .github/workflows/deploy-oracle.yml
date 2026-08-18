@@ -1,0 +1,80 @@
+name: Deploy to Oracle VM
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check API
+        run: pnpm --filter @pollbooth/api typecheck
+
+      - name: Type-check Web
+        run: pnpm --filter @pollbooth/web typecheck
+
+      - name: Type-check Admin
+        run: pnpm --filter @pollbooth/admin typecheck
+
+  deploy:
+    needs: ci
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.1
+        with:
+          host: ${{ secrets.ORACLE_HOST }}
+          username: ${{ secrets.ORACLE_USER }}
+          key: ${{ secrets.ORACLE_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            sudo apt-get update
+            sudo apt-get install -y ca-certificates curl gnupg
+            sudo install -m 0755 -d /etc/apt/keyrings
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+            sudo chmod a+r /etc/apt/keyrings/docker.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt-get update
+            sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+            sudo systemctl enable docker
+            sudo systemctl start docker
+            sudo usermod -aG docker $USER
+            mkdir -p ~/pulse
+            cd ~/pulse
+            if [ ! -d .git ]; then git clone https://github.com/<your-org>/<your-repo>.git .; fi
+            git fetch --all --prune
+            git checkout main || git checkout master
+            git pull --ff-only origin main || git pull --ff-only origin master
+            docker compose -f docker-compose.prod.yml up -d --build
+            docker compose -f docker-compose.prod.yml ps
+
+      - name: Health check
+        run: |
+          curl -fsS http://$ORACLE_HOST:3000/ >/dev/null || true
+          curl -fsS http://$ORACLE_HOST:3001/health >/dev/null || true
+        env:
+          ORACLE_HOST: ${{ secrets.ORACLE_HOST }}

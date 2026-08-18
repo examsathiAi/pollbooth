@@ -42,7 +42,7 @@ router.post("/otp/verify", rateLimiter.otp, validateBody(VerifyOtpSchema), async
 router.post("/refresh", rateLimiter.api, validateBody(RefreshTokenSchema), async (req, res, next) => {
   try {
     // Hybrid token retrieval for refresh
-    let tokenToRefresh = req.body.refreshToken;
+    let tokenToRefresh = req.body.refresh_token ?? req.body.refreshToken;
     if (!tokenToRefresh && req.headers.cookie) {
       const cookies = req.headers.cookie.split(";").map(c => c.trim());
       const refreshCookie = cookies.find(c => c.startsWith("refreshToken="));
@@ -53,10 +53,10 @@ router.post("/refresh", rateLimiter.api, validateBody(RefreshTokenSchema), async
       return res.status(401).json({ error: "Missing refresh token" });
     }
 
-    const result: any = await authService.refreshToken({ refreshToken: tokenToRefresh });
-    
-    if (result.accessToken && result.refreshToken) {
-      setAuthCookies(res, result.accessToken, result.refreshToken);
+    const result: any = await authService.refreshToken({ refresh_token: tokenToRefresh });
+
+    if (result.access_token && result.refresh_token) {
+      setAuthCookies(res, result.access_token, result.refresh_token);
     }
     res.status(200).json(result);
   } catch (err) {

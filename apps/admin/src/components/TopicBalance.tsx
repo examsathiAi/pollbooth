@@ -59,7 +59,7 @@ export function TopicBalance() {
             <BarChart3 className="h-4 w-4 text-maroon" /> Balanced topics help keep the platform reflective across politics, Bollywood and civic issues.
           </div>
         </div>
-      )}}
+      )}
     </section>
   );
 }
