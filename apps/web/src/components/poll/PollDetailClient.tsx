@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2, Share2, Sparkles, ThumbsDown, ThumbsUp, Flag } from "lucide-react";
@@ -13,6 +14,9 @@ interface PollDetailClientProps {
 }
 
 export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps) {
+  const actualPollId = useMemo(() => pollId.includes('--') ? (pollId.split('--').pop() as string) : pollId, [pollId]);
+  const router = useRouter();
+  const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
   const { user } = useAuth();
   const [poll, setPoll] = useState<any>(initialPoll);
   const [opinions, setOpinions] = useState<any[]>([]);
@@ -44,9 +48,9 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
     setIsLoading(true);
     try {
       const [pollRes, opinionsRes, relatedRes] = await Promise.all([
-        api.get(`/api/v1/polls/${pollId}`),
-        api.get(`/api/v1/opinions/${pollId}/opinions?sort=${sort}`),
-        api.get(`/api/v1/feed/related/${pollId}?limit=4`).catch(() => ({ data: [] })),
+        api.get(`/api/v1/polls/${actualPollId}`),
+        api.get(`/api/v1/opinions/${actualPollId}/opinions?sort=${sort}`),
+        api.get(`/api/v1/feed/related/${actualPollId}?limit=4`).catch(() => ({ data: [] })),
       ]);
       setPoll(pollRes.data);
       setHasVoted(Boolean(pollRes.data.has_voted));
@@ -56,7 +60,7 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
       setPredictionInput(pollRes.data.user_prediction?.toString() || "");
       if (pollRes.data.has_voted) {
         try {
-          const cohortRes = await api.get(`/api/v1/votes/${pollId}/cohort`);
+          const cohortRes = await api.get(`/api/v1/votes/${actualPollId}/cohort`);
           setCohort(cohortRes.data);
         } catch {
           setCohort(null);
@@ -81,14 +85,46 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
     void load();
   }, [poll?.id, pollId, loadPoll]);
 
+  // Canonical URL Enforcer: Silently rewrites naked UUID links to SEO keyword slugs instantly
+  useEffect(() => {
+    if (poll?.id && poll?.question && typeof window !== 'undefined') {
+      let slug = "";
+      if (poll.hashtags && poll.hashtags.length > 0) {
+        slug = poll.hashtags.map((t: string) => t.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()).filter(Boolean).join('-');
+      } else {
+        const stopWords = /\b(will|is|are|the|to|a|an|in|on|of|for|with|and|or|do|does|what|how|why|can)\b/gi;
+        const clean = poll.question.replace(stopWords, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+        slug = `${(poll.category || 'poll').toLowerCase().replace(/_/g, '-')}-${clean}`.slice(0, 75).replace(/-$/, '');
+      }
+      const targetPath = `/poll/${slug}--${poll.id}`;
+      
+      // If the URL in the browser doesn't match the optimized SEO target, rewrite it cleanly
+      if (window.location.pathname !== targetPath && !window.location.pathname.includes(slug)) {
+        window.history.replaceState({ ...window.history.state, as: targetPath, url: targetPath }, '', targetPath);
+      }
+    }
+  }, [poll?.id, poll?.question, poll?.category, poll?.hashtags]);
+
+
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const saved = window.localStorage.getItem(`pollbooth-cohort:${pollId}`);
+      const saved = window.localStorage.getItem(`pollbooth-cohort:${actualPollId}`);
       if (saved) {
         setCohort(saved);
       }
     }
   }, [pollId]);
+
+  
+  useEffect(() => {
+    if (redirectCountdown === null) return;
+    if (redirectCountdown === 0) {
+      router.push('/feed');
+      return;
+    }
+    const timer = window.setTimeout(() => setRedirectCountdown(prev => (prev as number) - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [redirectCountdown, router]);
 
   const submitPrediction = async () => {
     if (!user) {
@@ -102,7 +138,7 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
     }
     try {
       setIsSubmitting(true);
-      await api.post(`/api/v1/polls/${pollId}/predict`, { predicted_percentage: value });
+      await api.post(`/api/v1/polls/${actualPollId}/predict`, { predicted_percentage: value });
       setPrediction(value);
       setPredictionInput(value.toString());
       setMessage("Prediction saved. We’ll notify you when the poll closes if your bracket lands correctly.");
@@ -116,6 +152,7 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
   const handleVoteComplete = async () => {
     setHasVoted(true);
     await loadPoll();
+    setRedirectCountdown(15);
   };
 
   const submitOpinion = async () => {
@@ -128,7 +165,7 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
       return;
     }
     try {
-      await api.post(`/api/v1/opinions/${pollId}/opinion`, { content: newOpinion.trim() });
+      await api.post(`/api/v1/opinions/${actualPollId}/opinion`, { content: newOpinion.trim() });
       setNewOpinion("");
       loadPoll();
     } catch (err: any) {
@@ -194,6 +231,45 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
       
 
             <main>
+      {redirectCountdown !== null && (
+        <div className="mx-4 mt-5 flex flex-col gap-3 rounded-3xl border border-emerald-200 bg-[#f0fdf4] p-5 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex items-start gap-4">
+            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-sm">
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <div>
+              <h4 className="text-base font-bold text-emerald-950 tracking-tight">Thank you for voting!</h4>
+              <p className="text-sm font-semibold text-emerald-800 mt-0.5">Your vote has been registered.</p>
+              <p className="text-sm text-emerald-700 mt-2 leading-relaxed">
+                You can express your views from the comments section below. If you choose not to, you will be led to other polls in <span className="font-bold px-1.5 py-0.5 bg-emerald-200/50 rounded text-emerald-900">{redirectCountdown}s</span>.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center justify-end gap-3 mt-2 border-t border-emerald-200/60 pt-4">
+            <button
+              onClick={() => setRedirectCountdown(null)}
+              className="rounded-xl bg-emerald-200/50 px-4 py-2.5 text-xs font-bold text-emerald-800 transition-colors hover:bg-emerald-300 active:scale-95"
+            >
+              Wait, stay here
+            </button>
+            <button
+              onClick={() => {
+                setRedirectCountdown(null);
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+              }}
+              className="rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white transition-all hover:bg-emerald-700 active:scale-95 shadow-sm"
+            >
+              Express my views
+            </button>
+          </div>
+        </div>
+      )}
+      
+        
+
+        <EnhancedPollCard poll={poll} onVoteComplete={handleVoteComplete} />
+
+        {/* AI Context & Summary moved below the main poll */}
         {(poll as any).ai_summary ? (
           <div className="mx-4 mt-4 mb-2 overflow-hidden rounded-3xl border border-paper-border/60 bg-transparent p-5 shadow-sm transition-all">
             <div className="flex items-center gap-2 mb-3 border-b border-paper-border/40 pb-3">
@@ -208,8 +284,6 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
           </div>
         ) : null}
 
-        <EnhancedPollCard poll={poll} onVoteComplete={handleVoteComplete} />
-
                 {poll.has_voted && cohort ? (
           <div className="mx-4 my-4 rounded-2xl border border-ink/10 bg-ink/5 p-4 transition-all duration-300">
             <div className="flex items-center gap-2 mb-1.5">
@@ -223,14 +297,14 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
         ) : null}
 
                 {poll.faq && Array.isArray(poll.faq) && poll.faq.length > 0 ? (
-          <div className="mx-4 my-8 animate-in fade-in duration-500">
-            <h3 className="text-lg font-bold text-ink mb-4 flex items-center gap-2">
+          <div className="mx-4 my-6 overflow-hidden rounded-3xl border border-paper-border/60 bg-transparent p-5 shadow-sm transition-all animate-in fade-in duration-500">
+            <div className="flex items-center gap-2 mb-4 border-b border-paper-border/40 pb-3">
               <Sparkles className="w-5 h-5 text-maroon" />
-              Topic Deep Dive
-            </h3>
-            <div className="space-y-3">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-ink">Topic Deep Dive</h3>
+            </div>
+            <div className="space-y-4">
               {poll.faq.map((item: any, idx: number) => (
-                <div key={idx} className="rounded-2xl border border-paper-border/80 bg-[#fdfbf7] p-4.5 shadow-sm hover:shadow-md transition-shadow duration-300">
+                <div key={idx} className="rounded-2xl border border-paper-border/80 bg-[#fdfbf7] p-4 shadow-sm hover:shadow-md transition-shadow duration-300">
                   <h4 className="font-bold text-[#1f1b18] text-sm mb-2 leading-snug">{item.question || item.q}</h4>
                   <p className="text-sm text-[#6b665c] leading-relaxed">{item.answer || item.a}</p>
                 </div>

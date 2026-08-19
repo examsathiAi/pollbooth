@@ -9,7 +9,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export default async function Image({ params }: { params: { id: string } }) {
   try {
-    const res = await fetch(`${API_URL}/api/v1/polls/${params.id}`, { cache: "no-store" });
+    const res = await fetch(`${API_URL}/api/v1/polls/${params.id.includes('--') ? params.id.split('--').pop() : params.id}`, { cache: "no-store" });
     const poll = res.ok ? await res.json() : null;
     
     const title = poll?.question || "Have your say on PollBooth.it";

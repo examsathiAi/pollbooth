@@ -31,8 +31,8 @@ export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, cap
   const generateCardBlob = async (): Promise<Blob | null> => {
     if (!cardRef.current) return null;
     try {
-      return await toBlob(cardRef.current, { 
-        cacheBust: true, 
+      return await toBlob(cardRef.current, {
+        cacheBust: true,
         quality: 1.0,
         pixelRatio: 2,
         skipFonts: true,
@@ -71,28 +71,17 @@ export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, cap
   const openSocialUrl = (url: string) => window.open(url, "_blank", "noopener,noreferrer");
 
   return (
-    <div className="space-y-4 rounded-3xl border border-paper-border bg-paper-bg p-5 shadow-sm mt-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-sm font-bold text-ink">Share this Poll</h3>
-          <p className="text-xs text-ink-muted mt-0.5">Export a high-quality card or copy the link</p>
-        </div>
-        <button onClick={handleCopyLink} className="inline-flex items-center gap-1.5 rounded-xl border border-paper-border bg-transparent px-3 py-2 text-xs font-semibold text-ink hover:bg-ink/5 transition-colors">
-          {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-          {copied ? "Copied!" : "Copy Link"}
-        </button>
-      </div>
-
-      {/* Capture Area: Strict inline hex codes to bypass html-to-image CSS-variable loss */}
-      <div className="overflow-hidden rounded-2xl border border-paper-border/60 shadow-sm">
-        <div ref={cardRef} style={{ backgroundColor: '#ffffff', padding: '24px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div className="space-y-4 rounded-2xl border border-paper-border/60 bg-transparent p-4 mt-4 animate-in fade-in duration-300">
+      
+      {/* Hidden Capture Area: Bypasses duplicate visual bars on the frontend but allows image generation */}
+      <div style={{ position: "absolute", left: "-9999px", top: "-9999px", opacity: 0, pointerEvents: "none" }}>
+        <div ref={cardRef} style={{ backgroundColor: '#ffffff', padding: '24px', width: '600px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
           <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em', color: '#8a2a1b', marginBottom: '12px', textTransform: 'uppercase' }}>
             PollBooth Public Opinion
           </div>
           <div style={{ fontSize: '22px', fontWeight: 700, lineHeight: 1.3, marginBottom: '24px', color: '#111827' }}>
             {title}
           </div>
-          
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {chartItems.map((item) => (
               <div key={item.label}>
@@ -106,7 +95,6 @@ export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, cap
               </div>
             ))}
           </div>
-
           <div style={{ marginTop: '28px', paddingTop: '16px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', fontWeight: 600, color: '#6b7280' }}>
             <div>{voteCount ? `${voteCount.toLocaleString()} verified votes` : "Live tracking active"}</div>
             <div style={{ color: '#8a2a1b' }}>pollbooth.com</div>
@@ -114,19 +102,22 @@ export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, cap
         </div>
       </div>
 
-      {/* Conversion Actions */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 pt-2">
-        <button onClick={() => openSocialUrl(`https://api.whatsapp.com/send?text=${encodeURIComponent((captions?.whatsapp || title) + "\n\n👉 Vote now: " + shareLink)}`)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-50 px-3 py-3 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition-colors border border-emerald-100">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <button onClick={() => openSocialUrl(`https://api.whatsapp.com/send?text=${encodeURIComponent((captions?.whatsapp || title) + "\n\n👉 Vote now: " + shareLink)}`)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-bold text-ink shadow-sm hover:bg-ink/5 transition-all active:scale-95 border border-paper-border/40">
           <MessageCircle className="h-4 w-4" /> WhatsApp
         </button>
-        <button onClick={() => openSocialUrl(`https://twitter.com/intent/tweet?text=${encodeURIComponent(captions?.x || title)}&url=${encodeURIComponent(shareLink)}`)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-50 px-3 py-3 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors border border-slate-200">
+        <button onClick={() => openSocialUrl(`https://twitter.com/intent/tweet?text=${encodeURIComponent(captions?.x || title)}&url=${encodeURIComponent(shareLink)}`)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-bold text-ink shadow-sm hover:bg-ink/5 transition-all active:scale-95 border border-paper-border/40">
           <Sparkles className="h-4 w-4" /> X / Twitter
         </button>
-        <button onClick={() => openSocialUrl(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareLink)}`)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-50 px-3 py-3 text-xs font-bold text-blue-700 hover:bg-blue-100 transition-colors border border-blue-100">
+        <button onClick={() => openSocialUrl(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareLink)}`)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-bold text-ink shadow-sm hover:bg-ink/5 transition-all active:scale-95 border border-paper-border/40">
           <Share2 className="h-4 w-4" /> Facebook
         </button>
-        <button onClick={handleNativeShare} disabled={isGenerating} className="inline-flex items-center justify-center gap-2 rounded-xl bg-maroon px-3 py-3 text-xs font-bold text-white hover:bg-[#6b1e13] transition-colors shadow-sm disabled:opacity-50">
-          <Download className="h-4 w-4" /> Export Image
+        <button onClick={handleNativeShare} disabled={isGenerating} className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-3 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-ink/80 transition-all active:scale-95 disabled:opacity-50">
+          <Download className="h-4 w-4" /> Save Card
+        </button>
+        <button onClick={handleCopyLink} className="col-span-2 sm:col-span-4 inline-flex items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2.5 text-xs font-bold text-ink shadow-sm hover:bg-ink/5 transition-all active:scale-95 border border-paper-border/40">
+          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? "Copied to clipboard!" : "Copy Link"}
         </button>
       </div>
     </div>

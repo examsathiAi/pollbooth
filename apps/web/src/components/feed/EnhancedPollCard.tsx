@@ -119,6 +119,17 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
 
+  // Enterprise SEO Slug Generator
+  const seoSlug = useMemo(() => {
+    if (poll.hashtags && poll.hashtags.length > 0) {
+      return poll.hashtags.map(t => t.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()).filter(Boolean).join('-');
+    }
+    const stopWords = /\b(will|is|are|the|to|a|an|in|on|of|for|with|and|or|do|does|what|how|why|can)\b/gi;
+    const clean = poll.question.replace(stopWords, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    return `${(poll.category || 'poll').toLowerCase().replace(/_/g, '-')}-${clean}`.slice(0, 75).replace(/-$/, '');
+  }, [poll]);
+  const pollUrl = `/poll/${seoSlug}--${poll.id}`;
+
   useEffect(() => {
     let initialHasVoted = Boolean(poll.has_voted);
     let initialVoteIndex = poll.user_vote_index ?? null;
@@ -208,7 +219,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
 
   const handleReplyClick = async (opinionId: string) => {
     if (!user) {
-      window.location.href = `/auth/login?mode=login&redirect=/poll/${poll.id}`;
+      window.location.href = `/auth/login?mode=login&redirect=${pollUrl}`;
       return;
     }
     if (isUnlocked) {
@@ -220,7 +231,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       const shareData = {
         title: poll.question,
         text: "Join the debate on PollBooth!",
-        url: `${window.location.origin}/poll/${poll.id}?ref=${user.id}`,
+        url: `${window.location.origin}${pollUrl}?ref=${user.id}`,
       };
 
       if (navigator.share) {
@@ -366,7 +377,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
 
   const handleReaction = async (opinionId: string, reactionType: "AGREE" | "DISAGREE") => {
     if (!user) {
-      window.location.href = `/auth/login?mode=login&redirect=/poll/${poll.id}`;
+      window.location.href = `/auth/login?mode=login&redirect=${pollUrl}`;
       return;
     }
     setPressedReaction(`${opinionId}:${reactionType}`);
@@ -411,26 +422,11 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       </div>
 
       <div className="px-5 pb-4">
-        <Link href={`/poll/${poll.id}`} className="block group">
+        <Link href={`${pollUrl}`} className="block group">
           <h3 className="text-xl sm:text-2xl font-sans font-semibold tracking-tight leading-snug text-ink mb-2 line-clamp-4 group-hover:text-maroon transition-colors duration-200">{poll.question}</h3>
         </Link>
       </div>
-      {showShareMenu && (
-        <div className="px-5 pb-4 animate-in fade-in duration-300">
-          <ShareCardGenerator
-            title={poll.question}
-            voteCount={animatedVotes}
-            resultData={results.map((r) => ({ label: r.option, value: r.percentage || 0 }))}
-            shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/poll/${poll.id}`}
-            hashtags={poll.hashtags || []}
-            captions={{
-              whatsapp: poll.whatsapp_share_text || undefined,
-              x: poll.x_caption || undefined,
-              facebook: poll.facebook_caption || undefined
-            }}
-          />
-        </div>
-      )}
+      
 
       {!hasVoted ? (
         <div className="px-5 pb-5">
@@ -440,10 +436,10 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
                 key={idx}
                 onClick={() => void handleVote(idx)}
                 disabled={isVoting}
-                className={`group relative flex w-full items-center gap-4 rounded-2xl border px-5 py-4 text-left text-sm font-semibold transition-all duration-300 ease-out active:scale-[0.98] ${
+                className={`group relative flex w-full items-center gap-4 rounded-2xl border px-5 py-4 text-left text-sm font-semibold transition-all duration-300 ease-out transform hover:-translate-y-1 active:scale-95 cursor-pointer ${
                   selectedOptionIndex === idx || userVoteIndex === idx
-                    ? 'border-maroon bg-maroon/5 text-maroon shadow-sm ring-1 ring-maroon/20'
-                    : 'border-paper-border/80 bg-[#fdfbf7] text-[#1f1b18] hover:border-maroon/40 hover:bg-maroon/5 hover:shadow-md hover:-translate-y-0.5 cursor-pointer'
+                    ? 'border-maroon bg-maroon/5 text-maroon shadow-md ring-1 ring-maroon/20'
+                    : 'border-paper-border/80 bg-transparent text-ink hover:border-ink/30 hover:bg-ink/5 hover:shadow-sm'
                 }`}
               >
                 <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-300 ${selectedOptionIndex === idx || userVoteIndex === idx ? 'border-maroon' : 'border-ink/20 group-hover:border-maroon/50'}`}>
@@ -504,6 +500,24 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
             
           </div>
         </div>
+
+      {/* Facebook-style Bottom Share Menu */}
+      {showShareMenu && (
+        <div className="px-5 pb-4 animate-in fade-in duration-300">
+          <ShareCardGenerator
+            title={poll.question}
+            voteCount={animatedVotes}
+            resultData={results.map((r) => ({ label: r.option, value: r.percentage || 0 }))}
+            shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}${pollUrl}`}
+            hashtags={poll.hashtags || []}
+            captions={{
+              whatsapp: poll.whatsapp_share_text || undefined,
+              x: poll.x_caption || undefined,
+              facebook: poll.facebook_caption || undefined
+            }}
+          />
+        </div>
+      )}
       </div>
 
       {hasVoted && showComments && (
@@ -596,8 +610,8 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
               <p className="font-semibold text-ink">Join the conversation</p>
               <p className="mt-1 text-ink-muted mb-4">Sign in to share your view.</p>
               <div className="flex flex-wrap gap-2.5">
-                <Link href={`/auth/login?mode=login&redirect=/poll/${poll.id}`} className="rounded-xl border border-paper-border bg-transparent px-4 py-2.5 text-sm font-medium text-ink hover:bg-ink/5 transition-all duration-200">Sign in</Link>
-                <Link href={`/auth/login?mode=login&redirect=/poll/${poll.id}`} className="rounded-xl bg-ink px-4 py-2.5 text-sm font-medium text-paper-bg hover:bg-ink/90 transition-all duration-200">Create account</Link>
+                <Link href={`/auth/login?mode=login&redirect=${pollUrl}`} className="rounded-xl border border-paper-border bg-transparent px-4 py-2.5 text-sm font-medium text-ink hover:bg-ink/5 transition-all duration-200">Sign in</Link>
+                <Link href={`/auth/login?mode=login&redirect=${pollUrl}`} className="rounded-xl bg-ink px-4 py-2.5 text-sm font-medium text-paper-bg hover:bg-ink/90 transition-all duration-200">Create account</Link>
               </div>
             </div>
           ) : (

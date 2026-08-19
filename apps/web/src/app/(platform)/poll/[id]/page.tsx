@@ -28,7 +28,7 @@ async function fetchPoll(pollId: string) {
 }
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const poll = await fetchPoll(params.id);
+  const poll = await fetchPoll(params.id.includes('--') ? params.id.split('--').pop()! : params.id);
   
   // Dynamically resolve the true server domain/IP to prevent Facebook's localhost loopback failure
   const headersList = headers();
@@ -70,7 +70,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function PollDetailPage({ params }: { params: { id: string } }) {
-  const poll = await fetchPoll(params.id);
+  const poll = await fetchPoll(params.id.includes('--') ? params.id.split('--').pop()! : params.id);
 
   if (!poll) {
     return (
