@@ -245,7 +245,14 @@ export function PollCard({ poll, onVoteComplete }: PollCardProps) {
             subtitle={`${poll.total_votes?.toLocaleString()} votes • ${cohort} cohort`}
             voteCount={poll.total_votes}
             resultData={poll.results?.map((result) => ({ label: result.option, value: result.percentage }))}
-            shareUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/poll/${poll.id}`}
+            shareUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/poll/${poll.slug || poll.id}`}
+            hashtags={poll.hashtags || []}
+            captions={{
+              whatsapp: poll.whatsapp_share_text || undefined,
+              x: poll.x_caption || undefined,
+              facebook: poll.facebook_caption || undefined,
+              instagram: poll.instagram_caption || undefined
+            }}
           />
         </div>
       )}

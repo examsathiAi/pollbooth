@@ -121,6 +121,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
 
   // Enterprise SEO Slug Generator
   const seoSlug = useMemo(() => {
+    if (poll.slug) return poll.slug;
     if (poll.hashtags && poll.hashtags.length > 0) {
       return poll.hashtags.map(t => t.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()).filter(Boolean).join('-');
     }
@@ -513,7 +514,8 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
             captions={{
               whatsapp: poll.whatsapp_share_text || undefined,
               x: poll.x_caption || undefined,
-              facebook: poll.facebook_caption || undefined
+              facebook: poll.facebook_caption || undefined,
+              instagram: poll.instagram_caption || undefined
             }}
           />
         </div>

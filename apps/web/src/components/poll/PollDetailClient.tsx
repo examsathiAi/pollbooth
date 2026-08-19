@@ -78,7 +78,7 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
     const load = async () => {
       if (!poll?.id) {
         await loadPoll();
-      } else {
+      } else if (!slug) {
         setIsLoading(false);
       }
     };
@@ -88,8 +88,8 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
   // Canonical URL Enforcer: Silently rewrites naked UUID links to SEO keyword slugs instantly
   useEffect(() => {
     if (poll?.id && poll?.question && typeof window !== 'undefined') {
-      let slug = "";
-      if (poll.hashtags && poll.hashtags.length > 0) {
+      let slug = poll.slug || "";
+      if (!slug && poll.hashtags && poll.hashtags.length > 0) {
         slug = poll.hashtags.map((t: string) => t.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()).filter(Boolean).join('-');
       } else {
         const stopWords = /\b(will|is|are|the|to|a|an|in|on|of|for|with|and|or|do|does|what|how|why|can)\b/gi;

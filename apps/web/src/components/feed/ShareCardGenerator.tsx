@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { toBlob } from "html-to-image";
-import { Download, Share2, Sparkles, MessageCircle, Copy, Check } from "lucide-react";
+import { Download, Share2, Sparkles, MessageCircle, Copy, Check, Instagram } from "lucide-react";
 
 interface ShareCardGeneratorProps {
   title: string;
@@ -11,7 +11,7 @@ interface ShareCardGeneratorProps {
   voteCount?: number;
   resultData?: Array<{ label: string; value: number }>;
   shareUrl?: string;
-  captions?: { whatsapp?: string; x?: string; facebook?: string; };
+  captions?: { whatsapp?: string; x?: string; facebook?: string; instagram?: string; };
   hashtags?: string[];
 }
 
@@ -20,13 +20,23 @@ const formatData = (data?: Array<{ label: string; value: number }>) => {
   return [...data].sort((a, b) => b.value - a.value).slice(0, 4);
 };
 
-export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, captions, hashtags }: ShareCardGeneratorProps) {
+export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, captions, hashtags = [] }: ShareCardGeneratorProps) {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [igCopied, setIgCopied] = useState(false);
 
   const shareLink = useMemo(() => shareUrl || (typeof window !== "undefined" ? window.location.href : ""), [shareUrl]);
   const chartItems = useMemo(() => formatData(resultData), [resultData]);
+
+  // Ensure #pollbooth is always included
+  const completeHashtags = useMemo(() => {
+    const tags = Array.isArray(hashtags) ? [...hashtags] : [];
+    if (!tags.some(t => t.toLowerCase() === "#pollbooth" || t.toLowerCase() === "pollbooth")) {
+      tags.push("#pollbooth");
+    }
+    return tags.map(t => t.startsWith("#") ? t : `#${t}`);
+  }, [hashtags]);
 
   const generateCardBlob = async (): Promise<Blob | null> => {
     if (!cardRef.current) return null;
@@ -47,7 +57,7 @@ export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, cap
     setIsGenerating(true);
     try {
       const blob = await generateCardBlob();
-      const shareText = `${title}\n\nCast your vote on PollBooth: ${shareLink}`;
+      const shareText = `${title}\n\nCast your vote: ${shareLink}\n\n${completeHashtags.join(" ")}`;
 
       if (blob && navigator.canShare && navigator.canShare({ files: [new File([blob], "pollbooth.png", { type: "image/png" })] })) {
         await navigator.share({ title, text: shareText, url: shareLink, files: [new File([blob], "pollbooth.png", { type: "image/png" })] });
@@ -63,17 +73,26 @@ export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, cap
   };
 
   const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(`${title}\n${shareLink}`);
+    await navigator.clipboard.writeText(`${title}\n${shareLink}\n\n${completeHashtags.join(" ")}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
 
+  const handleInstagramShare = async () => {
+    const igText = captions?.instagram || `${title}\n\nCast your verified vote on PollBooth: ${shareLink}\n\n${completeHashtags.join(" ")}`;
+    await navigator.clipboard.writeText(igText);
+    setIgCopied(true);
+    setTimeout(() => setIgCopied(false), 2500);
+  };
+
   const openSocialUrl = (url: string) => window.open(url, "_blank", "noopener,noreferrer");
+
+  // Clean comma-separated list for Twitter/X native parameters
+  const twitterTagsParam = completeHashtags.map(t => t.replace("#", "").trim()).join(",");
 
   return (
     <div className="space-y-4 rounded-2xl border border-paper-border/60 bg-transparent p-4 mt-4 animate-in fade-in duration-300">
-      
-      {/* Hidden Capture Area: Bypasses duplicate visual bars on the frontend but allows image generation */}
+      {/* Off-screen capture surface */}
       <div style={{ position: "absolute", left: "-9999px", top: "-9999px", opacity: 0, pointerEvents: "none" }}>
         <div ref={cardRef} style={{ backgroundColor: '#ffffff', padding: '24px', width: '600px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
           <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em', color: '#8a2a1b', marginBottom: '12px', textTransform: 'uppercase' }}>
@@ -97,27 +116,54 @@ export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, cap
           </div>
           <div style={{ marginTop: '28px', paddingTop: '16px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', fontWeight: 600, color: '#6b7280' }}>
             <div>{voteCount ? `${voteCount.toLocaleString()} verified votes` : "Live tracking active"}</div>
-            <div style={{ color: '#8a2a1b' }}>pollbooth.com</div>
+            <div style={{ color: '#8a2a1b' }}>#pollbooth • pollbooth.com</div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <button onClick={() => openSocialUrl(`https://api.whatsapp.com/send?text=${encodeURIComponent((captions?.whatsapp || title) + "\n\n👉 Vote now: " + shareLink)}`)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-bold text-ink shadow-sm hover:bg-ink/5 transition-all active:scale-95 border border-paper-border/40">
-          <MessageCircle className="h-4 w-4" /> WhatsApp
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <button
+          onClick={() => openSocialUrl(`https://api.whatsapp.com/send?text=${encodeURIComponent((captions?.whatsapp || title) + "\n\n👉 Vote here: " + shareLink + "\n\n" + completeHashtags.join(" "))}`)}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-bold text-ink shadow-sm hover:bg-ink/5 transition-all active:scale-95 border border-paper-border/40"
+        >
+          <MessageCircle className="h-4 w-4 text-emerald-600" /> WhatsApp
         </button>
-        <button onClick={() => openSocialUrl(`https://twitter.com/intent/tweet?text=${encodeURIComponent(captions?.x || title)}&url=${encodeURIComponent(shareLink)}`)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-bold text-ink shadow-sm hover:bg-ink/5 transition-all active:scale-95 border border-paper-border/40">
-          <Sparkles className="h-4 w-4" /> X / Twitter
+
+        <button
+          onClick={() => openSocialUrl(`https://twitter.com/intent/tweet?text=${encodeURIComponent(captions?.x || title)}&url=${encodeURIComponent(shareLink)}&hashtags=${twitterTagsParam}`)}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-bold text-ink shadow-sm hover:bg-ink/5 transition-all active:scale-95 border border-paper-border/40"
+        >
+          <Sparkles className="h-4 w-4 text-slate-700" /> X / Twitter
         </button>
-        <button onClick={() => openSocialUrl(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareLink)}`)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-bold text-ink shadow-sm hover:bg-ink/5 transition-all active:scale-95 border border-paper-border/40">
-          <Share2 className="h-4 w-4" /> Facebook
+
+        <button
+          onClick={() => openSocialUrl(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareLink)}`)}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-bold text-ink shadow-sm hover:bg-ink/5 transition-all active:scale-95 border border-paper-border/40"
+        >
+          <Share2 className="h-4 w-4 text-blue-600" /> Facebook
         </button>
-        <button onClick={handleNativeShare} disabled={isGenerating} className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-3 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-ink/80 transition-all active:scale-95 disabled:opacity-50">
+
+        <button
+          onClick={handleInstagramShare}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-bold text-ink shadow-sm hover:bg-ink/5 transition-all active:scale-95 border border-paper-border/40"
+        >
+          <Instagram className="h-4 w-4 text-pink-600" /> {igCopied ? "Caption Copied!" : "Instagram"}
+        </button>
+
+        <button
+          onClick={handleNativeShare}
+          disabled={isGenerating}
+          className="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-3 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-ink/80 transition-all active:scale-95 disabled:opacity-50"
+        >
           <Download className="h-4 w-4" /> Save Card
         </button>
-        <button onClick={handleCopyLink} className="col-span-2 sm:col-span-4 inline-flex items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2.5 text-xs font-bold text-ink shadow-sm hover:bg-ink/5 transition-all active:scale-95 border border-paper-border/40">
+
+        <button
+          onClick={handleCopyLink}
+          className="col-span-2 sm:col-span-5 inline-flex items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2 text-xs font-bold text-ink shadow-sm hover:bg-ink/5 transition-all active:scale-95 border border-paper-border/40"
+        >
           {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-          {copied ? "Copied to clipboard!" : "Copy Link"}
+          {copied ? "Link and Hashtags Copied!" : "Copy Link & Hashtags"}
         </button>
       </div>
     </div>

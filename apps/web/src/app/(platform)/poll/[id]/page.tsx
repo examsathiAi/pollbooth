@@ -41,7 +41,10 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const title = poll.seo_title?.trim() || `${poll.question} | PollBooth`;
   
   // Feed Facebook the rich AI summary for maximum click-through rate
-  const description = (poll as any).ai_summary?.substring(0, 160) || poll.meta_description?.trim() || `Vote on this poll and see live results for ${poll.category}.`;
+  const baseDesc = (poll as any).ai_summary?.substring(0, 140) || poll.meta_description?.trim() || `Vote on this poll and see live results for ${poll.category}.`;
+  const allHashtags = (poll.hashtags && poll.hashtags.length > 0) ? poll.hashtags : ["#pollbooth"];
+  const formattedTags = allHashtags.map(t => t.startsWith('#') ? t : `#${t}`).join(' ');
+  const description = `${baseDesc} ${formattedTags}`;
   const openGraphTitle = poll.og_title?.trim() || poll.seo_title?.trim() || poll.question;
   const openGraphDescription = poll.og_description?.trim() || description;
 
