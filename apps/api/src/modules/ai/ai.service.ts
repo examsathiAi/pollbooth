@@ -169,8 +169,7 @@ ${sourceListText}
 TASK:
 Analyze the poll question: "${question}" (Category: ${category}).
 
-1. Write 'ai_summary': A comprehensive 2-3 paragraph investigative news brief explaining the latest developments, key stakeholders, recent performances/projects, public sentiment, and industry/civic implications grounded in the verified material for ${currentYear}. MUST end with:
-\n\n*Disclaimer: This context was AI-generated based on recent news sources. Always verify facts independently.*
+1. Write 'ai_summary': A massive, deep-dive investigative journalism article (6-8 dense paragraphs, minimum 800 words). It must read like a premium front-page editorial. Cover extensive background history, micro and macro implications, key stakeholders, public sentiment, and detailed analysis based strictly on the verified ${currentYear} material. MUST end with:\n\n*Disclaimer: This context was AI-generated based on recent news sources. Always verify facts independently.*
 2. Write 'faq': 2-4 key Q&As addressing the most searched questions on this topic by the Indian public for ${currentYear}.
 3. Generate 'suggested_options': An array of 2-4 realistic, mutually exclusive poll answers (e.g. candidate/actor names or direct answers). DO NOT include UI buttons or action items.
 4. Extract 'hashtags': 3-5 authentic, high-traffic trending hashtags hyper-localized for Indian social media in ${currentYear}. YOU MUST ALWAYS INCLUDE "#pollbooth".
@@ -216,7 +215,7 @@ Return strictly valid JSON matching:
         ],
         generationConfig: {
           temperature: 0.2,
-          maxOutputTokens: 2500,
+          maxOutputTokens: 6000,
           responseMimeType: "application/json",
         }
       }),

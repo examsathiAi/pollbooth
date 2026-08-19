@@ -5,18 +5,6 @@ import { CheckCircle2, Loader2, Plus, Sparkles, X, Link as LinkIcon, Users, Chev
 import { api } from "@/lib/api";
 
 
-const AutoResizeTextarea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => {
-  const ref = useRef<HTMLTextAreaElement>(null);
-  
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.style.height = 'auto';
-      ref.current.style.height = ref.current.scrollHeight + 'px';
-    }
-  }, [props.value]);
-
-  return <AutoResizeTextarea ref={ref} {...props} style={{ minHeight: '44px', overflow: 'hidden', resize: 'none', ...props.style }} />;
-};
 
 const CATEGORY_OPTIONS = [
   "POLITICS", "CIVIC", "BOLLYWOOD", "SPORTS", "CURRENT_EVENTS", "LOCAL",
@@ -76,6 +64,17 @@ export function PollCreationPanel() {
   const [aiContent, setAiContent] = useState<AiContent | null>(null);
   const [topicDraft, setTopicDraft] = useState("");
   const [topicTags, setTopicTags] = useState<string[]>([]);
+
+  // DOM Force: Auto-resize all textareas whenever AI populates data or user types
+  useEffect(() => {
+    // A micro-delay ensures React has finished painting the new text to the screen
+    setTimeout(() => {
+      document.querySelectorAll('textarea').forEach(el => {
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+      });
+    }, 10);
+  }, [aiContent, question, options]);
 
   const optionSummary = useMemo(() => options.filter(Boolean).join(" â€¢ "), [options]);
   const canGenerate = Boolean(question.trim()) && Boolean(category.trim());
@@ -219,7 +218,7 @@ export function PollCreationPanel() {
         <div className="flex items-center justify-between gap-3">
           <label className="block flex-1">
             <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Question</span>
-            <AutoResizeTextarea value={question} onChange={(e) => setQuestion(e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-3 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" placeholder="What should the community weigh in on?" required />
+            <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={question} onChange={(e) => setQuestion(e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-3 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" placeholder="What should the community weigh in on?" required />
           </label>
           <button type="button" onClick={handleGenerate} disabled={isGenerating || !canGenerate} className="inline-flex items-center gap-2 rounded-2xl bg-[#7a2e2e] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#7a2e2e]-dark disabled:opacity-60">
             {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Generate AI Content
@@ -323,7 +322,7 @@ export function PollCreationPanel() {
             <div className="grid gap-4">
               <label className="block">
                 <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Improved question</span>
-                <AutoResizeTextarea value={aiContent.improved_question} onChange={(e) => updateAiField("improved_question", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.improved_question} onChange={(e) => updateAiField("improved_question", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
               </label>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -333,7 +332,7 @@ export function PollCreationPanel() {
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Meta description</span>
-                  <AutoResizeTextarea value={aiContent.meta_description} onChange={(e) => updateAiField("meta_description", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.meta_description} onChange={(e) => updateAiField("meta_description", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
                 </label>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
@@ -343,37 +342,37 @@ export function PollCreationPanel() {
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Keywords</span>
-                  <AutoResizeTextarea value={aiContent.keywords.join(", ")} onChange={(e) => updateAiField("keywords", e.target.value.split(",").map(i => i.trim()))} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.keywords.join(", ")} onChange={(e) => updateAiField("keywords", e.target.value.split(",").map(i => i.trim()))} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
                 </label>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Hashtags</span>
-                  <AutoResizeTextarea value={aiContent.hashtags.join(", ")} onChange={(e) => updateAiField("hashtags", e.target.value.split(",").map(i => i.trim()))} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.hashtags.join(", ")} onChange={(e) => updateAiField("hashtags", e.target.value.split(",").map(i => i.trim()))} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">AI summary</span>
-                  <AutoResizeTextarea value={aiContent.ai_summary} onChange={(e) => updateAiField("ai_summary", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.ai_summary} onChange={(e) => updateAiField("ai_summary", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
                 </label>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Facebook caption</span>
-                  <AutoResizeTextarea value={aiContent.facebook_caption} onChange={(e) => updateAiField("facebook_caption", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.facebook_caption} onChange={(e) => updateAiField("facebook_caption", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Instagram caption</span>
-                  <AutoResizeTextarea value={aiContent.instagram_caption} onChange={(e) => updateAiField("instagram_caption", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.instagram_caption} onChange={(e) => updateAiField("instagram_caption", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
                 </label>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">X caption</span>
-                  <AutoResizeTextarea value={aiContent.x_caption} onChange={(e) => updateAiField("x_caption", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.x_caption} onChange={(e) => updateAiField("x_caption", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">WhatsApp share text</span>
-                  <AutoResizeTextarea value={aiContent.whatsapp_share_text} onChange={(e) => updateAiField("whatsapp_share_text", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.whatsapp_share_text} onChange={(e) => updateAiField("whatsapp_share_text", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
                 </label>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
@@ -383,7 +382,7 @@ export function PollCreationPanel() {
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Open Graph description</span>
-                  <AutoResizeTextarea value={aiContent.og_description} onChange={(e) => updateAiField("og_description", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.og_description} onChange={(e) => updateAiField("og_description", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
                 </label>
               </div>
               <div className="space-y-2">
@@ -391,7 +390,7 @@ export function PollCreationPanel() {
                 {aiContent.faq.map((item, index) => (
                   <div key={index} className="space-y-2 rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-3">
                     <input value={item.question} onChange={(e) => updateFaqItem(index, "question", e.target.value)} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" placeholder="Question" />
-                    <AutoResizeTextarea value={item.answer} onChange={(e) => updateFaqItem(index, "answer", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" placeholder="Answer" />
+                    <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={item.answer} onChange={(e) => updateFaqItem(index, "answer", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" placeholder="Answer" />
                   </div>
                 ))}
               </div>
