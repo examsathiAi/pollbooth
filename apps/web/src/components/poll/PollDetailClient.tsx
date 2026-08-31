@@ -78,7 +78,7 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
     const load = async () => {
       if (!poll?.id) {
         await loadPoll();
-      } else if (!slug) {
+      } else if (!poll?.slug) {
         setIsLoading(false);
       }
     };

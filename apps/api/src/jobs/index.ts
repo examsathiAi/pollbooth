@@ -4,6 +4,7 @@ import { registerDigestWorker, enqueueDigestJob } from "./digest.worker";
 import { registerModerationWorker, enqueueModerationSweep } from "./moderation.worker";
 import { registerNotificationWorker } from "./notification.worker";
 import { registerCleanupWorker, enqueueCleanupJob } from "./cleanup.worker";
+import { registerCloseExpiredPollsWorker, enqueueCloseExpiredPollsJob } from "./close-expired-polls.worker";
 
 export async function startWorkers(): Promise<void> {
   try {
@@ -12,6 +13,7 @@ export async function startWorkers(): Promise<void> {
       registerModerationWorker(),
       registerNotificationWorker(),
       registerCleanupWorker(),
+      registerCloseExpiredPollsWorker(),
     ]);
 
     cron.schedule("30 0 * * *", async () => {
@@ -29,9 +31,14 @@ export async function startWorkers(): Promise<void> {
       await enqueueCleanupJob();
     });
 
+        cron.schedule("0 * * * *", async () => {
+      await enqueueCloseExpiredPollsJob();
+    });
+
     await enqueueDigestJob();
     await enqueueModerationSweep();
     await enqueueCleanupJob();
+    await enqueueCloseExpiredPollsJob();
 
     logger.info("Background workers registered and scheduled.");
   } catch (error) {

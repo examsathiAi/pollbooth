@@ -1,10 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import { Queue, Worker, type Job } from "bullmq";
 import { logger } from "../common/interceptors/logger";
-import { redis } from "../config/redis";
+import { config } from "../config";
 
 const prisma = new PrismaClient();
-const cleanupRedisConnection = { ...(redis as unknown as Record<string, unknown>), maxRetriesPerRequest: null };
+const cleanupRedisConnection = { url: config.redisUrl, maxRetriesPerRequest: null };
 
 export const cleanupQueue = new Queue("cleanup", {
   connection: cleanupRedisConnection as any,

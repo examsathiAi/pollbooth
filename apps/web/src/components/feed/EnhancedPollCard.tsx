@@ -16,6 +16,12 @@ interface EnhancedPollCardProps {
     category: string;
     total_votes: number;
     total_opinions: number;
+    slug?: string | null;
+    hashtags?: string[] | null;
+    whatsapp_share_text?: string | null;
+    x_caption?: string | null;
+    facebook_caption?: string | null;
+    instagram_caption?: string | null;
     has_voted?: boolean;
     has_opinion?: boolean;
     results?: Array<{ option: string; index: number; count: number; percentage: number }>;
@@ -23,10 +29,6 @@ interface EnhancedPollCardProps {
     user_opinion?: { id: string; content: string; agree_count: number; disagree_count: number } | null;
     is_commercial?: boolean;
     created_at?: string;
-    whatsapp_share_text?: string | null;
-    x_caption?: string | null;
-    facebook_caption?: string | null;
-    hashtags?: string[] | null;
     end_date?: string | null;
   };
   index?: number;
@@ -532,7 +534,9 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
           <p className="text-sm text-ink-muted animate-pollbooth">Loading comments…</p>
         ) : opinions.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-paper-border bg-transparent px-4 py-3 text-sm text-ink-muted text-center font-medium">
-             Be the first to share your thoughts.
+            {poll.end_date && new Date(poll.end_date) < new Date()
+              ? "No comments were posted on this poll."
+              : "Be the first to share your thoughts."}
           </div>
         ) : (
           <div className="space-y-3">
@@ -607,7 +611,11 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         )}
 
         <div className="mt-4">
-          {!user ? (
+          {poll.end_date && new Date(poll.end_date) < new Date() ? (
+            <div className="rounded-2xl border border-paper-border bg-transparent p-4 text-sm font-medium text-center text-ink-muted transition-all">
+              This poll is closed. Comments are locked.
+            </div>
+          ) : !user ? (
             <div className="rounded-2xl border border-paper-border bg-transparent p-4 text-sm transition-all">
               <p className="font-semibold text-ink">Join the conversation</p>
               <p className="mt-1 text-ink-muted mb-4">Sign in to share your view.</p>

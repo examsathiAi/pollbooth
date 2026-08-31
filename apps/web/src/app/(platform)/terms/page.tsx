@@ -18,6 +18,10 @@ export default function TermsPage() {
           <li>Use the platform for civic, product, and community feedback in good faith.</li>
         </ul>
       </section>
+      <section className="rounded-[28px] border border-[#d8ceb8] bg-[#fffdf9] p-6 shadow-sm">
+        <h2 className="text-xl font-semibold text-[#1f1b18]">Intellectual Property & Data Rights</h2>
+        <p className="mt-3 text-sm leading-7">When you cast a vote or post a comment, you grant PollBooth a perpetual, non-exclusive right to use, aggregate, and publish that data. PollBooth retains full ownership of the aggregated statistical data (stripped of personal identifiers) and platform analytics, which may be licensed or utilized for commercial enterprise solutions.</p>
+      </section>
 
       <section className="rounded-[28px] border border-[#d8ceb8] bg-[#fffdf9] p-6 shadow-sm">
         <h2 className="text-xl font-semibold text-[#1f1b18]">Rewards and referrals</h2>

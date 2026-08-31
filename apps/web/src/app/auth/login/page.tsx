@@ -9,6 +9,7 @@ import Link from "next/link";
 export default function LoginPage() {
   const { login } = useAuth();
   const [phone, setPhone] = useState("");
+  const [name, setName] = useState(""); // Add name state
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [isLoading, setIsLoading] = useState(false);
@@ -34,8 +35,12 @@ export default function LoginPage() {
   }, []);
 
   const sendOtp = async () => {
-    if (!phone.match(/^\+91[6-9]\d{9}$/)) {
-      setError("Please enter a valid Indian phone number (+91...)");
+    if (!phone.match(/^[6-9]\d{9}$/)) {
+      setError("Please enter a valid 10-digit mobile number.");
+      return;
+    }
+    if (mode === "signup" && name.trim().length < 2) {
+      setError("Please enter your name (at least 2 characters).");
       return;
     }
     if (mode === "signup" && (!acceptedTerms || !acceptedPrivacy || !ageConfirmed)) {
@@ -45,10 +50,20 @@ export default function LoginPage() {
     setIsLoading(true);
     setError("");
     try {
-      await api.post("/api/v1/auth/otp/send", { phone_number: phone });
+      await api.post("/api/v1/auth/otp/send", { phone_number: `+91${phone}`, mode });
       setStep("otp");
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to send OTP. Please try again.");
+      const status = err.response?.status;
+      if (status === 404 && mode === "login") {
+        setMode("signup");
+        // FIXED TYPO: changed "below" to "above"
+        setError("Number not registered. Please check the boxes above to sign up.");
+      } else if (status === 409 && mode === "signup") {
+        setMode("login");
+        setError("Account already exists. Please sign in.");
+      } else {
+        setError(err.response?.data?.message || err.response?.data?.error || "Failed to send OTP. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -62,7 +77,9 @@ export default function LoginPage() {
     setIsLoading(true);
     setError("");
     try {
-      await login(phone, otp, mode === "signup" ? {
+      // Pass the new name state down to the backend under the 'username' key as defined in our schema
+      await login(`+91${phone}`, otp, mode === "signup" ? {
+        username: name.trim(), 
         accepted_terms: acceptedTerms,
         accepted_privacy: acceptedPrivacy,
         age_confirmed: ageConfirmed,
@@ -132,15 +149,33 @@ export default function LoginPage() {
 
           {step === "phone" ? (
             <div className="space-y-6 mt-8">
+              {/* Only show Name field during signup */}
+              {mode === "signup" && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none text-slate-700">Full Name</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Enter your name"
+                    className="flex h-11 w-full rounded-md border border-[#d8ceb8] bg-white px-3 py-2 text-sm placeholder:text-[#625a50] focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent transition-all"
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
                 <label className="text-sm font-medium leading-none text-slate-700">Phone Number</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  className="flex h-11 w-full rounded-md border border-[#d8ceb8] bg-white px-3 py-2 text-sm placeholder:text-[#625a50] focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent transition-all"
-                />
+                <div className="relative flex items-center">
+                  <span className="absolute left-3 text-sm font-medium text-slate-500">+91</span>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    placeholder="9876543210"
+                    maxLength={10}
+                    className="flex h-11 w-full rounded-md border border-[#d8ceb8] bg-white pl-10 pr-3 py-2 text-sm placeholder:text-[#625a50] focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent transition-all"
+                  />
+                </div>
               </div>
 
               {mode === "signup" && (
@@ -188,7 +223,7 @@ export default function LoginPage() {
                   className="flex h-12 w-full rounded-md border border-[#d8ceb8] bg-white px-3 py-2 text-center text-2xl tracking-[0.5em] font-mono placeholder:text-[#d8ceb8] focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent transition-all"
                   maxLength={6}
                 />
-                <p className="text-xs text-slate-500 pt-1">Sent to {phone}</p>
+                <p className="text-xs text-slate-500 pt-1">Sent to +91 {phone}</p>
               </div>
 
               {error && <div className="text-sm font-medium text-red-500 bg-red-50 p-3 rounded-md">{error}</div>}

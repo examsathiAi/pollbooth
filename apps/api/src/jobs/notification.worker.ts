@@ -1,11 +1,10 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { Queue, Worker, type Job } from "bullmq";
 import { logger } from "../common/interceptors/logger";
-import { redis } from "../config/redis";
 import { config } from "../config";
 
 const prisma = new PrismaClient();
-const notificationRedisConnection = { ...(redis as unknown as Record<string, unknown>), maxRetriesPerRequest: null };
+const notificationRedisConnection = { url: config.redisUrl, maxRetriesPerRequest: null };
 
 export const notificationQueue = new Queue("notification", {
   connection: notificationRedisConnection as any,

@@ -38,6 +38,17 @@ export default function PrivacyPage() {
       </section>
 
       <section className="rounded-[28px] border border-[#d8ceb8] bg-[#fffdf9] p-6 shadow-sm">
+        <h2 className="text-xl font-semibold text-[#1f1b18]">Cookies and Third-Party Advertising</h2>
+        <div className="mt-4 space-y-4 text-sm leading-7">
+          <p>We use cookies to improve user experience and serve relevant advertisements. Third-party vendors, including Google, use cookies to serve ads based on your prior visits to PollBooth or other websites.</p>
+          <ul className="list-disc space-y-2 pl-5">
+            <li>Google&apos;s use of advertising cookies enables it and its partners to serve ads to you based on your visit to our site and/or other sites on the Internet.</li>
+            <li>You may opt out of personalized advertising by visiting Google&apos;s <a href="https://www.google.com/settings/ads" className="text-[#7a1f10] underline" target="_blank" rel="noreferrer">Ads Settings</a>.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section className="rounded-[28px] border border-[#d8ceb8] bg-[#fffdf9] p-6 shadow-sm">
         <h2 className="text-xl font-semibold text-[#1f1b18]">Your rights</h2>
         <p className="mt-4 text-sm leading-7">You may withdraw your consent at any time, request access to the data we hold about you, or ask for deletion of your account-linked information. Submit a grievance request through the grievance page to start the process.</p>
       </section>

@@ -17,7 +17,7 @@ if (config.nodeEnv === "production" && config.isDevelopment) {
 // This is a mock implementation for development
 export class AuthService {
   async sendOtp(input: SendOtpInput) {
-    const { phone_number } = input;
+    const { phone_number, mode } = input;
     const rateLimitKey = `otp_limit:${phone_number}`;
     const attempts = await redis.incr(rateLimitKey);
 
@@ -29,23 +29,46 @@ export class AuthService {
       throw new Error("Too many OTP requests. Please try again later.");
     }
 
+    // Pre-check database to prevent WhatsApp spam and 500 errors
+    const phone_hash = await this.getPhoneHash(phone_number);
+    const user = await prisma.user.findFirst({
+      where: { OR: [{ phone_hash }, { phone_number }] },
+    });
+
+    if (mode === "login" && !user) {
+      const error: any = new Error("User not registered");
+      error.status = 404;
+      throw error;
+    }
+
+    if (mode === "signup" && user) {
+      const error: any = new Error("User already exists");
+      error.status = 409;
+      throw error;
+    }
+
     const otp = this.generateOtpCode();
     const otpKey = `otp:${phone_number}`;
 
     await redis.setex(otpKey, 300, otp); // 5 minutes expiry
 
-    // In production: send via Firebase Auth SMS or Twilio
-    if (config.isDevelopment) {
-      logger.info(`OTP sent to ${phone_number}: ${otp}`);
-    } else {
-      logger.info(`OTP request created for ${phone_number}`);
-    }
+    await this.dispatchWhatsAppOtp(phone_number, otp);
 
     return { message: "OTP sent successfully", expires_in: 300 };
   }
 
+  private async dispatchWhatsAppOtp(phone_number: string, otp: string) {
+    if (config.isDevelopment) {
+      logger.info(`[WhatsApp Dispatch] OTP sent to ${phone_number}: ${otp}`);
+    } else {
+      // Stub ready for Meta WhatsApp Cloud API Integration
+      logger.info(`[WhatsApp Dispatch] OTP generated for ${phone_number}: ${otp}`);
+    }
+  }
+
   async verifyOtp(input: VerifyOtpInput, context?: { ipAddress?: string; userAgent?: string }) {
-    const { phone_number, otp, accepted_terms, accepted_privacy, age_confirmed, analytics_consent } = input;
+    // 1. Extract the name the user typed on the frontend (passed as 'username' in the payload)
+    const { phone_number, otp, accepted_terms, accepted_privacy, age_confirmed, analytics_consent, username } = input;
     const otpKey = `otp:${phone_number}`;
     const storedOtp = await redis.get(otpKey);
 
@@ -70,13 +93,23 @@ export class AuthService {
       if (accepted_terms !== true || accepted_privacy !== true || age_confirmed !== true) {
         throw new Error("Please accept the Terms and Privacy policy and confirm your age to create an account.");
       }
+      if (!username) {
+        throw new Error("Please enter your name to create an account.");
+      }
 
       const referralCode = this.generateReferralCode();
+      
+      // 2. Generate a guaranteed unique background handle to satisfy the database constraint
+      const safeBaseName = username.trim().replace(/[^a-zA-Z0-9_]/g, "").toLowerCase().substring(0, 20);
+      const uniqueUsername = safeBaseName ? `${safeBaseName}_${Math.random().toString(36).substring(2, 6)}` : `user_${referralCode}`;
+
       user = await prisma.user.create({
         data: {
           phone_hash,
           phone_number: config.isDevelopment ? phone_number : undefined, // Only store raw in dev
           referral_code: referralCode,
+          name: username.trim(),       // 3. Save what the user typed to the new Display Name column
+          username: uniqueUsername,    // 4. Save the generated handle to the unique background column
         },
         include: { profile: true },
       });

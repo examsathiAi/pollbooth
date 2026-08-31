@@ -65,7 +65,7 @@ export class OpinionsService {
         user_id: userId,
         poll_id: pollId,
         content: input.content,
-        moderation_status: "APPROVED",
+        moderation_status: "PENDING",
         is_hidden: false,
       },
     });
@@ -330,30 +330,32 @@ export class OpinionsService {
   }
 
   private async checkProfanity(text: string): Promise<{ hasProfanity: boolean; matchedWords: string[] }> {
-    // Hindi + English profanity regex patterns.
-    // NOTE: the Hindi pattern list below is intentionally left as a short,
-    // clearly-marked placeholder rather than reconstructed guesswork - the
-    // original file's Hindi terms were corrupted into literal "?" characters
-    // (a Unicode encoding failure upstream), which is not just cosmetic: it
-    // was an invalid regex that would throw at runtime on the very first
-    // opinion post. Replace TODO_HINDI_TERM_N below with real, reviewed
-    // terms before relying on this filter in production - do not paste in
-    // guessed transliterations, since a wrong or offensive placeholder here
-    // is worse than an honest gap.
-    const profanityPatterns = [
-      // English profanity (basic set - expand as needed)
-      /\b(f+u+c+k+|s+h+i+t+|b+i+t+c+h+|a+s+s+h+o+l+e+|d+i+c+k+|c+u+n+t+)\b/gi,
-      // Hindi profanity - PLACEHOLDER, see note above. This pattern currently
-      // matches nothing (by design) until real terms are added, so it fails
-      // safe (does not block posts) rather than crashing the server.
-      /(?!)/,
+    // 1. Enterprise Normalization: Defeat "leetspeak" bypasses
+    const normalized = text.toLowerCase()
+      .replace(/@/g, 'a')
+      .replace(/!/g, 'i')
+      .replace(/1/g, 'i')
+      .replace(/0/g, 'o')
+      .replace(/3/g, 'e')
+      .replace(/\$/g, 's')
+      .replace(/5/g, 's');
+
+    // 2. Comprehensive Core Blocklist (English + Romanized Hindi/Subcontinent)
+    const exactMatches = [
+      "fuck", "shit", "bitch", "asshole", "dick", "cunt", "pussy", "bastard", "slut", "whore", "faggot", "rape",
+      "bhenchod", "behenchod", "madarchod", "chutiya", "randi", "bhosdike", "gandu", "laude", "lode", "chut", "gaand", "mc", "bc"
     ];
 
     const matchedWords: string[] = [];
-    for (const pattern of profanityPatterns) {
-      const matches = text.match(pattern);
-      if (matches) {
-        matchedWords.push(...matches);
+
+    // 3. Dynamic Regex Engine: Defeat punctuation/spacing bypasses (e.g. f.u.c.k, b h e n c h o d)
+    for (const word of exactMatches) {
+      // Splits word into characters and allows optional dots, underscores, hyphens, asterisks, or spaces between them
+      const spacedPattern = word.split('').join('[._\\s*\\-]*');
+      const regex = new RegExp(`\\b${spacedPattern}\\b`, 'i');
+      
+      if (regex.test(normalized)) {
+        matchedWords.push(word);
       }
     }
 

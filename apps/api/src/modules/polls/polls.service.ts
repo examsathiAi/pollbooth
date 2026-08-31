@@ -295,12 +295,12 @@ export class PollsService {
       };
     }
 
-    if (query.status !== "ALL") {
+    if (query.status && query.status !== "ALL") {
       where.status = query.status;
+    } else {
+      where.status = { in: ["ACTIVE", "CLOSED"] };
     }
-
     where.is_active = true;
-    where.status = "ACTIVE";
 
     const isBlackoutActive = await this.isElectionBlackoutActive(region);
     if (isBlackoutActive) {

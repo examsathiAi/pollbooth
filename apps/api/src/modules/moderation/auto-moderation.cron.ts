@@ -59,9 +59,10 @@ Input: ${JSON.stringify(batch)}`;
 
     // 4. Enforce Moderation & Issue Strikes
     const flaggedOpinions = pendingOpinions.filter(o => flaggedIds.includes(o.id));
+    const innocentOpinions = pendingOpinions.filter(o => !flaggedIds.includes(o.id));
 
+    // Handle Toxic Comments
     for (const opinion of flaggedOpinions) {
-      // Hide the comment from the public feed
       await prisma.opinion.update({
         where: { id: opinion.id },
         data: {
@@ -70,7 +71,6 @@ Input: ${JSON.stringify(batch)}`;
         }
       });
 
-      // Issue a strike to the user profile
       await prisma.userModerationStatus.upsert({
         where: { user_id: opinion.user_id },
         update: {
@@ -84,7 +84,6 @@ Input: ${JSON.stringify(batch)}`;
         }
       });
 
-      // Dispatch DPDP/Platform warning notification to the user
       await prisma.notification.create({
         data: {
           user_id: opinion.user_id,
@@ -97,7 +96,15 @@ Input: ${JSON.stringify(batch)}`;
       });
     }
 
-    console.log(`[SYSTEM] Auto-Moderator completed. Flagged ${flaggedOpinions.length} toxic comments.`);
+    // 5. Officially Approve Safe Comments
+    if (innocentOpinions.length > 0) {
+      await prisma.opinion.updateMany({
+        where: { id: { in: innocentOpinions.map(o => o.id) } },
+        data: { moderation_status: "APPROVED" }
+      });
+    }
+
+    console.log(`[SYSTEM] Auto-Moderator completed. Flagged: ${flaggedOpinions.length} | Approved: ${innocentOpinions.length}`);
   } catch (err) {
     console.error("[SYSTEM] Auto-Moderation cron job encountered a critical error:", err);
   }

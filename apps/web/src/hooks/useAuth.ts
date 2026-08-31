@@ -54,6 +54,7 @@ export function useAuth() {
     phoneNumber: string,
     otp: string,
     options?: {
+      username?: string;
       accepted_terms?: boolean;
       accepted_privacy?: boolean;
       age_confirmed?: boolean;
