@@ -19,7 +19,10 @@ export default function AdminLoginPage() {
     setError("");
     setAccessDenied(false);
     try {
-      await api.post("/api/v1/auth/otp/send", { phone_number: phone });
+      await api.post("/api/v1/auth/otp/send", { 
+        phone_number: phone,
+        mode: "login"
+      });
       setOtpSent(true);
     } catch (err: any) {
       setError(err.response?.data?.message || "Unable to send OTP");
