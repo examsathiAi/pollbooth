@@ -30,9 +30,11 @@ export class AuthService {
     }
 
     // Pre-check database to prevent WhatsApp spam and 500 errors
-    const phone_hash = await this.getPhoneHash(phone_number);
+    // Sanitize mobile keyboard formatting to strict 10 digits
+    const cleanPhone = phone_number.replace(/\D/g, '').slice(-10);
+    
     const user = await prisma.user.findFirst({
-      where: { OR: [{ phone_hash }, { phone_number }] },
+      where: { phone_number: { endsWith: cleanPhone } },
     });
 
     if (mode === "login" && !user) {

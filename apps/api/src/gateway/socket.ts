@@ -29,6 +29,14 @@ export const initWebSocket = (httpServer: HttpServer) => {
   io.on("connection", (socket) => {
     logger.info(`WebSocket: Client connected [${socket.id}]`);
 
+     // NEW: Personal user room for live notifications
+    socket.on("join_user", (userId: string) => {
+      if (userId) {
+        socket.join(`user_${userId}`);
+        logger.info(`WebSocket: Client ${socket.id} securely joined private room user_${userId}`);
+      }
+    });
+
     // Clients will emit this when viewing a specific poll page
     socket.on("join_poll", (pollId: string) => {
       socket.join(`poll_${pollId}`);

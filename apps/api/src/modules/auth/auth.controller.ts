@@ -10,7 +10,8 @@ const router = Router();
 const setAuthCookies = (res: any, accessToken: string, refreshToken: string) => {
   const isProd = process.env.NODE_ENV === "production";
   res.cookie("accessToken", accessToken, { httpOnly: true, secure: isProd, sameSite: "lax", maxAge: 15 * 60 * 1000 });
-  res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: isProd, sameSite: "lax", maxAge: 7 * 24 * 60 * 60 * 1000 });
+  // Facebook-style persistent login: 365 days (in milliseconds)
+  res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: isProd, sameSite: "lax", maxAge: 365 * 24 * 60 * 60 * 1000 });
 };
 
 router.post("/otp/send", rateLimiter.otp, validateBody(SendOtpSchema), async (req, res, next) => {

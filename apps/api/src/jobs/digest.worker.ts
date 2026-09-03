@@ -118,6 +118,84 @@ export async function runDigestWorker(job?: Job<{ date?: string }>) {
     },
   });
 
+  // NATIVE TARGETING LOOP: Zero LLM Cost, Hyper-Relevant
+  if (topPolls.length > 0) {
+    const trendingPoll = topPolls[0];
+    try {
+      const { notificationsService } = require("../modules/notifications/notifications.service");
+      
+      // Target 100 active users who haven't voted on this poll yet
+      const targetUsers = await prisma.user.findMany({
+        where: { 
+          is_active: true,
+          votes: { none: { poll_id: trendingPoll.id } }
+        },
+        select: { id: true, city: true },
+        take: 100
+      });
+
+      for (const u of targetUsers) {
+        const loc = u.city ? u.city : "your city";
+        const hookText = `${trendingPoll.vote_count} people in ${loc} are debating this right now.`;
+        
+        await notificationsService.createNotification(
+          u.id,
+          "TRENDING_POLL",
+          `Trending in ${trendingPoll.category}`,
+          hookText,
+          { poll_id: trendingPoll.id, ai_context: hookText } // Passes the hook directly to the frontend banner
+        );
+      }
+    } catch (err) {
+      logger.error("Native targeting loop failed", { error: err });
+    }
+  }
+
+  if (topPolls.length > 0) {
+    const trendingPoll = topPolls[0];
+    try {
+      const { notificationsService } = require("../modules/notifications/notifications.service");
+      let skip = 0;
+      const batchSize = 500;
+      let hasMore = true;
+
+      while (hasMore) {
+        const targetUsers = await prisma.user.findMany({
+          where: { 
+            is_active: true,
+            votes: { none: { poll_id: trendingPoll.id } }
+          },
+          select: { id: true, city: true },
+          skip: skip,
+          take: batchSize
+        });
+
+        if (targetUsers.length === 0) {
+          hasMore = false;
+          break;
+        }
+
+        const notifications = targetUsers.map(u => {
+          const loc = u.city ? u.city : "your city";
+          const hookText = `${trendingPoll.vote_count} people in ${loc} are debating this right now.`;
+          
+          return notificationsService.createNotification(
+            u.id,
+            "TRENDING_POLL",
+            `Trending in ${trendingPoll.category}`,
+            hookText,
+            { poll_id: trendingPoll.id, ai_context: hookText }
+          );
+        });
+
+        await Promise.all(notifications);
+        skip += batchSize;
+      }
+    } catch (err) {
+      logger.error("Native targeting loop failed", { error: err });
+    }
+  }
+
   logger.info("Daily digest generated", {
     digestId: digest.id,
     date: dateKey,

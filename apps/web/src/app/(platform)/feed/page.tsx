@@ -24,6 +24,7 @@ interface PollSummary {
   results?: Array<{ option: string; index: number; count: number; percentage: number }>;
   user_vote_index?: number | null;
   user_opinion?: { id: string; content: string; agree_count: number; disagree_count: number } | null;
+  ai_context?: string;
   is_commercial?: boolean;
   created_at?: string;
   end_date?: string | null;

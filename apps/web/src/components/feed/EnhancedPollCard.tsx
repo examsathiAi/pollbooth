@@ -27,6 +27,7 @@ interface EnhancedPollCardProps {
     results?: Array<{ option: string; index: number; count: number; percentage: number }>;
     user_vote_index?: number | null;
     user_opinion?: { id: string; content: string; agree_count: number; disagree_count: number } | null;
+    ai_context?: string;
     is_commercial?: boolean;
     created_at?: string;
     end_date?: string | null;
@@ -385,26 +386,34 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
     }
     setPressedReaction(`${opinionId}:${reactionType}`);
     window.setTimeout(() => setPressedReaction(null), 220);
+    // 1. Optimistic UI Update: Instant visual feedback, prevents double-click lag
+    setOpinions((current) => current.map((op) => {
+      if (op.id !== opinionId) return op;
+      const previousReaction = op.user_reaction;
+      let nextAgree = op.agree_count;
+      let nextDisagree = op.disagree_count;
+      let nextReaction: "AGREE" | "DISAGREE" | null = previousReaction ?? null;
+      
+      if (reactionType === "AGREE") {
+        if (previousReaction === "AGREE") { nextAgree -= 1; nextReaction = null; }
+        else if (previousReaction === "DISAGREE") { nextAgree += 1; nextDisagree -= 1; nextReaction = "AGREE"; }
+        else { nextAgree += 1; nextReaction = "AGREE"; }
+      } else if (reactionType === "DISAGREE") {
+        if (previousReaction === "DISAGREE") { nextDisagree -= 1; nextReaction = null; }
+        else if (previousReaction === "AGREE") { nextDisagree += 1; nextAgree -= 1; nextReaction = "DISAGREE"; }
+        else { nextDisagree += 1; nextReaction = "DISAGREE"; }
+      }
+      
+      // Math.max guarantees the UI numbers never visually glitch below 0
+      return { ...op, agree_count: Math.max(0, nextAgree), disagree_count: Math.max(0, nextDisagree), user_reaction: nextReaction };
+    }));
+
+    // 2. Network Sync: Runs invisibly in the background
     try {
       await api.post(`/api/v1/opinions/${opinionId}/react`, { reaction_type: reactionType });
-      setOpinions((current) => current.map((op) => {
-        if (op.id !== opinionId) return op;
-        const previousReaction = op.user_reaction;
-        let nextAgree = op.agree_count;
-        let nextDisagree = op.disagree_count;
-        let nextReaction: "AGREE" | "DISAGREE" | null = previousReaction ?? null;
-        if (reactionType === "AGREE") {
-          if (previousReaction === "AGREE") { nextAgree -= 1; nextReaction = null; }
-          else if (previousReaction === "DISAGREE") { nextAgree += 1; nextDisagree -= 1; nextReaction = "AGREE"; }
-          else { nextAgree += 1; nextReaction = "AGREE"; }
-        } else if (reactionType === "DISAGREE") {
-          if (previousReaction === "DISAGREE") { nextDisagree -= 1; nextReaction = null; }
-          else if (previousReaction === "AGREE") { nextDisagree += 1; nextAgree -= 1; nextReaction = "DISAGREE"; }
-          else { nextDisagree += 1; nextReaction = "DISAGREE"; }
-        }
-        return { ...op, agree_count: nextAgree, disagree_count: nextDisagree, user_reaction: nextReaction };
-      }));
-    } catch (err: any) {}
+    } catch (err: any) {
+      // Optional future addition: Rollback UI if the network completely fails
+    }
   };
 
   const relativeTime = poll.created_at ? formatRelativeTime(poll.created_at) : "just now";
@@ -425,8 +434,17 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       </div>
 
       <div className="px-5 pb-4">
+        {poll.ai_context && (
+          <div className="mb-3 flex items-center gap-2 text-xs font-semibold tracking-wide text-[#7a1f10] bg-[#7a1f10]/10 w-fit px-3 py-1.5 rounded-full border border-[#7a1f10]/20">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7a1f10] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#7a1f10]"></span>
+            </span>
+            {poll.ai_context}
+          </div>
+        )}
         <Link href={`${pollUrl}`} className="block group">
-          <h3 className="text-xl sm:text-2xl font-sans font-semibold tracking-tight leading-snug text-ink mb-2 line-clamp-4 group-hover:text-maroon transition-colors duration-200">{poll.question}</h3>
+          <h3 className="text-xl sm:text-2xl font-sans font-semibold tracking-tight leading-snug text-[#1f1b18] mb-2 line-clamp-4 group-hover:text-[#7a1f10] transition-colors duration-200">{poll.question}</h3>
         </Link>
       </div>
       

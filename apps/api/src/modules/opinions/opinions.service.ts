@@ -251,10 +251,9 @@ export class OpinionsService {
       },
     });
 
-    // Check for agree-count milestones and send notification
     const updatedOpinion = await prisma.opinion.findUnique({
       where: { id: opinionId },
-      select: { agree_count: true, user_id: true, poll_id: true },
+      select: { user_id: true },
     });
 
     if (updatedOpinion && updatedOpinion.user_id !== userId) {
@@ -262,30 +261,10 @@ export class OpinionsService {
         where: { id: userId },
         select: { username: true, phone_number: true },
       });
-      const actorName = actor?.username || actor?.phone_number || "Someone";
-      const reactionTitle = input.reaction_type === "AGREE"
-        ? "Someone agreed with your opinion"
-        : "Someone disagreed with your opinion";
-      const reactionBody = input.reaction_type === "AGREE"
-        ? `${actorName} agreed with your opinion.`
-        : `${actorName} disagreed with your opinion.`;
-      await notificationsService.createNotification(updatedOpinion.user_id, "OPINION_REACTION", reactionTitle, reactionBody, {
-        opinion_id: opinionId,
-        poll_id: updatedOpinion.poll_id,
-        reaction_type: input.reaction_type,
-        actor_user_id: userId,
-      });
-    }
-
-    if (updatedOpinion && input.reaction_type === "AGREE") {
-      const milestones = [10, 50, 100];
-      if (milestones.includes(updatedOpinion.agree_count)) {
-        await notificationsService.createNotification(updatedOpinion.user_id, "MILESTONE", "Your opinion hit a milestone", `Your opinion crossed ${updatedOpinion.agree_count} agrees.`, {
-          opinion_id: opinionId,
-          poll_id: updatedOpinion.poll_id,
-          agree_count: updatedOpinion.agree_count,
-        });
-      }
+      const actorName = actor?.username || actor?.phone_number || "A user";
+      
+      // Send to the Facebook-style aggregator
+      await notificationsService.notifyOpinionReacted(opinionId, actorName, input.reaction_type);
     }
 
     return { action: "added", reaction_type: input.reaction_type };

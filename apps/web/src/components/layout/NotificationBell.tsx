@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
+import { useSocket } from "@/providers/SocketProvider";
 import { Bell, CheckCheck, MessageCircle, Sparkles, TrendingUp } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -22,6 +23,7 @@ interface NotificationItem {
 
 export function NotificationBell() {
   const { user } = useAuth();
+  const { socket, isConnected } = useSocket();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -89,8 +91,28 @@ export function NotificationBell() {
   };
 
   useEffect(() => {
+    // 1. Initial load on page visit
     void load();
-  }, []);
+
+    // 2. Real-time Facebook-style listener
+    if (!socket || !isConnected || !user?.id) return;
+
+    // Tell the server to put us in our private notification room
+    socket.emit("join_user", user.id);
+
+    // Listen for instant updates and refresh the bell instantly
+    const handleLiveUpdate = () => {
+      void load();
+    };
+
+    socket.on("new_notification", handleLiveUpdate);
+    socket.on("update_notification", handleLiveUpdate);
+
+    return () => {
+      socket.off("new_notification", handleLiveUpdate);
+      socket.off("update_notification", handleLiveUpdate);
+    };
+  }, [socket, isConnected, user?.id]);
 
   return (
     <div className="relative">

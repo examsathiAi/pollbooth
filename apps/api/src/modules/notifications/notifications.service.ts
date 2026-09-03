@@ -80,7 +80,7 @@ export class NotificationsService {
   }
 
   async createNotification(userId: string, type: string, title: string, body: string, data?: any) {
-    return prisma.notification.create({
+    const notification = await prisma.notification.create({
       data: {
         user_id: userId,
         type,
@@ -89,7 +89,19 @@ export class NotificationsService {
         data,
       },
     });
+
+    try {
+      const { io } = require("../../gateway/socket");
+      if (io) {
+        io.to(`user_${userId}`).emit("new_notification", notification);
+      }
+    } catch (err) {
+      console.warn("[Notifications] Socket broadcast skipped - io not initialized");
+    }
+
+    return notification;
   }
+
 
   // FCM Token management
   async setFcmToken(userId: string, fcmToken: string) {
@@ -263,22 +275,51 @@ export class NotificationsService {
   }
 
   // Notification triggers for various events
-  async notifyOpinionReacted(opinionId: string, reactionType: string, agreeCount: number, _disagreeCount: number) {
+  async notifyOpinionReacted(opinionId: string, actorName: string, reactionType: string) {
     const opinion = await prisma.opinion.findUnique({
       where: { id: opinionId },
-      select: { user_id: true, content: true },
+      select: { user_id: true, poll_id: true, agree_count: true, disagree_count: true },
     });
 
     if (!opinion) return;
 
-    // Notify on milestone reactions
-    if (reactionType === "AGREE" && [10, 50, 100].includes(agreeCount)) {
+    const actionWord = reactionType === "AGREE" ? "agreed" : "disagreed";
+    const count = reactionType === "AGREE" ? opinion.agree_count : opinion.disagree_count;
+    
+    let body = `${actorName} ${actionWord} with your opinion.`;
+    if (count > 1) {
+      body = `${actorName} and ${count - 1} others ${actionWord} with your opinion.`;
+    }
+
+    // Facebook Pattern: Find an existing unread notification to aggregate
+    const existing = await prisma.notification.findFirst({
+      where: {
+        user_id: opinion.user_id,
+        type: "OPINION_REACTION",
+        is_read: false,
+        data: { path: ['opinion_id'], equals: opinionId }
+      }
+    });
+
+    if (existing) {
+      // Update existing instead of spamming a new one
+      const updated = await prisma.notification.update({
+        where: { id: existing.id },
+        data: { body, created_at: new Date() }
+      });
+      
+      try {
+        const { io } = require("../../gateway/socket");
+        if (io) io.to(`user_${opinion.user_id}`).emit("update_notification", updated);
+      } catch (err) {}
+    } else {
+      // Create a fresh notification
       await this.createNotification(
         opinion.user_id,
         "OPINION_REACTION",
-        "Your opinion is getting recognized!",
-        `Your opinion reached ${agreeCount} people who agree with you: "${opinion.content.substring(0, 50)}..."`,
-        { opinion_id: opinionId, agree_count: agreeCount }
+        "New reaction",
+        body,
+        { opinion_id: opinionId, poll_id: opinion.poll_id, reaction_type: reactionType }
       );
     }
   }
