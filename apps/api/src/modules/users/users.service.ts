@@ -192,6 +192,8 @@ export class UsersService {
         data: {
           username: scrubbedName,
           phone_number: scrubbedPhone,
+          email: null,
+          google_id: null,
           city: null,
           state: null,
           is_active: false,

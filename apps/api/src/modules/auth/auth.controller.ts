@@ -1,16 +1,14 @@
-﻿import { Router } from "express";
+import { Router } from "express";
 import { authService } from "./auth.service";
 import { validateBody } from "../../common/pipes/validation.pipe";
 import { rateLimiter } from "../../common/interceptors/rate-limiter";
-import { SendOtpSchema, VerifyOtpSchema, RefreshTokenSchema } from "./auth.types";
+import { SendOtpSchema, VerifyOtpSchema, RefreshTokenSchema, EmailOtpSendSchema, EmailOtpVerifySchema, GoogleVerifySchema } from "./auth.types";
 
 const router = Router();
 
-// Helper function to set secure cookies
 const setAuthCookies = (res: any, accessToken: string, refreshToken: string) => {
   const isProd = process.env.NODE_ENV === "production";
   res.cookie("accessToken", accessToken, { httpOnly: true, secure: isProd, sameSite: "lax", maxAge: 15 * 60 * 1000 });
-  // Facebook-style persistent login: 365 days (in milliseconds)
   res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: isProd, sameSite: "lax", maxAge: 365 * 24 * 60 * 60 * 1000 });
 };
 
@@ -29,10 +27,47 @@ router.post("/otp/verify", rateLimiter.otp, validateBody(VerifyOtpSchema), async
       ipAddress: req.ip,
       userAgent: req.headers["user-agent"] as string | undefined,
     });
-    
-    // Issue Hybrid Tokens: Set cookies for Web, return JSON for Mobile
-    if (result.accessToken && result.refreshToken) {
-      setAuthCookies(res, result.accessToken, result.refreshToken);
+    if (result.tokens?.access_token && result.tokens?.refresh_token) {
+      setAuthCookies(res, result.tokens.access_token, result.tokens.refresh_token);
+    }
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/email-otp/send", rateLimiter.otp, validateBody(EmailOtpSendSchema), async (req, res, next) => {
+  try {
+    const result = await authService.sendEmailOtp(req.body);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/email-otp/verify", rateLimiter.otp, validateBody(EmailOtpVerifySchema), async (req, res, next) => {
+  try {
+    const result: any = await authService.verifyEmailOtp(req.body, {
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"] as string | undefined,
+    });
+    if (result.tokens?.access_token && result.tokens?.refresh_token) {
+      setAuthCookies(res, result.tokens.access_token, result.tokens.refresh_token);
+    }
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/google/verify", rateLimiter.api, validateBody(GoogleVerifySchema), async (req, res, next) => {
+  try {
+    const result: any = await authService.verifyGoogle(req.body, {
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"] as string | undefined,
+    });
+    if (result.tokens?.access_token && result.tokens?.refresh_token) {
+      setAuthCookies(res, result.tokens.access_token, result.tokens.refresh_token);
     }
     res.status(200).json(result);
   } catch (err) {
@@ -42,20 +77,16 @@ router.post("/otp/verify", rateLimiter.otp, validateBody(VerifyOtpSchema), async
 
 router.post("/refresh", rateLimiter.api, validateBody(RefreshTokenSchema), async (req, res, next) => {
   try {
-    // Hybrid token retrieval for refresh
     let tokenToRefresh = req.body.refresh_token ?? req.body.refreshToken;
     if (!tokenToRefresh && req.headers.cookie) {
       const cookies = req.headers.cookie.split(";").map(c => c.trim());
       const refreshCookie = cookies.find(c => c.startsWith("refreshToken="));
       if (refreshCookie) tokenToRefresh = refreshCookie.split("=")[1];
     }
-
     if (!tokenToRefresh) {
       return res.status(401).json({ error: "Missing refresh token" });
     }
-
     const result: any = await authService.refreshToken({ refresh_token: tokenToRefresh });
-
     if (result.access_token && result.refresh_token) {
       setAuthCookies(res, result.access_token, result.refresh_token);
     }

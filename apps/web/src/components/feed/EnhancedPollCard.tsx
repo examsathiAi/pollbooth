@@ -430,7 +430,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
           <span className="opacity-40">•</span>
           <div className="text-xs font-sans font-medium">{relativeTime}</div>
         </div>
-        
+            {((poll as any).status === "CLOSED" || (poll as any).is_active === false) && <span className="text-[10px] font-bold uppercase tracking-wider text-ink/60 bg-ink/5 px-2 py-0.5 rounded-full border border-ink/10">Voting Closed</span>}
       </div>
 
       <div className="px-5 pb-4">
@@ -449,7 +449,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       </div>
       
 
-      {!hasVoted ? (
+      {!hasVoted && (poll as any).status !== "CLOSED" && (poll as any).is_active !== false ? (
         <div className="px-5 pb-5">
           <div className="mt-3 flex w-full flex-col gap-3">
             {poll.options.map((option, idx) => (
@@ -493,7 +493,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
                   <div className="h-2.5 w-full bg-paper-border/40 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full ${barColor} transition-all duration-1000 ease-out`}
-                      style={{ width: barRevealReady ? `${pct}%` : '0%' }}
+                      style={{ width: (barRevealReady || (poll as any).status === "CLOSED" || (poll as any).is_active === false) ? `${pct}%` : "0%" }}
                     />
                   </div>
                 </div>
@@ -528,7 +528,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
           <ShareCardGenerator
             title={poll.question}
             voteCount={animatedVotes}
-            resultData={results.map((r) => ({ label: r.option, value: r.percentage || 0 }))}
+              resultData={results.map((r) => ({ label: r.option, value: r.percentage || 0 }))}
             shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}${pollUrl}`}
             hashtags={poll.hashtags || []}
             captions={{
@@ -542,7 +542,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       )}
       </div>
 
-      {hasVoted && showComments && (
+      {(hasVoted || (poll as any).status === "CLOSED" || (poll as any).is_active === false) && showComments && (
       <div className="border-t border-paper-border/60 bg-transparent px-5 py-5 animate-in fade-in slide-in-from-top-2 duration-300">
         <div className="mb-4 flex items-center justify-between">
           <p className="text-sm font-semibold tracking-tight text-ink">Discussion</p>
@@ -577,7 +577,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
                       </div>
                       <p className="text-sm leading-relaxed text-ink/90">{opinion.content}</p>
                       
-                      {/* REACTIONS & VIRAL REPLY BUTTON */}
+
                       <div className="mt-2.5 flex items-center gap-2">
                         <button onClick={() => void handleReaction(opinion.id, "AGREE")} className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-all duration-200 ${opinion.user_reaction === "AGREE" ? "bg-ink/10 text-ink" : "bg-transparent text-ink-muted hover:bg-ink/5"} ${isPressed ? "scale-95" : ""}`}>
                           <ThumbsUp className="h-3.5 w-3.5" /> {opinion.agree_count}

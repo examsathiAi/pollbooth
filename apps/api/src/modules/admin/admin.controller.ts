@@ -169,4 +169,32 @@ router.post("/civic-issues/:issueId/convert-to-poll", authGuard, roleGuard("ADMI
   }
 });
 
+// Poll Lifecycle Management
+router.patch("/polls/:id/lifecycle", authGuard, roleGuard("ADMIN"), async (req, res, next) => {
+  try {
+    const result = await adminService.updatePollLifecycle(req.params.id, req.body);
+    res.status(200).json({
+      message: `Poll successfully updated with action: ${req.body.action}`,
+      poll: result
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Fetch polls for Lifecycle UI
+router.get("/polls/manage", authGuard, roleGuard("ADMIN"), async (req, res, next) => {
+  try {
+    res.status(200).json(await adminService.getManageablePolls());
+  } catch (err) { next(err); }
+});
+
+// Poll Lifecycle Management
+router.patch("/polls/:id/lifecycle", authGuard, roleGuard("ADMIN"), async (req, res, next) => {
+  try {
+    const result = await adminService.updatePollLifecycle(req.params.id, req.body);
+    res.status(200).json({ message: "Success", poll: result });
+  } catch (err) { next(err); }
+});
+
 export { router as adminRouter };

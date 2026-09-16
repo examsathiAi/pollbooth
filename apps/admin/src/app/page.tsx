@@ -14,6 +14,7 @@ import { SurveysDashboard } from "@/components/SurveysDashboard";
 import { TopicBalance } from "@/components/TopicBalance";
 import { UserManagement } from "@/components/UserManagement";
 import { ExecutiveOverview } from "@/components/ExecutiveOverview";
+import { ActivePollManager } from "@/components/ActivePollManager";
 
 const navItems = [
   { id: "overview", label: "Executive Overview", icon: LayoutDashboard, minimumRole: "MODERATOR" },
@@ -69,6 +70,7 @@ export default function AdminPage() {
       case "polls": return (
         <div className="space-y-6">
           <PollCreationPanel />
+          <ActivePollManager />
           <PollReviewQueue />
           {userRole === "SUPER_ADMIN" ? <ElectionBlackoutPanel /> : null}
         </div>

@@ -1,21 +1,25 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
+import Script from "next/script";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
-import { Loader2, Activity, ShieldCheck } from "lucide-react";
+import { Loader2, Activity, ShieldCheck, Mail, Phone } from "lucide-react";
 import Link from "next/link";
 
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, sendEmailOtp, loginWithEmailOtp, loginWithGoogle } = useAuth();
+  const [method, setMethod] = useState<"phone" | "email">("phone");
   const [phone, setPhone] = useState("");
-  const [name, setName] = useState(""); // Add name state
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  
-  // Consent States
+
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
@@ -23,6 +27,8 @@ export default function LoginPage() {
 
   const [mode, setMode] = useState<"signup" | "login">("login");
   const [redirectPath, setRedirectPath] = useState<string>("/feed");
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+  const [googleReady, setGoogleReady] = useState(false);
 
   useEffect(() => {
     try {
@@ -34,7 +40,49 @@ export default function LoginPage() {
     } catch (e) {}
   }, []);
 
-  const sendOtp = async () => {
+  const consentOk = mode === "login" || (acceptedTerms && acceptedPrivacy && ageConfirmed);
+
+  const handleGoogleCredential = async (response: any) => {
+    setError("");
+    if (mode === "signup" && !consentOk) {
+      setError("Please accept the Terms, Privacy Policy, and confirm your age before signing up.");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      await loginWithGoogle(response.credential, mode === "signup" ? {
+        accepted_terms: acceptedTerms,
+        accepted_privacy: acceptedPrivacy,
+        age_confirmed: ageConfirmed,
+        analytics_consent: analyticsConsent,
+      } : undefined);
+      window.location.href = redirectPath;
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Google sign-in failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!googleReady || !GOOGLE_CLIENT_ID || !googleButtonRef.current) return;
+    // @ts-ignore
+    if (!window.google?.accounts?.id) return;
+    // @ts-ignore
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleCredential,
+    });
+    // @ts-ignore
+    window.google.accounts.id.renderButton(googleButtonRef.current, {
+      theme: "outline",
+      size: "large",
+      width: 360,
+      text: mode === "signup" ? "signup_with" : "signin_with",
+    });
+  }, [googleReady, mode, acceptedTerms, acceptedPrivacy, ageConfirmed, analyticsConsent]);
+
+  const sendPhoneOtp = async () => {
     if (!phone.match(/^[6-9]\d{9}$/)) {
       setError("Please enter a valid 10-digit mobile number.");
       return;
@@ -43,7 +91,7 @@ export default function LoginPage() {
       setError("Please enter your name (at least 2 characters).");
       return;
     }
-    if (mode === "signup" && (!acceptedTerms || !acceptedPrivacy || !ageConfirmed)) {
+    if (mode === "signup" && !consentOk) {
       setError("Please accept the Terms, Privacy Policy, and confirm your age to continue.");
       return;
     }
@@ -56,7 +104,6 @@ export default function LoginPage() {
       const status = err.response?.status;
       if (status === 404 && mode === "login") {
         setMode("signup");
-        // FIXED TYPO: changed "below" to "above"
         setError("Number not registered. Please check the boxes above to sign up.");
       } else if (status === 409 && mode === "signup") {
         setMode("login");
@@ -69,7 +116,7 @@ export default function LoginPage() {
     }
   };
 
-  const verifyOtp = async () => {
+  const verifyPhoneOtp = async () => {
     if (otp.length !== 6) {
       setError("Please enter a valid 6-digit OTP.");
       return;
@@ -77,9 +124,8 @@ export default function LoginPage() {
     setIsLoading(true);
     setError("");
     try {
-      // Pass the new name state down to the backend under the 'username' key as defined in our schema
       await login(`+91${phone}`, otp, mode === "signup" ? {
-        username: name.trim(), 
+        username: name.trim(),
         accepted_terms: acceptedTerms,
         accepted_privacy: acceptedPrivacy,
         age_confirmed: ageConfirmed,
@@ -93,8 +139,75 @@ export default function LoginPage() {
     }
   };
 
+  const sendEmailOtpStep = async () => {
+    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    if (mode === "signup" && name.trim().length < 2) {
+      setError("Please enter your name (at least 2 characters).");
+      return;
+    }
+    if (mode === "signup" && !consentOk) {
+      setError("Please accept the Terms, Privacy Policy, and confirm your age to continue.");
+      return;
+    }
+    setIsLoading(true);
+    setError("");
+    try {
+      await sendEmailOtp(email, mode);
+      setStep("otp");
+    } catch (err: any) {
+      const status = err.response?.status;
+      if (status === 404 && mode === "login") {
+        setMode("signup");
+        setError("Email not registered. Please check the boxes above to sign up.");
+      } else if (status === 409 && mode === "signup") {
+        setMode("login");
+        setError("Account already exists. Please sign in.");
+      } else {
+        setError(err.response?.data?.message || err.response?.data?.error || "Failed to send OTP. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyEmailOtpStep = async () => {
+    if (otp.length !== 6) {
+      setError("Please enter a valid 6-digit OTP.");
+      return;
+    }
+    setIsLoading(true);
+    setError("");
+    try {
+      await loginWithEmailOtp(email, otp, mode === "signup" ? {
+        username: name.trim(),
+        accepted_terms: acceptedTerms,
+        accepted_privacy: acceptedPrivacy,
+        age_confirmed: ageConfirmed,
+        analytics_consent: analyticsConsent,
+      } : undefined);
+      window.location.href = redirectPath;
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Invalid OTP. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const sendOtp = method === "phone" ? sendPhoneOtp : sendEmailOtpStep;
+  const verifyOtp = method === "phone" ? verifyPhoneOtp : verifyEmailOtpStep;
+  const contactLabel = method === "phone" ? `+91 ${phone}` : email;
+
   return (
     <div className="flex min-h-screen bg-[#f4efe7]">
+      <Script
+        src="https://accounts.google.com/gsi/client"
+        strategy="afterInteractive"
+        onLoad={() => setGoogleReady(true)}
+      />
+
       <div className="hidden lg:flex w-1/2 flex-col justify-between overflow-hidden bg-[#fffdf9] p-12 shadow-[inset_-1px_0_0_#d8ceb8]">
         <div className="pointer-events-none absolute inset-0 hidden lg:block">
           <div className="absolute -left-20 top-12 h-72 w-72 rounded-full bg-[#f2e7dc] blur-3xl" />
@@ -141,63 +254,113 @@ export default function LoginPage() {
               {mode === "signup" ? "Create an account" : "Welcome back"}
             </h1>
             <p className="mt-2 text-sm text-[#625a50]">
-              {mode === "signup"
-                ? "Enter your phone number below to create your secure account."
-                : "Enter your phone number to sign in to your account."}
+              {mode === "signup" ? "Sign up with Google, or use your phone or email below." : "Sign in with Google, or use your phone or email below."}
             </p>
           </div>
 
+          {step === "phone" && mode === "signup" && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none text-slate-700">Full Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter your name"
+                className="flex h-11 w-full rounded-md border border-[#d8ceb8] bg-white px-3 py-2 text-sm placeholder:text-[#625a50] focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent transition-all"
+              />
+            </div>
+          )}
+
+          {mode === "signup" && (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
+              {[
+                { state: analyticsConsent, setter: setAnalyticsConsent, label: "Allow anonymous analytics to improve experience (optional)." },
+                {
+                  state: acceptedTerms && acceptedPrivacy && ageConfirmed,
+                  setter: (checked: boolean) => {
+                    setAcceptedTerms(checked);
+                    setAcceptedPrivacy(checked);
+                    setAgeConfirmed(checked);
+                  },
+                  label: <>I agree to the <Link href="/terms" className="font-semibold text-slate-900 hover:underline">Terms of Service</Link> and <Link href="/privacy" className="font-semibold text-slate-900 hover:underline">Privacy Policy</Link>, and confirm that I am 18 years or older.</>,
+                },
+              ].map((item, i) => (
+                <label key={i} className="flex items-start gap-3 cursor-pointer group">
+                  <div className="flex items-center h-5">
+                    <input
+                      type="checkbox"
+                      checked={item.state}
+                      onChange={(e) => item.setter(e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                    />
+                  </div>
+                  <span className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">{item.label}</span>
+                </label>
+              ))}
+            </div>
+          )}
+
+          {step === "phone" && (
+            <div className="flex justify-center">
+              <div ref={googleButtonRef} />
+              {!GOOGLE_CLIENT_ID && (
+                <p className="text-xs text-slate-400">Google Sign-In will appear here once configured.</p>
+              )}
+            </div>
+          )}
+
+          {step === "phone" && (
+            <div className="relative flex items-center gap-2">
+              <div className="flex-1 border-t border-[#d8ceb8]" />
+              <span className="text-xs text-slate-400 uppercase tracking-wide">or</span>
+              <div className="flex-1 border-t border-[#d8ceb8]" />
+            </div>
+          )}
+
+          {step === "phone" && (
+            <div className="flex rounded-md border border-[#d8ceb8] bg-white p-1">
+              <button
+                onClick={() => { setMethod("phone"); setError(""); }}
+                className={`flex-1 flex items-center justify-center gap-2 h-9 rounded text-sm font-medium transition-colors ${method === "phone" ? "bg-maroon text-white" : "text-slate-600 hover:bg-slate-50"}`}
+              >
+                <Phone className="w-4 h-4" /> Phone
+              </button>
+              <button
+                onClick={() => { setMethod("email"); setError(""); }}
+                className={`flex-1 flex items-center justify-center gap-2 h-9 rounded text-sm font-medium transition-colors ${method === "email" ? "bg-maroon text-white" : "text-slate-600 hover:bg-slate-50"}`}
+              >
+                <Mail className="w-4 h-4" /> Email
+              </button>
+            </div>
+          )}
+
           {step === "phone" ? (
-            <div className="space-y-6 mt-8">
-              {/* Only show Name field during signup */}
-              {mode === "signup" && (
+            <div className="space-y-6">
+              {method === "phone" ? (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium leading-none text-slate-700">Full Name</label>
+                  <label className="text-sm font-medium leading-none text-slate-700">Phone Number</label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 text-sm font-medium text-slate-500">+91</span>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                      placeholder="9876543210"
+                      maxLength={10}
+                      className="flex h-11 w-full rounded-md border border-[#d8ceb8] bg-white pl-10 pr-3 py-2 text-sm placeholder:text-[#625a50] focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent transition-all"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none text-slate-700">Email Address</label>
                   <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter your name"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
                     className="flex h-11 w-full rounded-md border border-[#d8ceb8] bg-white px-3 py-2 text-sm placeholder:text-[#625a50] focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent transition-all"
                   />
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium leading-none text-slate-700">Phone Number</label>
-                <div className="relative flex items-center">
-                  <span className="absolute left-3 text-sm font-medium text-slate-500">+91</span>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                    placeholder="9876543210"
-                    maxLength={10}
-                    className="flex h-11 w-full rounded-md border border-[#d8ceb8] bg-white pl-10 pr-3 py-2 text-sm placeholder:text-[#625a50] focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent transition-all"
-                  />
-                </div>
-              </div>
-
-              {mode === "signup" && (
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
-                  {[
-                    { state: acceptedTerms, setter: setAcceptedTerms, label: <>I agree to the <Link href="/terms" className="font-semibold text-slate-900 hover:underline">Terms of Service</Link>.</> },
-                    { state: acceptedPrivacy, setter: setAcceptedPrivacy, label: <>I have read the <Link href="/privacy" className="font-semibold text-slate-900 hover:underline">Privacy Policy</Link>.</> },
-                    { state: ageConfirmed, setter: setAgeConfirmed, label: "I confirm that I am 18 years or older." },
-                    { state: analyticsConsent, setter: setAnalyticsConsent, label: "Allow anonymous analytics to improve experience (optional)." },
-                  ].map((item, i) => (
-                    <label key={i} className="flex items-start gap-3 cursor-pointer group">
-                      <div className="flex items-center h-5">
-                        <input
-                          type="checkbox"
-                          checked={item.state}
-                          onChange={(e) => item.setter(e.target.checked)}
-                          className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
-                        />
-                      </div>
-                      <span className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">{item.label}</span>
-                    </label>
-                  ))}
                 </div>
               )}
 
@@ -223,7 +386,7 @@ export default function LoginPage() {
                   className="flex h-12 w-full rounded-md border border-[#d8ceb8] bg-white px-3 py-2 text-center text-2xl tracking-[0.5em] font-mono placeholder:text-[#d8ceb8] focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent transition-all"
                   maxLength={6}
                 />
-                <p className="text-xs text-slate-500 pt-1">Sent to +91 {phone}</p>
+                <p className="text-xs text-slate-500 pt-1">Sent to {contactLabel}</p>
               </div>
 
               {error && <div className="text-sm font-medium text-red-500 bg-red-50 p-3 rounded-md">{error}</div>}
@@ -241,13 +404,12 @@ export default function LoginPage() {
                   onClick={() => setStep("phone")}
                   className="text-sm text-slate-500 hover:text-slate-900 font-medium transition-colors"
                 >
-                  ← Use a different number
+                  ← Use a different {method === "phone" ? "number" : "email"}
                 </button>
               </div>
             </div>
           )}
 
-          {/* Toggle Mode */}
           <div className="text-center text-sm text-slate-500 mt-6">
             {mode === "signup" ? "Already have an account? " : "Don't have an account? "}
             <button

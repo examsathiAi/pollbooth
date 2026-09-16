@@ -1,13 +1,18 @@
+-- CreateEnum
+CREATE TYPE "UserRole" AS ENUM ('USER', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN');
+
 -- CreateTable
 CREATE TABLE "users" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "phone_hash" TEXT NOT NULL,
     "phone_number" VARCHAR(20),
     "username" VARCHAR(50),
+    "role" "UserRole" NOT NULL DEFAULT 'USER',
     "avatar_url" TEXT,
     "city" VARCHAR(100),
     "state" VARCHAR(100),
     "city_tier" VARCHAR(20),
+    "fcm_token" TEXT,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "is_banned" BOOLEAN NOT NULL DEFAULT false,
     "ban_reason" TEXT,
@@ -17,6 +22,7 @@ CREATE TABLE "users" (
     "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(6) NOT NULL,
     "deleted_at" TIMESTAMP(6),
+    "name" VARCHAR(50),
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
@@ -55,11 +61,48 @@ CREATE TABLE "polls" (
     "target_filters" JSONB,
     "estimated_reach" INTEGER,
     "methodology" JSONB,
+    "seo_title" VARCHAR(60),
+    "meta_description" VARCHAR(160),
+    "slug" VARCHAR(100),
+    "keywords" TEXT[],
+    "hashtags" TEXT[],
+    "facebook_caption" TEXT,
+    "instagram_caption" TEXT,
+    "x_caption" TEXT,
+    "whatsapp_share_text" TEXT,
+    "ai_summary" TEXT,
+    "faq" JSONB,
+    "og_title" VARCHAR(60),
+    "og_description" TEXT,
     "created_by" UUID,
     "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(6) NOT NULL,
 
     CONSTRAINT "polls_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "poll_predictions" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "user_id" UUID NOT NULL,
+    "poll_id" UUID NOT NULL,
+    "predicted_percentage" INTEGER NOT NULL,
+    "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(6) NOT NULL,
+
+    CONSTRAINT "poll_predictions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "topics" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "name" VARCHAR(100) NOT NULL,
+    "slug" VARCHAR(100) NOT NULL,
+    "description" TEXT,
+    "parent_category" VARCHAR(50),
+    "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "topics_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -85,6 +128,16 @@ CREATE TABLE "user_poll_assignments" (
     "is_voted" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "user_poll_assignments_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "poll_share_unlocks" (
+    "user_id" UUID NOT NULL,
+    "poll_id" UUID NOT NULL,
+    "platform" VARCHAR(30) NOT NULL DEFAULT 'native',
+    "shared_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "poll_share_unlocks_pkey" PRIMARY KEY ("user_id","poll_id")
 );
 
 -- CreateTable
@@ -241,6 +294,19 @@ CREATE TABLE "civic_issues" (
 );
 
 -- CreateTable
+CREATE TABLE "poll_insights" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "poll_id" UUID NOT NULL,
+    "headline" VARCHAR(200) NOT NULL,
+    "content" TEXT NOT NULL,
+    "demographics_summary" JSONB,
+    "is_published" BOOLEAN NOT NULL DEFAULT false,
+    "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "poll_insights_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "partner_surveys" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "partner_name" VARCHAR(100) NOT NULL,
@@ -249,7 +315,7 @@ CREATE TABLE "partner_surveys" (
     "survey_description" TEXT,
     "target_criteria" JSONB,
     "incentive_amount" INTEGER NOT NULL,
-    "pulse_referral_fee" INTEGER NOT NULL,
+    "pollbooth_referral_fee" INTEGER NOT NULL,
     "survey_url" TEXT NOT NULL,
     "callback_url" TEXT NOT NULL,
     "sample_size_needed" INTEGER NOT NULL,
@@ -409,6 +475,14 @@ CREATE TABLE "user_blocks" (
     CONSTRAINT "user_blocks_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "_PollToTopic" (
+    "A" UUID NOT NULL,
+    "B" UUID NOT NULL,
+
+    CONSTRAINT "_PollToTopic_AB_pkey" PRIMARY KEY ("A","B")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_phone_hash_key" ON "users"("phone_hash");
 
@@ -437,6 +511,9 @@ CREATE INDEX "users_city_idx" ON "users"("city");
 CREATE INDEX "users_state_idx" ON "users"("state");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "polls_slug_key" ON "polls"("slug");
+
+-- CreateIndex
 CREATE INDEX "polls_category_idx" ON "polls"("category");
 
 -- CreateIndex
@@ -455,6 +532,24 @@ CREATE INDEX "polls_created_at_idx" ON "polls"("created_at");
 CREATE INDEX "polls_start_date_end_date_idx" ON "polls"("start_date", "end_date");
 
 -- CreateIndex
+CREATE INDEX "poll_predictions_poll_id_idx" ON "poll_predictions"("poll_id");
+
+-- CreateIndex
+CREATE INDEX "poll_predictions_user_id_idx" ON "poll_predictions"("user_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "poll_predictions_user_id_poll_id_key" ON "poll_predictions"("user_id", "poll_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "topics_slug_key" ON "topics"("slug");
+
+-- CreateIndex
+CREATE INDEX "topics_slug_idx" ON "topics"("slug");
+
+-- CreateIndex
+CREATE INDEX "topics_parent_category_idx" ON "topics"("parent_category");
+
+-- CreateIndex
 CREATE INDEX "user_poll_assignments_user_id_expires_at_idx" ON "user_poll_assignments"("user_id", "expires_at");
 
 -- CreateIndex
@@ -465,6 +560,9 @@ CREATE INDEX "user_poll_assignments_is_seen_idx" ON "user_poll_assignments"("is_
 
 -- CreateIndex
 CREATE UNIQUE INDEX "user_poll_assignments_user_id_poll_id_key" ON "user_poll_assignments"("user_id", "poll_id");
+
+-- CreateIndex
+CREATE INDEX "poll_share_unlocks_poll_id_idx" ON "poll_share_unlocks"("poll_id");
 
 -- CreateIndex
 CREATE INDEX "votes_poll_id_idx" ON "votes"("poll_id");
@@ -560,6 +658,12 @@ CREATE INDEX "civic_issues_state_idx" ON "civic_issues"("state");
 CREATE INDEX "civic_issues_created_at_idx" ON "civic_issues"("created_at");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "poll_insights_poll_id_key" ON "poll_insights"("poll_id");
+
+-- CreateIndex
+CREATE INDEX "poll_insights_is_published_idx" ON "poll_insights"("is_published");
+
+-- CreateIndex
 CREATE INDEX "partner_surveys_is_active_idx" ON "partner_surveys"("is_active");
 
 -- CreateIndex
@@ -631,20 +735,35 @@ CREATE INDEX "user_blocks_blocker_id_idx" ON "user_blocks"("blocker_id");
 -- CreateIndex
 CREATE UNIQUE INDEX "user_blocks_blocker_id_blocked_id_key" ON "user_blocks"("blocker_id", "blocked_id");
 
+-- CreateIndex
+CREATE INDEX "_PollToTopic_B_index" ON "_PollToTopic"("B");
+
 -- AddForeignKey
 ALTER TABLE "profiles" ADD CONSTRAINT "profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "user_poll_assignments" ADD CONSTRAINT "user_poll_assignments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "poll_predictions" ADD CONSTRAINT "poll_predictions_poll_id_fkey" FOREIGN KEY ("poll_id") REFERENCES "polls"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "poll_predictions" ADD CONSTRAINT "poll_predictions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "user_poll_assignments" ADD CONSTRAINT "user_poll_assignments_poll_id_fkey" FOREIGN KEY ("poll_id") REFERENCES "polls"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "votes" ADD CONSTRAINT "votes_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "user_poll_assignments" ADD CONSTRAINT "user_poll_assignments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "poll_share_unlocks" ADD CONSTRAINT "poll_share_unlocks_poll_id_fkey" FOREIGN KEY ("poll_id") REFERENCES "polls"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "poll_share_unlocks" ADD CONSTRAINT "poll_share_unlocks_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "votes" ADD CONSTRAINT "votes_poll_id_fkey" FOREIGN KEY ("poll_id") REFERENCES "polls"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "votes" ADD CONSTRAINT "votes_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "guest_votes" ADD CONSTRAINT "guest_votes_converted_user_id_fkey" FOREIGN KEY ("converted_user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -653,10 +772,10 @@ ALTER TABLE "guest_votes" ADD CONSTRAINT "guest_votes_converted_user_id_fkey" FO
 ALTER TABLE "guest_votes" ADD CONSTRAINT "guest_votes_poll_id_fkey" FOREIGN KEY ("poll_id") REFERENCES "polls"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "opinions" ADD CONSTRAINT "opinions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "opinions" ADD CONSTRAINT "opinions_poll_id_fkey" FOREIGN KEY ("poll_id") REFERENCES "polls"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "opinions" ADD CONSTRAINT "opinions_poll_id_fkey" FOREIGN KEY ("poll_id") REFERENCES "polls"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "opinions" ADD CONSTRAINT "opinions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "opinion_reactions" ADD CONSTRAINT "opinion_reactions_opinion_id_fkey" FOREIGN KEY ("opinion_id") REFERENCES "opinions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -671,19 +790,25 @@ ALTER TABLE "user_moderation_status" ADD CONSTRAINT "user_moderation_status_user
 ALTER TABLE "reports" ADD CONSTRAINT "reports_opinion_id_fkey" FOREIGN KEY ("opinion_id") REFERENCES "opinions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "user_badges" ADD CONSTRAINT "user_badges_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "user_badges" ADD CONSTRAINT "user_badges_badge_id_fkey" FOREIGN KEY ("badge_id") REFERENCES "badges"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "user_badges" ADD CONSTRAINT "user_badges_badge_id_fkey" FOREIGN KEY ("badge_id") REFERENCES "badges"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "user_badges" ADD CONSTRAINT "user_badges_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "survey_suggestions" ADD CONSTRAINT "survey_suggestions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "survey_consents" ADD CONSTRAINT "survey_consents_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "civic_issues" ADD CONSTRAINT "civic_issues_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "poll_insights" ADD CONSTRAINT "poll_insights_poll_id_fkey" FOREIGN KEY ("poll_id") REFERENCES "polls"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "survey_consents" ADD CONSTRAINT "survey_consents_survey_id_fkey" FOREIGN KEY ("survey_id") REFERENCES "partner_surveys"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "survey_consents" ADD CONSTRAINT "survey_consents_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "user_earnings" ADD CONSTRAINT "user_earnings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -695,10 +820,17 @@ ALTER TABLE "ad_placements" ADD CONSTRAINT "ad_placements_poll_id_fkey" FOREIGN 
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "user_engagements" ADD CONSTRAINT "user_engagements_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "user_engagements" ADD CONSTRAINT "user_engagements_poll_id_fkey" FOREIGN KEY ("poll_id") REFERENCES "polls"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "user_engagements" ADD CONSTRAINT "user_engagements_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_PollToTopic" ADD CONSTRAINT "_PollToTopic_A_fkey" FOREIGN KEY ("A") REFERENCES "polls"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_PollToTopic" ADD CONSTRAINT "_PollToTopic_B_fkey" FOREIGN KEY ("B") REFERENCES "topics"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+

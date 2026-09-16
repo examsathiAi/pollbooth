@@ -156,6 +156,47 @@ export class AdminService {
       },
     };
   }
+// Poll Lifecycle Management (God-Mode)
+// 1. Fetch all polls for UI
+  async getManageablePolls() {
+    const polls = await prisma.poll.findMany({
+      orderBy: { created_at: "desc" },
+      select: { id: true, question: true, status: true, is_active: true, end_date: true }
+    });
+    return { polls };
+  }
+
+  // 2. Lifecycle Management (God-Mode)
+  async updatePollLifecycle(pollId: string, input: { action: string; endDate?: string }) {
+    const poll = await prisma.poll.findUnique({ where: { id: pollId } });
+    if (!poll) throw new Error("Poll not found");
+
+    const data: any = {};
+    switch (input.action.toUpperCase()) {
+      case "CLOSE":
+        data.status = "CLOSED";
+        data.end_date = new Date();
+        break;
+      case "REOPEN":
+        data.status = "ACTIVE";
+        data.is_active = true;
+        break;
+      case "HIDE":
+        data.is_active = false;
+        break;
+      case "UNHIDE":
+        data.is_active = true;
+        break;
+      case "EXTEND":
+        if (!input.endDate) throw new Error("endDate required");
+        data.end_date = new Date(input.endDate);
+        data.status = "ACTIVE";
+        break;
+      default:
+        throw new Error("Invalid action.");
+    }
+    return prisma.poll.update({ where: { id: pollId }, data });
+  }
 }
 
 export const adminService = new AdminService();

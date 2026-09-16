@@ -23,6 +23,33 @@ export const RefreshTokenSchema = z.object({
   refresh_token: z.string().min(1, "Refresh token is required"),
 });
 
+export const EmailOtpSendSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  mode: z.enum(["login", "signup"]),
+});
+
+export const EmailOtpVerifySchema = z.object({
+  email: z.string().email("Invalid email address"),
+  otp: z.string().length(6, "OTP must be 6 digits"),
+  username: z.string().min(2, "Name must be at least 2 characters").max(50).optional(),
+  accepted_terms: z.boolean().optional(),
+  accepted_privacy: z.boolean().optional(),
+  age_confirmed: z.boolean().optional(),
+  analytics_consent: z.boolean().optional(),
+});
+
+export const GoogleVerifySchema = z.object({
+  id_token: z.string().min(1, "Google ID token is required"),
+  username: z.string().min(2).max(50).optional(),
+  accepted_terms: z.boolean().optional(),
+  accepted_privacy: z.boolean().optional(),
+  age_confirmed: z.boolean().optional(),
+  analytics_consent: z.boolean().optional(),
+});
+
 export type SendOtpInput = z.infer<typeof SendOtpSchema>;
 export type VerifyOtpInput = z.infer<typeof VerifyOtpSchema>;
 export type RefreshTokenInput = z.infer<typeof RefreshTokenSchema>;
+export type EmailOtpSendInput = z.infer<typeof EmailOtpSendSchema>;
+export type EmailOtpVerifyInput = z.infer<typeof EmailOtpVerifySchema>;
+export type GoogleVerifyInput = z.infer<typeof GoogleVerifySchema>;

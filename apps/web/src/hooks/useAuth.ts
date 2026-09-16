@@ -74,6 +74,49 @@ export function useAuth() {
     return res.data;
   };
 
+  const sendEmailOtp = async (email: string, mode: "login" | "signup") => {
+    return api.post("/api/v1/auth/email-otp/send", { email, mode });
+  };
+
+  const loginWithEmailOtp = async (
+    email: string,
+    otp: string,
+    options?: {
+      username?: string;
+      accepted_terms?: boolean;
+      accepted_privacy?: boolean;
+      age_confirmed?: boolean;
+      analytics_consent?: boolean;
+    }
+  ) => {
+    const res = await api.post("/api/v1/auth/email-otp/verify", { email, otp, ...options });
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("pollbooth_token", res.data.tokens.access_token);
+      window.localStorage.setItem("pollbooth_refresh_token", res.data.tokens.refresh_token);
+    }
+    setUser(res.data.user);
+    return res.data;
+  };
+
+  const loginWithGoogle = async (
+    idToken: string,
+    options?: {
+      username?: string;
+      accepted_terms?: boolean;
+      accepted_privacy?: boolean;
+      age_confirmed?: boolean;
+      analytics_consent?: boolean;
+    }
+  ) => {
+    const res = await api.post("/api/v1/auth/google/verify", { id_token: idToken, ...options });
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("pollbooth_token", res.data.tokens.access_token);
+      window.localStorage.setItem("pollbooth_refresh_token", res.data.tokens.refresh_token);
+    }
+    setUser(res.data.user);
+    return res.data;
+  };
+
   const logout = () => {
     if (typeof window !== "undefined") {
       window.localStorage.removeItem("pollbooth_token");
@@ -83,5 +126,5 @@ export function useAuth() {
     window.location.href = "/feed";
   };
 
-  return { user, isLoading, login, logout, refreshUser };
+  return { user, isLoading, login, sendEmailOtp, loginWithEmailOtp, loginWithGoogle, logout, refreshUser };
 }

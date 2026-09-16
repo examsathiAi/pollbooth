@@ -14,7 +14,9 @@ export class OpinionsService {
     });
 
     if (!vote) {
-      throw new Error("You must vote before sharing an opinion");
+      const error: any = new Error("You must vote before sharing an opinion. If you just logged in, please cast your vote again.");
+      error.status = 403;
+      throw error;
     }
 
     // Check if user already has an opinion on this poll

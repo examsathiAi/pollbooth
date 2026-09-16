@@ -19,8 +19,10 @@ enum UserRole {
 
 model User {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  phone_hash      String    @unique
+  phone_hash      String?   @unique
   phone_number    String?   @db.VarChar(20)
+  email           String?   @unique @db.VarChar(255)
+  google_id       String?   @unique @db.VarChar(255)
   username        String?   @unique @db.VarChar(50)
   name            String?   @db.VarChar(50)
   role            UserRole  @default(USER)

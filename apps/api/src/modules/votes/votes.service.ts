@@ -28,11 +28,15 @@ export class VotesService {
     }
 
     if (!poll || !poll.is_active || poll.status !== "ACTIVE") {
-      throw new Error("Poll is not active");
+      const error: any = new Error("Poll is not active");
+      error.status = 403;
+      throw error;
     }
 
     if (input.option_index >= poll.options.length) {
-      throw new Error("Invalid option index");
+      const error: any = new Error("Invalid option index");
+      error.status = 400;
+      throw error;
     }
 
     let createdVote;
@@ -266,11 +270,15 @@ export class VotesService {
     });
 
     if (!poll || !poll.is_active || poll.status !== "ACTIVE") {
-      throw new Error("Poll is not active");
+      const error: any = new Error("Poll is not active");
+      error.status = 403;
+      throw error;
     }
 
     if (input.option_index >= poll.options.length) {
-      throw new Error("Invalid option index");
+      const error: any = new Error("Invalid option index");
+      error.status = 400;
+      throw error;
     }
 
     const ipHash = ip ? require("crypto").createHash("sha256").update(ip).digest("hex") : null;

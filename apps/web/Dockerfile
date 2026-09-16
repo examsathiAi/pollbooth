@@ -17,6 +17,8 @@ CMD ["pnpm", "--filter", "@pollbooth/web", "dev"]
 FROM deps AS production
 WORKDIR /app
 COPY . .
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
 RUN pnpm --filter @pollbooth/web build
 ENV NODE_ENV=production
 WORKDIR /app/apps/web
