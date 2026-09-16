@@ -4,14 +4,14 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import Script from "next/script";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
-import { Loader2, Activity, ShieldCheck, Mail, Phone } from "lucide-react";
+import { Loader2, Activity, ShieldCheck, Mail } from "lucide-react";
 import Link from "next/link";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
 export default function LoginPage() {
   const { login, sendEmailOtp, loginWithEmailOtp, loginWithGoogle } = useAuth();
-  const [method, setMethod] = useState<"phone" | "email">("phone");
+  const method = "email";
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -196,9 +196,9 @@ export default function LoginPage() {
     }
   };
 
-  const sendOtp = method === "phone" ? sendPhoneOtp : sendEmailOtpStep;
-  const verifyOtp = method === "phone" ? verifyPhoneOtp : verifyEmailOtpStep;
-  const contactLabel = method === "phone" ? `+91 ${phone}` : email;
+  const sendOtp = sendEmailOtpStep;
+  const verifyOtp = verifyEmailOtpStep;
+  const contactLabel = email;
 
   return (
     <div className="flex min-h-screen bg-[#f4efe7]">
@@ -254,7 +254,7 @@ export default function LoginPage() {
               {mode === "signup" ? "Create an account" : "Welcome back"}
             </h1>
             <p className="mt-2 text-sm text-[#625a50]">
-              {mode === "signup" ? "Sign up with Google, or use your phone or email below." : "Sign in with Google, or use your phone or email below."}
+              {mode === "signup" ? "Sign up with Google, or use your email below." : "Sign in with Google, or use your email below."}
             </p>
           </div>
 
@@ -317,52 +317,18 @@ export default function LoginPage() {
             </div>
           )}
 
-          {step === "phone" && (
-            <div className="flex rounded-md border border-[#d8ceb8] bg-white p-1">
-              <button
-                onClick={() => { setMethod("phone"); setError(""); }}
-                className={`flex-1 flex items-center justify-center gap-2 h-9 rounded text-sm font-medium transition-colors ${method === "phone" ? "bg-maroon text-white" : "text-slate-600 hover:bg-slate-50"}`}
-              >
-                <Phone className="w-4 h-4" /> Phone
-              </button>
-              <button
-                onClick={() => { setMethod("email"); setError(""); }}
-                className={`flex-1 flex items-center justify-center gap-2 h-9 rounded text-sm font-medium transition-colors ${method === "email" ? "bg-maroon text-white" : "text-slate-600 hover:bg-slate-50"}`}
-              >
-                <Mail className="w-4 h-4" /> Email
-              </button>
-            </div>
-          )}
-
           {step === "phone" ? (
             <div className="space-y-6">
-              {method === "phone" ? (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium leading-none text-slate-700">Phone Number</label>
-                  <div className="relative flex items-center">
-                    <span className="absolute left-3 text-sm font-medium text-slate-500">+91</span>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                      placeholder="9876543210"
-                      maxLength={10}
-                      className="flex h-11 w-full rounded-md border border-[#d8ceb8] bg-white pl-10 pr-3 py-2 text-sm placeholder:text-[#625a50] focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent transition-all"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium leading-none text-slate-700">Email Address</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="flex h-11 w-full rounded-md border border-[#d8ceb8] bg-white px-3 py-2 text-sm placeholder:text-[#625a50] focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent transition-all"
-                  />
-                </div>
-              )}
+              <div className="space-y-2">
+                <label className="text-sm font-medium leading-none text-slate-700">Email Address</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="flex h-11 w-full rounded-md border border-[#d8ceb8] bg-white px-3 py-2 text-sm placeholder:text-[#625a50] focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent transition-all"
+                />
+              </div>
 
               {error && <div className="text-sm font-medium text-red-500 bg-red-50 p-3 rounded-md">{error}</div>}
 
@@ -404,7 +370,7 @@ export default function LoginPage() {
                   onClick={() => setStep("phone")}
                   className="text-sm text-slate-500 hover:text-slate-900 font-medium transition-colors"
                 >
-                  ← Use a different {method === "phone" ? "number" : "email"}
+                  ← Use a different email
                 </button>
               </div>
             </div>
