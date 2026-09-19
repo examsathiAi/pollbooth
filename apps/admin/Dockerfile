@@ -14,6 +14,8 @@ CMD ["pnpm", "--filter", "@pollbooth/admin", "dev"]
 
 FROM deps AS production
 WORKDIR /app
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 COPY . .
 RUN pnpm --filter @pollbooth/admin build
 ENV NODE_ENV=production

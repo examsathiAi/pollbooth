@@ -104,6 +104,8 @@ services:
       context: .
       dockerfile: apps/admin/Dockerfile
       network: host
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     image: pollbooth-admin:prod
     restart: unless-stopped
     environment:
