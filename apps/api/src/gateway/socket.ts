@@ -9,7 +9,7 @@ export let io: Server;
 export const initWebSocket = (httpServer: HttpServer) => {
   io = new Server(httpServer, {
     cors: {
-      origin: "*", // Allows your Next.js frontend to connect
+      origin: ["https://pollbooth.in", "https://www.pollbooth.in", "https://admin.pollbooth.in"],
       methods: ["GET", "POST"],
       credentials: true,
     },

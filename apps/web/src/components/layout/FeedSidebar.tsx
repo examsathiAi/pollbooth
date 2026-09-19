@@ -85,21 +85,6 @@ export function FeedSidebar({ activeCategory: propActive, onCategoryChange }: Fe
         </Link>
       </div>
 
-      <div className="border-t border-paper-border/40 space-y-0.5 pt-3 pb-6">
-        <p className="px-3 py-2 text-[16px] font-bold text-ink-muted">About & Legal</p>
-        <Link href="/about" className="flex items-center gap-3 rounded-xl px-3 py-2 text-[15px] font-semibold text-ink hover:bg-paper-card transition-all duration-200">
-          <HelpCircle className="h-[24px] w-[24px] shrink-0 text-ink-muted" /> About Us
-        </Link>
-        <Link href="/privacy" className="flex items-center gap-3 rounded-xl px-3 py-2 text-[15px] font-semibold text-ink hover:bg-paper-card transition-all duration-200">
-          <Shield className="h-[24px] w-[24px] shrink-0 text-ink-muted" /> Privacy Policy
-        </Link>
-        <Link href="/terms" className="flex items-center gap-3 rounded-xl px-3 py-2 text-[15px] font-semibold text-ink hover:bg-paper-card transition-all duration-200">
-          <Newspaper className="h-[24px] w-[24px] shrink-0 text-ink-muted" /> Terms of Service
-        </Link>
-        <Link href="/grievance" className="flex items-center gap-3 rounded-xl px-3 py-2 text-[15px] font-semibold text-ink hover:bg-paper-card transition-all duration-200">
-          <AlertTriangle className="h-[24px] w-[24px] shrink-0 text-ink-muted" /> Grievance & Data
-        </Link>
-      </div>
     </aside>
   );
 }

@@ -42,14 +42,22 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
             </Link>
 
             {/* CENTRAL SEARCH */}
-            <div className="flex-1 max-w-2xl mx-8 hidden md:block">
-              <div className="relative group">
+            <div className="flex-1 mx-8 hidden md:flex items-center gap-5 min-w-0">
+              <div className="h-9 w-px bg-paper-border/70 shrink-0" />
+              <p
+                title="Your vote isn't just a number — aggregated results reach the departments, representatives, and media who can act on them."
+                className="text-[15px] font-semibold text-maroon leading-snug whitespace-nowrap"
+              >
+                Not just a vote — a voice that reaches decision-makers.
+              </p>
+              <div className="flex-1 min-w-4" />
+              <div className="relative group w-64 shrink-0">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-muted group-focus-within:text-maroon transition-colors" />
-                <input 
-                  type="text" 
-                  placeholder="Search polls..." 
-                  onChange={(e) => window.dispatchEvent(new CustomEvent("globalSearch", { detail: { query: e.target.value } }))} 
-                  className="w-full bg-paper-card border border-paper-border/50 text-ink text-sm rounded-full pl-10 pr-4 py-2.5 focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon/30 transition-all shadow-inner" 
+                <input
+                  type="text"
+                  placeholder="Search polls..."
+                  onChange={(e) => window.dispatchEvent(new CustomEvent("globalSearch", { detail: { query: e.target.value } }))}
+                  className="w-full bg-paper-card border border-paper-border/50 text-ink text-sm rounded-full pl-10 pr-4 py-2.5 focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon/30 transition-all shadow-inner"
                 />
               </div>
             </div>
