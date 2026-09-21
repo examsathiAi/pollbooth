@@ -13,7 +13,8 @@ export default function GrievancePage() {
         <h2 className="text-xl font-semibold text-[#1f1b18]">How to contact our grievance officer</h2>
         <div className="mt-4 space-y-4 text-sm leading-7 text-[#625a50]">
           <p>Designated Grievance Officer: <span className="font-medium text-[#1f1b18]">PollBooth Compliance Team</span></p>
-          <p>Email: <a href="mailto:privacy@pollboothapp.in" className="font-medium text-[#7a1f10]">privacy@pollboothapp.in</a></p>
+          <p>Email: <a href="mailto:support@pollbooth.in" className="font-medium text-[#7a1f10]">support@pollbooth.in</a></p>
+          <p>Phone: <a href="tel:+917004314471" className="font-medium text-[#7a1f10]">+91 70043 14471</a></p>
           <p>Response time: We aim to acknowledge your request within 3 business days and resolve it as soon as possible.</p>
         </div>
       </section>
@@ -30,7 +31,7 @@ export default function GrievancePage() {
 
       <section className="rounded-[28px] border border-[#d8ceb8] bg-[#fffdf9] p-6 shadow-sm">
         <h2 className="text-xl font-semibold text-[#1f1b18]">Submit a request</h2>
-        <p className="mt-4 text-sm leading-7 text-[#625a50]">Please send your request from the phone number or email linked to your PollBooth account, or include your account ID if you are already signed in. If you are unable to access your account, email us with the same phone number used for signup.</p>
+        <p className="mt-4 text-sm leading-7 text-[#625a50]">Please send your request from the phone number or email linked to your PollBooth account, or include your account ID if you are already signed in. If you are unable to access your account, email us from any address and mention the phone number or email used at signup.</p>
         <div className="mt-6 space-y-4 text-sm leading-7">
           <p className="font-semibold text-[#1f1b18]">Suggested request format:</p>
           <div className="rounded-2xl border border-[#d8ceb8] bg-[#f7f1e8] p-4 text-[#1f1b18]">

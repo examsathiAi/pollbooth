@@ -56,6 +56,16 @@ export default function FeedPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<PollSummary[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const organicPollsRef = useRef<PollSummary[]>([]);
+  const sponsoredPollsRef = useRef<PollSummary[]>([]);
+
+  useEffect(() => {
+    organicPollsRef.current = organicPolls;
+  }, [organicPolls]);
+
+  useEffect(() => {
+    sponsoredPollsRef.current = sponsoredPolls;
+  }, [sponsoredPolls]);
 
       useEffect(() => {
         const handleCat = (e: any) => { try { if (typeof handleCategoryChange === "function") handleCategoryChange(e.detail.id, e.detail.category); } catch(err) {} };
@@ -85,9 +95,11 @@ export default function FeedPage() {
     }
 
     setIsSearching(true);
-    const allPolls = [...organicPolls, ...sponsoredPolls];
+    const q = query.toLowerCase();
+    const allPolls = [...organicPollsRef.current, ...sponsoredPollsRef.current];
     const filtered = allPolls.filter((poll) =>
-      poll.question.toLowerCase().includes(query.toLowerCase())
+      poll.question.toLowerCase().includes(q) ||
+      (poll.options || []).some((opt) => opt.toLowerCase().includes(q))
     );
     setSearchResults(filtered);
   };
