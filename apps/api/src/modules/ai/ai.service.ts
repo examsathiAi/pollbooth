@@ -179,6 +179,7 @@ Analyze the poll question: "${question}" (Category: ${category}).
    - 'whatsapp_share_text': Highly forwardable conversational invite with emojis and #pollbooth.
    - 'facebook_caption': Contextual summary hook with #pollbooth.
    - 'instagram_caption': High-engagement caption with news summary, key question, and all hashtags including #pollbooth.
+   - CRITICAL: NONE of the four caption fields above may contain a URL, link, or web address of any kind (no "http", "https", "www", or any domain name such as pollbooth.in, pollbooth.com, or any other). The application appends the real, correct link to each caption automatically after generation. Any link you include would be fabricated and incorrect — end each caption with text and hashtags only, never a URL.
 
 Return strictly valid JSON matching:
 {

@@ -18,9 +18,10 @@ const NAV_ITEMS = [
 interface FeedSidebarProps {
   activeCategory?: string;
   onCategoryChange?: (category: string, categoryFilter?: string) => void;
+  forceVisible?: boolean;
 }
 
-export function FeedSidebar({ activeCategory: propActive, onCategoryChange }: FeedSidebarProps) {
+export function FeedSidebar({ activeCategory: propActive, onCategoryChange, forceVisible }: FeedSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [localActive, setLocalActive] = useState(propActive || "for-you");
@@ -46,7 +47,7 @@ export function FeedSidebar({ activeCategory: propActive, onCategoryChange }: Fe
   };
 
   return (
-    <aside className="hidden w-full space-y-3 lg:block lg:max-h-full lg:overflow-y-auto scrollbar-auto-hide pr-2">
+    <aside className={forceVisible ? "block w-full space-y-3 pr-2" : "hidden w-full space-y-3 lg:block lg:max-h-full lg:overflow-y-auto scrollbar-auto-hide pr-2"}>
       <div className="space-y-1">
         <p className="px-3 py-2 text-[16px] font-bold text-ink-muted">Browse</p>
         <nav className="space-y-0.5">

@@ -444,7 +444,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
           </div>
         )}
         <Link href={`${pollUrl}`} className="block group">
-          <h3 className="text-xl sm:text-2xl font-sans font-semibold tracking-tight leading-snug text-[#1f1b18] mb-2 line-clamp-4 group-hover:text-[#7a1f10] transition-colors duration-200">{poll.question}</h3>
+          <h3 className="text-xl sm:text-2xl font-sans font-semibold tracking-tight leading-snug text-[#1f1b18] mb-2 break-words group-hover:text-[#7a1f10] transition-colors duration-200">{poll.question}</h3>
         </Link>
       </div>
       
