@@ -15,7 +15,7 @@ export default async function Image({ params }: { params: { id: string } }) {
     const res = await fetch(\`\${API_URL}/api/v1/polls/\${params.id}\`, { cache: "no-store" });
     const poll = res.ok ? await res.json() : null;
     
-    const title = poll?.question || "Have your say on PollBooth.it";
+    const title = poll?.question || "Have your say on PollBooth.in";
     const category = poll?.category || "PUBLIC OPINION";
 
     return new ImageResponse(

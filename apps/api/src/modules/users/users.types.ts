@@ -4,7 +4,7 @@ export const UpdateProfileSchema = z.object({
   username: z.string().min(3).max(50).optional(),
   city: z.string().max(100).optional(),
   state: z.string().max(100).optional(),
-  age_bracket: z.enum(["GEN_Z", "MILLENNIAL", "GEN_X", "BOOMER"]).optional(),
+  age_bracket: z.enum(["GEN_ALPHA", "GEN_Z", "MILLENNIAL", "GEN_X", "BOOMER", "PREFER_NOT_TO_SAY"]).optional(),
   gender: z.enum(["MALE", "FEMALE", "NON_BINARY", "PREFER_NOT_TO_SAY"]).optional(),
   education: z.string().max(50).optional(),
   income_bracket: z.string().max(50).optional(),
@@ -12,6 +12,7 @@ export const UpdateProfileSchema = z.object({
   vehicle: z.string().max(50).optional(),
   diet: z.enum(["VEG", "NON_VEG", "VEGAN"]).optional(),
   shopping_pref: z.enum(["ONLINE", "OFFLINE", "BOTH"]).optional(),
+  streaming_platforms: z.array(z.string()).optional(),
 }).strict();
 
 export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;

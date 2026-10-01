@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'pollbooth.it Admin',
+  title: 'pollbooth.in Admin',
   description: 'Administration dashboard for PollBooth moderation and community operations',
   icons: {
     icon: '/favicon.png',

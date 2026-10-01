@@ -24,7 +24,7 @@ const createLimiter = (windowMs: number, max: number, keyPrefix: string, message
 };
 
 export const rateLimiter = {
-  general: createLimiter(60000, 100, "api", "Rate limit exceeded. Please try again later."),
+  general: createLimiter(60000, 500, "api", "Rate limit exceeded. Please try again later."),
   otp: createLimiter(60000, 1000, "otp", "Too many OTP requests. Try again in an hour."),
   vote: createLimiter(60000, 10, "vote", "Too many votes. Please slow down."),
   opinion: createLimiter(60000, 5, "opinion", "Too many opinions posted. Please slow down."),

@@ -30,7 +30,7 @@ async function fetchDeepNewsContext(query: string): Promise<{ contextText: strin
     const cleanQuery = query.replace(/[^a-zA-Z0-9 ]/g, " ").trim();
     
     // Target high-relevance current news via Google News RSS with year & freshness biasing
-    const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(cleanQuery + " " + currentYear)}&hl=en-IN&gl=IN&ceid=IN:en`;
+    const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(cleanQuery + " when:14d")}&hl=en-IN&gl=IN&ceid=IN:en`;
 
     let rssRes;
     try {
@@ -42,7 +42,7 @@ async function fetchDeepNewsContext(query: string): Promise<{ contextText: strin
       });
     } catch {
       // Fallback query if specific year RSS yields low results
-      rssRes = await axios.get(`https://news.google.com/rss/search?q=${encodeURIComponent(cleanQuery)}&hl=en-IN&gl=IN&ceid=IN:en`, {
+      rssRes = await axios.get(`https://news.google.com/rss/search?q=${encodeURIComponent(cleanQuery + " when:3m")}&hl=en-IN&gl=IN&ceid=IN:en`, {
         timeout: 4000,
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
@@ -153,7 +153,7 @@ export async function generatePollContent(question: string, category: string): P
         .join("\n");
     }
 
-    const prompt = `You are an elite Indian investigative data journalist and SEO strategist for PollBooth.
+    const prompt = `You are a highly engaging, relatable Indian social media strategist and poll creator for PollBooth.
 
 TEMPORAL ANCHOR (MANDATORY):
 - CURRENT DATE: ${currentDateStr}
@@ -168,18 +168,20 @@ ${sourceListText}
 
 TASK:
 Analyze the poll question: "${question}" (Category: ${category}).
+CRITICAL DIRECTIVE: Stay 100% focused on the EXACT topic of the question. Do NOT mix unrelated historical events, old news, or generic filler. Be direct, strictly to the point, and base the context ONLY on the provided recent sources.
 
-1. Write 'ai_summary': A massive, deep-dive investigative journalism article (6-8 dense paragraphs, minimum 800 words). It must read like a premium front-page editorial. Cover extensive background history, micro and macro implications, key stakeholders, public sentiment, and detailed analysis based strictly on the verified ${currentYear} material. MUST end with:\n\n*Disclaimer: This context was AI-generated based on recent news sources. Always verify facts independently.*
-2. Write 'faq': 2-4 key Q&As addressing the most searched questions on this topic by the Indian public for ${currentYear}.
-3. Generate 'suggested_options': An array of 2-4 realistic, mutually exclusive poll answers (e.g. candidate/actor names or direct answers). DO NOT include UI buttons or action items.
-4. Extract 'hashtags': 3-5 authentic, high-traffic trending hashtags hyper-localized for Indian social media in ${currentYear}. YOU MUST ALWAYS INCLUDE "#pollbooth".
-5. Generate 'keywords': 6-10 high-intent SEO search phrases targeting ${currentYear}.
-6. Generate social captions:
+1. Generate 'improved_question': Rewrite the question to be highly engaging, conversational, and punchy. Use a natural "Hinglish" tone (mixing everyday Hindi words with English like internet users do in India) so it connects instantly with the general public. Keep it short.
+2. Write 'ai_summary': A detailed but highly engaging background context of around 400 words. Use simple, everyday language with a conversational Hinglish vibe so it feels like a story. Break it down into small, readable paragraphs so it is easy to consume. MUST end with:\n\n*Disclaimer: This context was AI-generated based on recent news sources. Always verify facts independently.*
+3. Write 'faq': 2-4 key Q&As addressing the most searched questions on this topic by the Indian public for ${currentYear}. Keep answers brief and conversational.
+4. Generate 'suggested_options': An array of 2-4 short, punchy, mutually exclusive poll answers. Use an everyday conversational Hinglish tone (e.g., "Haan bhai bilkul", "No way", "Can't say"). DO NOT include UI buttons.
+5. Extract 'hashtags': 3-5 authentic, high-traffic trending hashtags hyper-localized for Indian social media in ${currentYear}. YOU MUST ALWAYS INCLUDE "#pollbooth".
+6. Generate 'keywords': 6-10 high-intent SEO search phrases targeting ${currentYear}.
+7. Generate social captions:
    - 'x_caption': Punchy tweet hook ending with relevant hashtags and #pollbooth.
-   - 'whatsapp_share_text': Highly forwardable conversational invite with emojis and #pollbooth.
+   - 'whatsapp_share_text': Highly forwardable conversational invite with emojis and #pollbooth. Use a strong Hinglish hook.
    - 'facebook_caption': Contextual summary hook with #pollbooth.
    - 'instagram_caption': High-engagement caption with news summary, key question, and all hashtags including #pollbooth.
-   - CRITICAL: NONE of the four caption fields above may contain a URL, link, or web address of any kind (no "http", "https", "www", or any domain name such as pollbooth.in, pollbooth.com, or any other). The application appends the real, correct link to each caption automatically after generation. Any link you include would be fabricated and incorrect — end each caption with text and hashtags only, never a URL.
+   - CRITICAL: NONE of the four caption fields above may contain a URL, link, or web address of any kind. The application appends the real link automatically. Any link you include would be fabricated and incorrect — end each caption with text and hashtags only.
 
 Return strictly valid JSON matching:
 {
@@ -201,6 +203,7 @@ Return strictly valid JSON matching:
   "suggested_options": string[],
   "sources": [{"url": string, "title": string, "publisher": string, "published_at": string}]
 }`;
+
 
     const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent", {
       method: "POST",

@@ -297,9 +297,34 @@ export class PollsService {
 
     if (query.status && query.status !== "ALL") {
       where.status = query.status;
-    } else {
-      where.status = { in: ["ACTIVE", "CLOSED"] };
     }
+
+    // TARGETING LOGIC: If a poll is targeted, ONLY show it to assigned users
+    if (userId) {
+      where.OR = [
+        // Show universal polls (no filters applied)
+        { target_filters: { equals: {} } },
+        { target_filters: { equals: null } },
+        // OR show polls explicitly assigned to this user
+        { 
+          user_poll_assignments: {
+            some: {
+              user_id: userId
+            }
+          }
+        }
+      ];
+    } else {
+      // Guests only see universal polls
+      where.OR = [
+        { target_filters: { equals: {} } },
+        { target_filters: { equals: null } }
+      ];
+    }
+
+      if (!query.status || query.status === "ALL") {
+        where.status = { in: ["ACTIVE", "CLOSED"] };
+      }
     where.is_active = true;
 
     const isBlackoutActive = await this.isElectionBlackoutActive(region);
@@ -472,6 +497,10 @@ export class PollsService {
 
     if (filters?.states?.length) where.state = { in: filters.states };
     if (filters?.city_tiers?.length) where.city_tier = { in: filters.city_tiers };
+    if (filters?.cities?.length) {
+      // Case-insensitive city matching
+      where.city = { in: filters.cities, mode: 'insensitive' };
+    }
 
     const profileWhere: any = {};
     if (filters?.age_brackets?.length) profileWhere.age_bracket = { in: filters.age_brackets };
@@ -480,6 +509,8 @@ export class PollsService {
     if (filters?.education?.length) profileWhere.education = { in: filters.education };
     if (filters?.employment?.length) profileWhere.employment = { in: filters.employment };
     if (filters?.vehicle_ownership?.length) profileWhere.vehicle = { in: filters.vehicle_ownership };
+    if (filters?.diet?.length) profileWhere.diet = { in: filters.diet };
+    if (filters?.shopping_pref?.length) profileWhere.shopping_pref = { in: filters.shopping_pref };
 
     const query: any = { where };
     if (Object.keys(profileWhere).length > 0) {

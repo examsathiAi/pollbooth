@@ -13,10 +13,15 @@ const CATEGORY_OPTIONS = [
 ];
 
 const TARGETING_OPTIONS = {
-  genders: ["MALE", "FEMALE", "OTHER"],
-  age_brackets: ["18-24", "25-34", "35-44", "45-54", "55+"],
-  city_tiers: ["TIER_1", "TIER_2", "TIER_3"],
-  income_brackets: ["LOWER", "MIDDLE", "UPPER"],
+    genders: ["MALE", "FEMALE", "NON_BINARY", "PREFER_NOT_TO_SAY"],
+  age_brackets: ["GEN_ALPHA", "GEN_Z", "MILLENNIAL", "GEN_X", "BOOMER"],
+  income_brackets: ["Under 3 Lakhs", "3 - 10 Lakhs", "10 - 20 Lakhs", "Above 20 Lakhs"],
+  education: ["High School", "Diploma / Certificate", "Undergraduate / Bachelors", "Postgraduate / Masters", "Doctorate / PhD"],
+  employment: ["Student", "Employed", "Self-Employed", "Unemployed", "Retired"],
+  vehicle_ownership: ["None / Public Transport", "Two-Wheeler", "Four-Wheeler", "Both"],
+  diet: ["VEG", "NON_VEG", "VEGAN"],
+  shopping_pref: ["ONLINE", "OFFLINE", "BOTH"],
+
   states: [
     "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", 
     "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", 
@@ -280,7 +285,21 @@ export function PollCreationPanel() {
                 </div>
               ))}
               
-              <label className="flex items-center gap-3 mt-4 rounded-xl border border-[#7a2e2e]/20 bg-[#7a2e2e]/5 px-4 py-3 text-sm text-[#7a2e2e]">
+                              <div className="mb-4 space-y-2 border-t border-[#d8ceb8] pt-4">
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#625a50]">SPECIFIC CITIES / VILLAGES</p>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. Ranchi, Mumbai, Patna (comma separated)" 
+                    className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]"
+                    onChange={(e) => {
+                      const cityArray = e.target.value.split(',').map(c => c.trim()).filter(Boolean);
+                      setFilters(prev => ({ ...prev, cities: cityArray }));
+                    }}
+                  />
+                  <p className="text-xs text-[#625a50]">Leave blank to target all cities in the selected states/tiers.</p>
+                </div>
+
+                <label className="flex items-center gap-3 mt-4 rounded-xl border border-[#7a2e2e]/20 bg-[#7a2e2e]/5 px-4 py-3 text-sm text-[#7a2e2e]">
                 <input type="checkbox" checked={isCommercial} onChange={(e) => setIsCommercial(e.target.checked)} className="h-4 w-4 rounded border-[#d8ceb8] bg-white accent-maroon" />
                 Mark this poll as a paid commercial survey
               </label>

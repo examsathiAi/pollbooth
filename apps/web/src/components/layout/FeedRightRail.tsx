@@ -50,22 +50,10 @@ export function FeedRightRail() {
   return (
     <aside className="w-full lg:max-h-full lg:overflow-y-auto scrollbar-paper">
       <div className="space-y-4">
-        <div className="rounded-2xl border border-paper-border/30 bg-paper-bg shadow-sm p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <span className="rounded-full bg-paper-card px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-maroon border border-maroon">Sponsored</span>
-            <h3 className="text-sm font-sans uppercase tracking-widest text-ink border-b-2 border-ink">Sponsored polls</h3>
-          </div>
-          <div className="space-y-0">
-            {sponsoredPolls.length > 0 ? (
-              sponsoredPolls.map((poll) => (
-                <Link key={poll.id} href={`/poll/${poll.id}`} className="block px-3 py-3 border-b border-paper-border transition hover:bg-paper-card">
-                  <p className="text-sm font-semibold text-ink">{poll.question}</p>
-                  <p className="mt-2 text-xs uppercase tracking-[0.2em] text-ink-muted">{poll.category}</p>
-                </Link>
-              ))
-            ) : (
-              <p className="text-sm text-ink-muted">No sponsored polls are available right now.</p>
-            )}
+        <div className="rounded-2xl border border-paper-border/30 bg-paper-bg shadow-sm p-4 text-center">
+          <span className="rounded-full bg-paper-card px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-muted border border-paper-border">Advertisement</span>
+          <div className="mt-3 min-h-[250px] flex items-center justify-center border-2 border-dashed border-paper-border rounded-xl bg-paper-card/50">
+            <p className="text-xs uppercase tracking-widest text-ink-muted">Banner Ad Space Available</p>
           </div>
         </div>
 

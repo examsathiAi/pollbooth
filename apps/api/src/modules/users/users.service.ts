@@ -1,3 +1,14 @@
+
+function getCityTier(city: string | undefined | null): string | undefined {
+  if (!city) return undefined;
+  const c = city.toLowerCase().trim();
+  const tier1 = ['mumbai', 'delhi', 'new delhi', 'bengaluru', 'bangalore', 'chennai', 'hyderabad', 'kolkata', 'ahmedabad', 'pune'];
+  const tier2 = ['ranchi', 'patna', 'jaipur', 'lucknow', 'kanpur', 'nagpur', 'indore', 'bhopal', 'visakhapatnam', 'vadodara', 'ludhiana', 'agra', 'nashik', 'faridabad', 'meerut', 'rajkot', 'varanasi', 'srinagar', 'aurangabad', 'dhanbad', 'amritsar', 'allahabad', 'howrah', 'gwalior', 'jabalpur', 'coimbatore', 'vijayawada', 'jodhpur', 'madurai', 'raipur', 'kota', 'guwahati', 'chandigarh', 'thiruvananthapuram', 'mysore', 'gurgaon', 'noida', 'jamshedpur', 'dehradun', 'kochi', 'bhubaneswar', 'mangalore'];
+  if (tier1.includes(c)) return 'TIER_1';
+  if (tier2.includes(c)) return 'TIER_2';
+  return 'TIER_3'; 
+}
+
 ﻿import { PrismaClient } from "@prisma/client";
 import type { UpdateProfileInput } from "./users.types";
 
@@ -65,7 +76,7 @@ export class UsersService {
 
     const userUpdate: any = {};
     if (username) userUpdate.username = username;
-    if (city) userUpdate.city = city;
+    if (city) { userUpdate.city = city; userUpdate.city_tier = getCityTier(city); }
     if (state) userUpdate.state = state;
 
     if (Object.keys(userUpdate).length > 0) {
@@ -80,10 +91,7 @@ export class UsersService {
         where: { user_id: userId },
       });
 
-      const allFields = [
-        "age_bracket", "gender", "education", "income_bracket",
-        "employment", "vehicle", "diet", "shopping_pref",
-      ];
+      const allFields = ["age_bracket", "gender", "education", "income_bracket", "employment", "vehicle", "diet", "shopping_pref", "streaming_platforms"];
 
       const filledFields = allFields.filter((field) => {
         const val = (profileFields as any)[field] || (currentProfile as any)?.[field];
@@ -148,7 +156,7 @@ export class UsersService {
     }
 
     const fieldGates: Record<string, { field: string; question: string; options: string[] }> = {
-      age_bracket: { field: "age_bracket", question: "Which generation's voice is yours?", options: ["GEN_Z (18-24)", "MILLENNIAL (25-40)", "GEN_X (41-56)", "BOOMER (57+)"] },
+      age_bracket: { field: "age_bracket", question: "Which generation's voice is yours?", options: ["GEN_ALPHA", "GEN_Z", "MILLENNIAL", "GEN_X", "BOOMER", "PREFER_NOT_TO_SAY"] },
       gender: { field: "gender", question: "How do you identify?", options: ["Male", "Female", "Non-binary", "Prefer not to say"] },
       state: { field: "state", question: "Which state represents you?", options: [] },
       education: { field: "education", question: "What's your highest qualification?", options: ["High School", "Bachelor's", "Master's", "PhD", "Other"] },

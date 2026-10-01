@@ -18,12 +18,15 @@ interface ProfileSummary {
   city?: string | null;
   state?: string | null;
   profile?: {
-    completion_percentage?: number | null;
+    completed_percentage?: number | null;
     age_bracket?: string | null;
     gender?: string | null;
     education?: string | null;
     income_bracket?: string | null;
     employment?: string | null;
+    vehicle?: string | null;
+    diet?: string | null;
+    shopping_pref?: string | null;
     streaming_platforms?: string[] | null;
   } | null;
 }
@@ -49,6 +52,9 @@ export default function ProfilePage() {
     income_bracket: "",
     employment: "",
     streaming_platforms: "",
+    vehicle: "",
+    diet: "",
+    shopping_pref: "",
   });
 
   const handleDeleteAccount = async () => {
@@ -107,6 +113,9 @@ export default function ProfilePage() {
       income_bracket: user.profile?.income_bracket || "",
       employment: user.profile?.employment || "",
       streaming_platforms: user.profile?.streaming_platforms?.join(", ") || "",
+      vehicle: user.profile?.vehicle || "",
+      diet: user.profile?.diet || "",
+      shopping_pref: user.profile?.shopping_pref || "",
     });
   }, [user]);
 
@@ -121,7 +130,19 @@ export default function ProfilePage() {
     };
   }, [user]);
 
-  const completion = profile?.profile?.completion_percentage ?? 0;
+  const completion = profile?.profile?.completed_percentage ?? 0;
+  const detectLocation = async () => {
+    try {
+      const res = await fetch("https://ipapi.co/json/");
+      const data = await res.json();
+      if (data.city && data.region) {
+        setForm(prev => ({ ...prev, city: data.city, state: data.region }));
+        setFeedback("Location auto-detected via IP.");
+      }
+    } catch {
+      setFeedback("Could not auto-detect location. Please type it manually.");
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -137,6 +158,9 @@ export default function ProfilePage() {
       if (form.income_bracket) payload.income_bracket = form.income_bracket;
       if (form.employment) payload.employment = form.employment;
       if (form.streaming_platforms.trim()) payload.streaming_platforms = form.streaming_platforms.split(",").map((value) => value.trim()).filter(Boolean);
+      if (form.vehicle.trim()) payload.vehicle = form.vehicle.trim();
+      if (form.diet) payload.diet = form.diet;
+      if (form.shopping_pref) payload.shopping_pref = form.shopping_pref;
       await api.patch("/api/v1/users/profile", payload);
       await refreshUser();
       setEditing(false);
@@ -206,21 +230,31 @@ export default function ProfilePage() {
                   <input value={form.username} onChange={(event) => setForm((value) => ({ ...value, username: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]" />
                 </label>
                 <label className="text-sm text-[#1f1b18]">
-                  <span className="mb-1 block">State</span>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[#625a50]">State</span>
+                    <button type="button" onClick={detectLocation} className="text-xs text-maroon hover:underline font-medium">Auto-detect IP</button>
+                  </div>
                   <select value={form.state} onChange={(event) => setForm((value) => ({ ...value, state: event.target.value, city: "" }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]">
                     <option value="">Select state</option>
+                    <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
                     <option value="Andhra Pradesh">Andhra Pradesh</option>
                     <option value="Arunachal Pradesh">Arunachal Pradesh</option>
                     <option value="Assam">Assam</option>
                     <option value="Bihar">Bihar</option>
+                    <option value="Chandigarh">Chandigarh</option>
                     <option value="Chhattisgarh">Chhattisgarh</option>
+                    <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</option>
+                    <option value="Delhi">Delhi</option>
                     <option value="Goa">Goa</option>
                     <option value="Gujarat">Gujarat</option>
                     <option value="Haryana">Haryana</option>
                     <option value="Himachal Pradesh">Himachal Pradesh</option>
+                    <option value="Jammu and Kashmir">Jammu and Kashmir</option>
                     <option value="Jharkhand">Jharkhand</option>
                     <option value="Karnataka">Karnataka</option>
                     <option value="Kerala">Kerala</option>
+                    <option value="Ladakh">Ladakh</option>
+                    <option value="Lakshadweep">Lakshadweep</option>
                     <option value="Madhya Pradesh">Madhya Pradesh</option>
                     <option value="Maharashtra">Maharashtra</option>
                     <option value="Manipur">Manipur</option>
@@ -228,6 +262,7 @@ export default function ProfilePage() {
                     <option value="Mizoram">Mizoram</option>
                     <option value="Nagaland">Nagaland</option>
                     <option value="Odisha">Odisha</option>
+                    <option value="Puducherry">Puducherry</option>
                     <option value="Punjab">Punjab</option>
                     <option value="Rajasthan">Rajasthan</option>
                     <option value="Sikkim">Sikkim</option>
@@ -237,46 +272,22 @@ export default function ProfilePage() {
                     <option value="Uttar Pradesh">Uttar Pradesh</option>
                     <option value="Uttarakhand">Uttarakhand</option>
                     <option value="West Bengal">West Bengal</option>
-                    <option value="Delhi">Delhi</option>
-                    <option value="Jammu and Kashmir">Jammu and Kashmir</option>
-                    <option value="Ladakh">Ladakh</option>
-                    <option value="Puducherry">Puducherry</option>
-                    <option value="Chandigarh">Chandigarh</option>
                   </select>
                 </label>
                 <label className="text-sm text-[#1f1b18]">
-                  <span className="mb-1 block text-[#625a50]">City</span>
-                  <select value={form.city} onChange={(event) => setForm((value) => ({ ...value, city: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]">
-                    <option value="">Select city</option>
-                    {form.state === "Delhi" ? (["Delhi", "Noida", "Gurgaon", "Faridabad"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                    {form.state === "Maharashtra" ? (["Mumbai", "Pune", "Nagpur", "Nashik"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                    {form.state === "Tamil Nadu" ? (["Chennai", "Coimbatore", "Madurai", "Salem"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                    {form.state === "Karnataka" ? (["Bengaluru", "Mysuru", "Mangaluru", "Hubballi"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                    {form.state === "Uttar Pradesh" ? (["Lucknow", "Kanpur", "Noida", "Agra"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                    {form.state === "West Bengal" ? (["Kolkata", "Howrah", "Durgapur", "Siliguri"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                    {form.state === "Telangana" ? (["Hyderabad", "Warangal", "Nizamabad", "Karimnagar"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                    {form.state === "Rajasthan" ? (["Jaipur", "Jodhpur", "Udaipur", "Kota"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                    {form.state === "Gujarat" ? (["Ahmedabad", "Surat", "Vadodara", "Rajkot"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                    {form.state === "Punjab" ? (["Chandigarh", "Ludhiana", "Amritsar", "Jalandhar"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                    {form.state === "Kerala" ? (["Thiruvananthapuram", "Kochi", "Kozhikode", "Kottayam"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                    {form.state === "Andhra Pradesh" ? (["Visakhapatnam", "Vijayawada", "Guntur", "Tirupati"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                    {form.state === "Haryana" ? (["Gurgaon", "Faridabad", "Panipat", "Hisar"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                    {form.state === "Bihar" ? (["Patna", "Gaya", "Bhagalpur", "Muzaffarpur"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                    {form.state === "Odisha" ? (["Bhubaneswar", "Cuttack", "Rourkela", "Puri"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                    {form.state === "Assam" ? (["Guwahati", "Silchar", "Dibrugarh", "Jorhat"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                    {form.state === "Jharkhand" ? (["Ranchi", "Jamshedpur", "Dhanbad", "Bokaro"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                    {form.state === "Chhattisgarh" ? (["Raipur", "Bhilai", "Bilaspur", "Korba"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                    {!form.state ? (["Mumbai", "Delhi", "Bengaluru", "Chennai", "Hyderabad", "Kolkata", "Pune", "Jaipur", "Ahmedabad", "Lucknow"].map((city) => <option key={city} value={city}>{city}</option>)) : null}
-                  </select>
-                </label>
+              <span className="mb-1 block text-[#625a50]">City</span>
+              <input value={form.city} onChange={(event) => setForm((value) => ({ ...value, city: event.target.value }))} placeholder="e.g. Ranchi" className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]" />
+            </label>
                 <label className="text-sm text-[#1f1b18]">
                   <span className="mb-1 block text-[#625a50]">Age bracket</span>
                   <select value={form.age_bracket} onChange={(event) => setForm((value) => ({ ...value, age_bracket: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]">
                     <option value="">Select</option>
-                    <option value="GEN_Z">Gen Z</option>
-                    <option value="MILLENNIAL">Millennial</option>
-                    <option value="GEN_X">Gen X</option>
-                    <option value="BOOMER">Boomer</option>
+                    <option value="GEN_ALPHA">Gen Alpha</option>
+                    <option value="GEN_Z">Gen Z (1997 - 2012)</option>
+                    <option value="MILLENNIAL">Millennial (1981 - 1996)</option>
+                    <option value="GEN_X">Gen X (1965 - 1980)</option>
+                    <option value="BOOMER">Boomer (1946 - 1964)</option>
+                    <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
                   </select>
                 </label>
                 <label className="text-sm text-[#1f1b18]">
@@ -291,15 +302,63 @@ export default function ProfilePage() {
                 </label>
                 <label className="text-sm text-[#1f1b18]">
                   <span className="mb-1 block text-[#625a50]">Education</span>
-                  <input value={form.education} onChange={(event) => setForm((value) => ({ ...value, education: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]" />
+                  <select value={form.education} onChange={(event) => setForm((value) => ({ ...value, education: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]">
+                    <option value="">Select</option>
+                    <option value="High School">High School</option>
+                    <option value="Diploma / Certificate">Diploma / Certificate</option>
+                    <option value="Undergraduate / Bachelors">Undergraduate / Bachelor&apos;s</option>
+                    <option value="Postgraduate / Masters">Postgraduate / Master&apos;s</option>
+                    <option value="Doctorate / PhD">Doctorate / PhD</option>
+                  </select>
                 </label>
                 <label className="text-sm text-[#1f1b18]">
-                  <span className="mb-1 block text-[#625a50]">Income bracket</span>
-                  <input value={form.income_bracket} onChange={(event) => setForm((value) => ({ ...value, income_bracket: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]" />
+                  <span className="mb-1 block text-[#625a50]">Income bracket (Annual)</span>
+                  <select value={form.income_bracket} onChange={(event) => setForm((value) => ({ ...value, income_bracket: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]">
+                    <option value="">Select</option>
+                    <option value="Under 3 Lakhs">Under 3 Lakhs</option>
+                    <option value="3 - 10 Lakhs">3 - 10 Lakhs</option>
+                    <option value="10 - 20 Lakhs">10 - 20 Lakhs</option>
+                    <option value="Above 20 Lakhs">Above 20 Lakhs</option>
+                  </select>
                 </label>
                 <label className="text-sm text-[#1f1b18]">
                   <span className="mb-1 block text-[#625a50]">Employment</span>
-                  <input value={form.employment} onChange={(event) => setForm((value) => ({ ...value, employment: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]" />
+                  <select value={form.employment} onChange={(event) => setForm((value) => ({ ...value, employment: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]">
+                    <option value="">Select</option>
+                    <option value="Student">Student</option>
+                    <option value="Employed">Employed</option>
+                    <option value="Self-Employed">Self-Employed</option>
+                    <option value="Unemployed">Unemployed</option>
+                    <option value="Retired">Retired</option>
+                  </select>
+                </label>
+                <label className="text-sm text-[#1f1b18]">
+                  <span className="mb-1 block text-[#625a50]">Vehicle</span>
+                  <select value={form.vehicle} onChange={(event) => setForm((value) => ({ ...value, vehicle: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]">
+                    <option value="">Select</option>
+                    <option value="None / Public Transport">None / Public Transport</option>
+                    <option value="Two-Wheeler">Two-Wheeler</option>
+                    <option value="Four-Wheeler">Four-Wheeler</option>
+                    <option value="Both">Both (2W & 4W)</option>
+                  </select>
+                </label>
+                <label className="text-sm text-[#1f1b18]">
+                  <span className="mb-1 block text-[#625a50]">Diet</span>
+                  <select value={form.diet} onChange={(event) => setForm((value) => ({ ...value, diet: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]">
+                    <option value="">Select</option>
+                    <option value="VEG">Vegetarian</option>
+                    <option value="NON_VEG">Non-Vegetarian</option>
+                    <option value="VEGAN">Vegan</option>
+                  </select>
+                </label>
+                <label className="text-sm text-[#1f1b18]">
+                  <span className="mb-1 block text-[#625a50]">Shopping Preference</span>
+                  <select value={form.shopping_pref} onChange={(event) => setForm((value) => ({ ...value, shopping_pref: event.target.value }))} className="w-full rounded-xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18]">
+                    <option value="">Select</option>
+                    <option value="ONLINE">Online</option>
+                    <option value="OFFLINE">In-Store / Offline</option>
+                    <option value="BOTH">Both</option>
+                  </select>
                 </label>
                 <label className="text-sm text-[#1f1b18] md:col-span-2">
                   <span className="mb-1 block text-[#625a50]">Interests / topics</span>

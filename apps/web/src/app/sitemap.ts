@@ -1,10 +1,7 @@
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://pollbooth.in";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-type TopicEntry = {
-  slug: string;
-};
-
+type TopicEntry = { slug: string; };
 type PollEntry = {
   id: string;
   question: string;
@@ -14,7 +11,6 @@ type PollEntry = {
   created_at?: string | null;
 };
 
-// Mirror the exact frontend slug logic to guarantee perfect canonical URLs
 function getPollSlug(poll: PollEntry): string {
   if (poll.slug) return poll.slug;
   if (poll.hashtags && poll.hashtags.length > 0) {
@@ -35,7 +31,6 @@ export default async function sitemap() {
   ];
 
   try {
-    // 1. Fetch Topics
     const topicRes = await fetch(`${API_URL}/api/v1/topics?active=true&limit=100`, { cache: "no-store" });
     if (topicRes.ok) {
       const topics = (await topicRes.json()) as TopicEntry[];
@@ -49,7 +44,6 @@ export default async function sitemap() {
       }
     }
 
-    // 2. Fetch All Active Polls
     const polls: PollEntry[] = [];
     let page = 1;
     const limit = 100;
@@ -75,7 +69,6 @@ export default async function sitemap() {
       page += 1;
     }
 
-    // Append correct SEO slugged URLs
     staticEntries.push(
       ...polls.map((poll) => ({
         url: `${SITE_URL}/poll/${getPollSlug(poll)}--${poll.id}`,
