@@ -267,7 +267,21 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
       
         
 
-        <EnhancedPollCard poll={poll} onVoteComplete={handleVoteComplete} />
+                <div className="mx-4 mt-4 mb-2 flex items-center gap-4">
+          <button 
+            onClick={() => router.push('/feed')} 
+            className="flex items-center justify-center h-10 w-10 shrink-0 rounded-full bg-paper-card border border-paper-border hover:bg-paper-border/50 transition-colors text-ink shadow-sm"
+            aria-label="Back to Feed"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </button>
+          <div className="flex-1 min-w-0 text-left">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-0.5">Context & Insights</div>
+            <h1 className="text-sm font-bold text-ink truncate">{poll.question}</h1>
+          </div>
+        </div>
 
         {/* AI Context & Summary moved below the main poll */}
         {(poll as any).ai_summary ? (

@@ -255,8 +255,8 @@ export default function FeedPage() {
                     </div>
                   ) : error ? (
                     <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>
-                  ) : organicPolls.length > 0 ? (
-                    organicPolls.map((poll, idx) => (
+                  ) : (organicPolls.length > 0 || sponsoredPolls.length > 0) ? (
+                    Array.from(new Map([...sponsoredPolls, ...organicPolls].map(p => [p.id, p])).values()).map((poll, idx) => (
                       <EnhancedPollCard
                         key={poll.id}
                         poll={poll}

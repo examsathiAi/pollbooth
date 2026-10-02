@@ -430,7 +430,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
           <span className="opacity-40">•</span>
           <div className="text-xs font-sans font-medium">{relativeTime}</div>
         </div>
-            {((poll as any).status === "CLOSED" || (poll as any).is_active === false) && <span className="text-[10px] font-bold uppercase tracking-wider text-ink/60 bg-ink/5 px-2 py-0.5 rounded-full border border-ink/10">Voting Closed</span>}
+            {poll.is_commercial && <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-amber-800 border border-amber-300 shadow-sm">Sponsored</span>} {((poll as any).status === "CLOSED" || (poll as any).is_active === false) && <span className="text-[10px] font-bold uppercase tracking-wider text-ink/60 bg-ink/5 px-2 py-0.5 rounded-full border border-ink/10">Voting Closed</span>}
       </div>
 
       <div className="px-5 pb-4">
