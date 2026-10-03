@@ -7,7 +7,7 @@ const faqItemSchema = z.object({
 
 export const GeminiPollContentSchema = z.object({
   improved_question: z.string().trim().min(1),
-  seo_title: z.string().trim().min(1).transform((v) => v.slice(0, 60)),
+  seo_title: z.string().trim().min(1).transform((v) => smartCut(v, 60)),
   meta_description: z.string().trim().min(1).transform((v) => v.slice(0, 160)),
   slug: z.string().trim().min(1).transform((v) => v.slice(0, 100)),
   keywords: z.array(z.string().trim().min(1)).min(1),
@@ -18,7 +18,7 @@ export const GeminiPollContentSchema = z.object({
   whatsapp_share_text: z.string().trim().min(1),
   ai_summary: z.string().trim().min(1),
   faq: z.array(faqItemSchema).min(1),
-  og_title: z.string().trim().min(1).transform((v) => v.slice(0, 60)),
+  og_title: z.string().trim().min(1).transform((v) => smartCut(v, 60)),
   og_description: z.string().trim().min(1),
   suggested_topics: z.array(z.string().trim().min(1)).min(1),
   suggested_options: z.array(z.string().trim().min(1)).optional(),
@@ -37,3 +37,10 @@ export const GeminiPollContentWithSourcesSchema = GeminiPollContentSchema.extend
 
 export type GeminiPollContentWithSources = z.infer<typeof GeminiPollContentWithSourcesSchema>;
 export type GeminiPollContent = z.infer<typeof GeminiPollContentSchema>;
+
+function smartCut(value: string, max: number): string {
+  if (value.length <= max) return value;
+  const head = value.slice(0, max);
+  const lastSpace = head.lastIndexOf(" ");
+  return (lastSpace > max * 0.6 ? head.slice(0, lastSpace) : head).replace(/[ ,:;-]+$/, "");
+}

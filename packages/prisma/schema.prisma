@@ -107,6 +107,7 @@ model Poll {
   estimated_reach     Int?
   methodology         Json?
   seo_title           String?   @db.VarChar(60)
+  image_url           String?   @db.Text
   meta_description    String?   @db.VarChar(160)
   slug                String?   @unique @db.VarChar(100)
   keywords            String[]

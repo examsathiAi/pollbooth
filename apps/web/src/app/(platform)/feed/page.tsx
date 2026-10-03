@@ -28,6 +28,7 @@ interface PollSummary {
   is_commercial?: boolean;
   created_at?: string;
   end_date?: string | null;
+  image_url?: string | null;
 }
 
 const categoryAccentMap: Record<string, { ring: string; bg: string; text: string; icon: string }> = {

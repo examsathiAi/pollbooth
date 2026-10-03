@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { PollDetailClient } from "@/components/poll/PollDetailClient";
+import { SharedPollLanding } from "@/components/poll/SharedPollLanding";
 import Script from "next/script";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -18,9 +19,18 @@ type Poll = {
   hashtags?: string[] | null;
   total_votes?: number;
   total_opinions?: number;
+  image_url?: string | null;
   created_at?: string;
 };
 
+function trimTo(text: string, max: number) {
+  const t = text.replace(/\s+/g, " ").trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max - 3);
+  const lastSpace = cut.lastIndexOf(" ");
+  const base = lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut;
+  return base.replace(/[ ,:;-]+$/, "") + "...";
+}
 async function fetchPoll(pollId: string) {
   const res = await fetch(`${API_URL}/api/v1/polls/${pollId}`, { cache: "no-store" });
   if (!res.ok) return null;
@@ -34,19 +44,27 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const headersList = headers();
   const host = headersList.get('host') || 'localhost:3000';
   const protocol = headersList.get('x-forwarded-proto') || 'http';
-  const dynamicSiteUrl = `${protocol}://${host}`;
+  const dynamicSiteUrl = SITE_URL.startsWith("http://localhost") ? `${protocol}://${host}` : SITE_URL;
 
   if (!poll) return { title: "PollBooth", description: "Vote on PollBooth" };
 
-  const title = poll.seo_title?.trim() || `${poll.question} | PollBooth`;
+  const seoRaw = poll.seo_title?.trim() || "";
+  const title = seoRaw && seoRaw.length < 60 ? seoRaw : `${trimTo(poll.question, 52)} | PollBooth`;
   
   // Feed Facebook the rich AI summary for maximum click-through rate
   const baseDesc = (poll as any).ai_summary?.substring(0, 140) || poll.meta_description?.trim() || `Vote on this poll and see live results for ${poll.category}.`;
   const allHashtags = (poll.hashtags && poll.hashtags.length > 0) ? poll.hashtags : ["#pollbooth"];
   const formattedTags = allHashtags.map(t => t.startsWith('#') ? t : `#${t}`).join(' ');
   const description = `${baseDesc} ${formattedTags}`;
-  const openGraphTitle = poll.og_title?.trim() || poll.seo_title?.trim() || poll.question;
-  const openGraphDescription = poll.og_description?.trim() || description;
+  const ogRaw = poll.og_title?.trim() || "";
+  const openGraphTitle = ogRaw && ogRaw.length < 60 ? ogRaw : trimTo(poll.question, 72);
+  const rawOptions: string[] = Array.isArray((poll as any).options)
+    ? (poll as any).options
+    : Array.isArray((poll as any).results)
+      ? (poll as any).results.map((r: any) => r.option)
+      : [];
+  const optionTeaser = rawOptions.slice(0, 4).join(" / ");
+  const openGraphDescription = trimTo(optionTeaser ? `Vote karo: ${optionTeaser}. Ek tap mein vote, result turant.` : "Vote karo aur result turant dekho.", 150);
 
   // We dynamically generate an Open Graph image on the fly with the poll question using a free API (No /api/og file required)
   const encodedTitle = encodeURIComponent(poll.question.substring(0, 75) + (poll.question.length > 75 ? '...' : ''));
@@ -60,11 +78,13 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
       title: openGraphTitle,
       description: openGraphDescription,
       url: `${dynamicSiteUrl}/poll/${params.id}`,
+      images: [{ url: poll.image_url || `${dynamicSiteUrl}/og-card.png`, width: 1200, height: 630, alt: poll.question }],
       type: "article",
       
     },
     twitter: {
       card: "summary_large_image",
+      images: [poll.image_url || `${dynamicSiteUrl}/og-card.png`],
       title: openGraphTitle,
       description: openGraphDescription,
       
@@ -97,7 +117,7 @@ export default async function PollDetailPage({ params }: { params: { id: string 
     },
     image: {
       "@type": "ImageObject",
-      url: `${SITE_URL}/og-card.png`,
+      url: poll.image_url || `${SITE_URL}/og-card.png`,
     },
     mainEntity: {
       "@type": "Poll",
@@ -122,7 +142,10 @@ export default async function PollDetailPage({ params }: { params: { id: string 
         }}
         strategy="afterInteractive"
       />
-      <PollDetailClient pollId={params.id} initialPoll={poll} />
+      <SharedPollLanding
+      poll={poll as any}
+      insights={<PollDetailClient pollId={params.id} initialPoll={poll} />}
+    />
     </>
   );
 }

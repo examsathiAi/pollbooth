@@ -45,6 +45,7 @@ export class PollsService {
         faq: input.faq ?? [],
         og_title: input.og_title,
         og_description: input.og_description,
+        image_url: input.image_url ?? null,
       },
     });
 
@@ -239,6 +240,7 @@ export class PollsService {
       seo_title: poll.seo_title || null,
       og_title: poll.og_title || null,
       og_description: poll.og_description || null,
+      image_url: (poll as any).image_url ?? null,
       meta_description: poll.meta_description || null,
       slug: poll.slug || null,
       keywords: poll.keywords || [],
@@ -420,6 +422,7 @@ export class PollsService {
           seo_title: poll.seo_title || null,
           og_title: poll.og_title || null,
           og_description: poll.og_description || null,
+          image_url: (poll as any).image_url ?? null,
           slug: poll.slug || null,
           keywords: poll.keywords || [],
           hashtags: poll.hashtags || [],

@@ -57,6 +57,8 @@ export function PollCreationPanel() {
   const [category, setCategory] = useState("CIVIC");
   const [duration, setDuration] = useState(3);
   const [isCommercial, setIsCommercial] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   
   // Targeting State
   const [showTargeting, setShowTargeting] = useState(false);
@@ -150,6 +152,27 @@ export function PollCreationPanel() {
     updateAiField("faq", nextFaq);
   };
 
+  
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("image", file);
+    
+    try {
+      const res = await api.post("/api/v1/polls/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      setImageUrl(res.data.url);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Image upload failed");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
@@ -173,6 +196,7 @@ export function PollCreationPanel() {
         status: "PENDING_REVIEW",
         is_active: false,
         is_commercial: isCommercial,
+              image_url: imageUrl,
         end_date: endDate.toISOString(),
         seo_title: aiContent?.seo_title?.trim() || undefined,
         meta_description: aiContent?.meta_description?.trim() || undefined,
@@ -220,6 +244,21 @@ export function PollCreationPanel() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+
+              {/* Image Upload Block */}
+              <div className="rounded-2xl border border-[#d8ceb8] bg-[#fcf9f2] p-4 text-[#1f1b18] mb-6">
+                <label className="mb-2 block text-sm font-medium">Cover Image (Optional)</label>
+                <div className="flex items-center gap-4">
+                  {imageUrl && (
+                    <img src={imageUrl} alt="Cover Preview" className="h-16 w-32 rounded object-cover shadow-sm" />
+                  )}
+                  <label className="relative cursor-pointer rounded-xl bg-white px-4 py-2 text-sm font-medium border border-[#d8ceb8] hover:bg-gray-50 transition">
+                    <span>{isUploading ? "Uploading..." : imageUrl ? "Change Image" : "Upload 1200x630 Image"}</span>
+                    <input type="file" className="sr-only" accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
+                  </label>
+                </div>
+              </div>
+
         <div className="flex items-center justify-between gap-3">
           <label className="block flex-1">
             <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Question</span>

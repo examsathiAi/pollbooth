@@ -30,6 +30,7 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
   const [predictionInput, setPredictionInput] = useState(initialPoll?.user_prediction?.toString() || "");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
 
   const predictionBands = useMemo(
     () => [
@@ -231,101 +232,100 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
       
 
             <main>
-      {redirectCountdown !== null && (
-        <div className="mx-4 mt-5 flex flex-col gap-3 rounded-3xl border border-emerald-200 bg-[#f0fdf4] p-5 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
-          <div className="flex items-start gap-4">
-            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-sm">
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
-            </div>
-            <div>
-              <h4 className="text-base font-bold text-emerald-950 tracking-tight">Thank you for voting!</h4>
-              <p className="text-sm font-semibold text-emerald-800 mt-0.5">Your vote has been registered.</p>
-              <p className="text-sm text-emerald-700 mt-2 leading-relaxed">
-                You can express your views from the comments section below. If you choose not to, you will be led to other polls in <span className="font-bold px-1.5 py-0.5 bg-emerald-200/50 rounded text-emerald-900">{redirectCountdown}s</span>.
-              </p>
+        {redirectCountdown !== null && (
+          <div className="mx-4 mt-5 flex flex-col gap-3 rounded-3xl border border-emerald-200 bg-[#f0fdf4] p-5 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="flex items-start gap-4">
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-sm">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+              </div>
+              <div>
+                <h4 className="text-base font-bold text-emerald-950 tracking-tight">Thank you for voting!</h4>
+                <p className="text-sm text-emerald-700 mt-2 leading-relaxed">
+                  Scroll down to keep voting on other polls in your feed!
+                </p>
+              </div>
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 mt-2 border-t border-emerald-200/60 pt-4">
-            <button
-              onClick={() => setRedirectCountdown(null)}
-              className="rounded-xl bg-emerald-200/50 px-4 py-2.5 text-xs font-bold text-emerald-800 transition-colors hover:bg-emerald-300 active:scale-95"
-            >
-              Wait, stay here
-            </button>
-            <button
-              onClick={() => {
-                setRedirectCountdown(null);
-                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-              }}
-              className="rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white transition-all hover:bg-emerald-700 active:scale-95 shadow-sm"
-            >
-              Express my views
-            </button>
-          </div>
-        </div>
-      )}
-      
-        
+        )}
 
-                <div className="mx-4 mt-4 mb-2 flex items-center gap-4">
-          <button 
-            onClick={() => router.push('/feed')} 
-            className="flex items-center justify-center h-10 w-10 shrink-0 rounded-full bg-paper-card border border-paper-border hover:bg-paper-border/50 transition-colors text-ink shadow-sm"
-            aria-label="Back to Feed"
-          >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-          </button>
-          <div className="flex-1 min-w-0 text-left">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-0.5">Context & Insights</div>
-            <h1 className="text-sm font-bold text-ink truncate">{poll.question}</h1>
-          </div>
+        <div className="mx-4 mt-4 lg:mt-6 mb-8">
+          <EnhancedPollCard poll={poll} onVoteComplete={handleVoteComplete} />
+          
+          {(poll.ai_summary || (poll.faq && poll.faq.length > 0)) && (
+            <button 
+              onClick={() => setShowInsights(true)} 
+              className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl bg-paper-card border border-maroon/20 px-4 py-3.5 text-sm font-bold text-maroon hover:bg-maroon/5 transition-colors shadow-sm"
+            >
+              <Sparkles className="w-4 h-4" /> Read Context & Deep Dive
+            </button>
+          )}
         </div>
 
-        {/* AI Context & Summary moved below the main poll */}
-        {(poll as any).ai_summary ? (
-          <div className="mx-4 mt-4 mb-2 overflow-hidden rounded-3xl border border-paper-border/60 bg-transparent p-5 shadow-sm transition-all">
-            <div className="flex items-center gap-2 mb-3 border-b border-paper-border/40 pb-3">
-              <svg className="w-4 h-4 text-maroon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <h2 className="text-xs font-bold uppercase tracking-widest text-ink">Context & Insights</h2>
-            </div>
-            <div className="text-sm leading-relaxed text-ink/90 whitespace-pre-wrap font-sans">
-              {(poll as any).ai_summary}
-            </div>
-          </div>
-        ) : null}
-
-                {poll.has_voted && cohort ? (
-          <div className="mx-4 my-4 rounded-2xl border border-ink/10 bg-ink/5 p-4 transition-all duration-300">
-            <div className="flex items-center gap-2 mb-1.5">
-              <svg className="w-4 h-4 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              <p className="text-sm font-semibold tracking-tight text-ink">People like you voted</p>
-            </div>
-            <p className="text-sm text-ink-muted ml-6">
-              {cohort.cohort_breakdown?.find((item: any) => item.option_index === cohort.user_vote_index)?.percentage || 0}% of people in your demographic voted the same way.
-            </p>
-          </div>
-        ) : null}
-
-                {poll.faq && Array.isArray(poll.faq) && poll.faq.length > 0 ? (
-          <div className="mx-4 my-6 overflow-hidden rounded-3xl border border-paper-border/60 bg-transparent p-5 shadow-sm transition-all animate-in fade-in duration-500">
-            <div className="flex items-center gap-2 mb-4 border-b border-paper-border/40 pb-3">
+        {related && related.length > 0 && (
+          <div className="border-t border-paper-border/60 pt-8 bg-transparent">
+            <div className="mx-4 mb-4 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-maroon" />
-              <h3 className="text-sm font-bold uppercase tracking-widest text-ink">Topic Deep Dive</h3>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-ink">Keep Voting</h3>
             </div>
-            <div className="space-y-4">
-              {poll.faq.map((item: any, idx: number) => (
-                <div key={idx} className="rounded-2xl border border-paper-border/80 bg-[#fdfbf7] p-4 shadow-sm hover:shadow-md transition-shadow duration-300">
-                  <h4 className="font-bold text-[#1f1b18] text-sm mb-2 leading-snug">{item.question || item.q}</h4>
-                  <p className="text-sm text-[#6b665c] leading-relaxed">{item.answer || item.a}</p>
-                </div>
+            <div className="mx-4 flex flex-col gap-6 pb-12">
+              {related.map((rp, idx) => (
+                <EnhancedPollCard key={rp.id} poll={rp} index={idx} />
               ))}
             </div>
           </div>
-        ) : null}
+        )}
+
+        {/* SEO Hidden Content - Always in DOM for Googlebot */}
+        <div className="sr-only">
+          <h2>{poll.question} - Context and Insights</h2>
+          {poll.ai_summary && <p>{poll.ai_summary}</p>}
+          {poll.faq && poll.faq.map((item: any, idx: number) => (
+            <div key={idx}>
+              <h3>{item.question || item.q}</h3>
+              <p>{item.answer || item.a}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Insights Pop-up Modal */}
+        {showInsights && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in" onClick={() => setShowInsights(false)}>
+            <div className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-3xl bg-paper-bg p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+              <button onClick={() => setShowInsights(false)} className="absolute right-4 top-4 p-2 text-ink-muted hover:bg-paper-border/50 rounded-full transition-colors">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+              
+              <h2 className="text-xl font-bold text-ink mb-6 pr-8">{poll.question}</h2>
+              
+              {poll.ai_summary && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3 border-b border-paper-border/40 pb-2">
+                    <Sparkles className="w-4 h-4 text-maroon" />
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-ink">Context & Insights</h3>
+                  </div>
+                  <div className="text-sm leading-relaxed text-ink/90 whitespace-pre-wrap font-sans">{poll.ai_summary}</div>
+                </div>
+              )}
+              
+              {poll.faq && poll.faq.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3 border-b border-paper-border/40 pb-2">
+                    <svg className="w-4 h-4 text-maroon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-ink">Deep Dive / FAQ</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {poll.faq.map((item: any, idx: number) => (
+                      <div key={idx} className="rounded-2xl border border-paper-border/80 bg-[#fdfbf7] p-3.5 shadow-sm">
+                        <h4 className="font-bold text-[#1f1b18] text-sm mb-1.5 leading-snug">{item.question || item.q}</h4>
+                        <p className="text-sm text-[#6b665c] leading-relaxed">{item.answer || item.a}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

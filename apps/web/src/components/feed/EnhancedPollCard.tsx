@@ -31,6 +31,7 @@ interface EnhancedPollCardProps {
     is_commercial?: boolean;
     created_at?: string;
     end_date?: string | null;
+    image_url?: string | null;
   };
   index?: number;
   isFeatured?: boolean;
@@ -416,6 +417,8 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
     }
   };
 
+  const myChoice = userVoteIndex !== null && userVoteIndex !== undefined ? poll.options[userVoteIndex] : null;
+  const friendText = `${myChoice ? `Maine "${myChoice}" ko vote kiya. ` : ""}Tum kya chunoge? ${typeof window !== "undefined" ? window.location.origin : ""}${pollUrl}`;
   const relativeTime = poll.created_at ? formatRelativeTime(poll.created_at) : "just now";
 
   return (
@@ -424,6 +427,19 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       id={`poll-card-${poll.id}`}
       className={`relative mb-6 overflow-hidden rounded-3xl border border-paper-border bg-transparent transition-all duration-400 ease-out ${visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"} hover:border-ink/10 shadow-sm`}
     >
+      {poll.image_url && (
+        <Link href={pollUrl} className="block">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={poll.image_url}
+            alt={poll.question}
+            width={1200}
+            height={630}
+            loading={index < 2 ? "eager" : "lazy"}
+            className="block h-auto max-h-[420px] w-full bg-paper-border/20 object-contain"
+          />
+        </Link>
+      )}
       <div className="flex items-center justify-between gap-3 px-5 pt-5 pb-3">
         <div className="min-w-0 flex items-center gap-2 text-ink-muted">
           <div className="text-xs font-sans font-semibold uppercase tracking-wider">{poll.category.replace(/_/g, " ")}</div>
@@ -503,6 +519,33 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         </div>
       )}
 
+      {showSharePrompt && hasVoted && (
+        <div className="mx-5 mb-4 rounded-2xl border border-paper-border bg-paper-bg p-4">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-sm font-semibold text-ink">Vote record ho gaya. Ab ek dost ko bhejo.</p>
+            <button onClick={() => setShowSharePrompt(false)} aria-label="Dismiss" className="text-ink-muted hover:text-ink">&times;</button>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              onClick={() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(friendText)}`, "_blank", "noopener,noreferrer")}
+              className="rounded-xl bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            >
+              Send to a friend on WhatsApp
+            </button>
+            <button
+              onClick={() => setShowShareMenu(true)}
+              className="rounded-xl border border-paper-border px-4 py-2.5 text-sm font-medium text-ink transition-all hover:bg-ink/5"
+            >
+              More ways to share
+            </button>
+            {!user && (
+              <Link href={`/auth/login?mode=signup&redirect=${pollUrl}`} className="rounded-xl bg-ink px-4 py-2.5 text-sm font-medium text-paper-bg transition-all hover:bg-ink/90">
+                Sign up free to share your opinion
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between gap-2 border-t border-paper-border/60 px-5 py-3 bg-transparent">
         <div className="flex items-center gap-4">
           <div className="text-xs font-medium text-ink-muted flex items-center gap-1.5">
@@ -527,6 +570,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         <div className="px-5 pb-4 animate-in fade-in duration-300">
           <ShareCardGenerator
             title={poll.question}
+            onClose={() => setShowShareMenu(false)}
             voteCount={animatedVotes}
               resultData={results.map((r) => ({ label: r.option, value: r.percentage || 0 }))}
             shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}${pollUrl}`}

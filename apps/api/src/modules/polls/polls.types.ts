@@ -30,6 +30,7 @@ export const CreatePollSchema = z.object({
   faq: z.array(z.object({ question: z.string(), answer: z.string() })).optional(),
   og_title: z.string().optional(),
   og_description: z.string().optional(),
+  image_url: z.string().max(500).refine((v) => v.startsWith("https://images.pollbooth.in/"), { message: "Image must be hosted on images.pollbooth.in" }).nullable().optional(),
   topic_names: z.array(z.string()).optional(),
 }).passthrough();
 
