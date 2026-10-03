@@ -144,7 +144,7 @@ export default async function PollDetailPage({ params }: { params: { id: string 
       />
       <SharedPollLanding
       poll={poll as any}
-      insights={<PollDetailClient pollId={params.id} initialPoll={poll} />}
+      insights={<PollDetailClient pollId={params.id} initialPoll={poll} isModalView={true} />}
     />
     </>
   );

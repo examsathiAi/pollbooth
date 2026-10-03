@@ -1,3 +1,6 @@
+import multer from "multer";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import * as crypto from "crypto";
 ﻿import { Router } from "express";
 import { authGuard, optionalAuthGuard } from "../../common/guards/auth.guard";
 import { rateLimiter } from "../../common/interceptors/rate-limiter";
@@ -6,6 +9,21 @@ import { logger } from "../../common/interceptors/logger";
 import { validateBody, validateParams, validateQuery } from "../../common/pipes/validation.pipe";
 import { pollsService } from "./polls.service";
 import { CreatePollSchema, PollIdSchema, PollQuerySchema, PredictPollSchema } from "./polls.types";
+
+
+const s3 = new S3Client({
+  region: "auto",
+  endpoint: process.env.R2_ENDPOINT as string,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID as string,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY as string,
+  },
+});
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit safely prevents 413 errors
+});
 
 const router = Router();
 
@@ -88,6 +106,30 @@ router.get("/:id/unlock-status", authGuard, validateParams(PollIdSchema), async 
 });
 
 // Admin routes
+
+router.post("/upload", authGuard, roleGuard("ADMIN"), upload.single("image"), async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No image file provided" });
+    }
+    
+    const ext = req.file.originalname.split('.').pop()?.toLowerCase() || 'webp';
+    const key = `poll-${Date.now()}-${crypto.randomBytes(4).toString("hex")}.${ext}`;
+    
+    await s3.send(new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME as string,
+      Key: key,
+      Body: req.file.buffer,
+      ContentType: req.file.mimetype,
+    }));
+    
+    const url = `https://images.pollbooth.in/${key}`;
+    res.status(200).json({ url });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post("/", authGuard, roleGuard("ADMIN"), validateBody(CreatePollSchema), async (req, res, next) => {
   try {
     const result = await pollsService.createPoll(req.user!.id, req.body);

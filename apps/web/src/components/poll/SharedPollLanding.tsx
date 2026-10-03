@@ -48,9 +48,31 @@ export function SharedPollLanding({ poll, insights }: { poll: AnyPoll; insights:
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search.includes("insights=true")) {
+      setTimeout(() => setShowInsights(true), 50);
+      const url = new URL(window.location.href);
+      url.searchParams.delete("insights");
+      window.history.replaceState({}, document.title, url.toString());
+    }
+  }, []);
+
   const [voted, setVoted] = useState(false);
+  const [justVoted, setJustVoted] = useState(false);
   const moreRef = useRef<HTMLDivElement | null>(null);
   const seen = useRef<Set<string>>(new Set([poll.id]));
+
+  useEffect(() => {
+    if (justVoted && moreRef.current) {
+      const timer = setTimeout(() => {
+        moreRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        setJustVoted(false);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [justVoted]);
+
 
   useEffect(() => {
     let alive = true;
@@ -107,25 +129,10 @@ export function SharedPollLanding({ poll, insights }: { poll: AnyPoll; insights:
   return (
     <div className="mx-auto w-full max-w-2xl pb-16">
       {Array.isArray(mainPoll.options) && mainPoll.options.length > 0 && (
-        <EnhancedPollCard poll={mainPoll as any} index={0} onVoteComplete={() => setVoted(true)} />
+        <EnhancedPollCard poll={mainPoll as any} index={0} onVoteComplete={() => { setVoted(true); setJustVoted(true); }} onShowInsights={() => setShowInsights(true)} />
       )}
 
-      <div className="mb-8 flex flex-wrap items-center gap-3">
-        <button
-          onClick={() => setShowInsights(true)}
-          className="inline-flex items-center gap-2 rounded-2xl border border-paper-border bg-transparent px-4 py-2.5 text-sm font-semibold text-ink transition-all hover:bg-ink/5"
-        >
-          <BookOpen className="h-4 w-4" /> Read poll insights
-        </button>
-        {voted && (
-          <button
-            onClick={() => moreRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            className="inline-flex items-center gap-2 rounded-2xl bg-ink px-4 py-2.5 text-sm font-semibold text-paper-bg transition-all hover:bg-ink/90"
-          >
-            Shukriya! Ab agla poll <ChevronDown className="h-4 w-4" />
-          </button>
-        )}
-      </div>
+      
 
       <div ref={moreRef} className="scroll-mt-24">
         <h2 className="mb-4 text-lg font-semibold tracking-tight text-ink">Aur polls mein vote karo</h2>

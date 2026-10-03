@@ -11,9 +11,10 @@ import { EnhancedPollCard } from "@/components/feed/EnhancedPollCard";
 interface PollDetailClientProps {
   pollId: string;
   initialPoll: any | null;
+  isModalView?: boolean;
 }
 
-export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps) {
+export function PollDetailClient({ pollId, initialPoll, isModalView }: PollDetailClientProps) {
   const actualPollId = useMemo(() => pollId.includes('--') ? (pollId.split('--').pop() as string) : pollId, [pollId]);
   const router = useRouter();
   const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
@@ -211,6 +212,46 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
     ? `Your opinion feature is disabled until ${commentBannedUntil.toLocaleDateString()}. Please keep things respectful.`
     : "";
 
+  
+  if (isModalView) {
+    return (
+      <div className="flex flex-col gap-8 pb-4">
+        <h2 className="text-2xl font-extrabold text-ink leading-tight">{poll.question}</h2>
+        
+        {poll.ai_summary && (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-2 border-b-2 border-paper-border/60 pb-2">
+              <Sparkles className="w-5 h-5 text-maroon" />
+              <h3 className="text-sm font-bold uppercase tracking-widest text-ink">Context & Insights</h3>
+            </div>
+            <div className="text-[1.05rem] leading-relaxed text-ink/90 whitespace-pre-wrap font-sans">{poll.ai_summary}</div>
+          </div>
+        )}
+
+        {poll.faq && poll.faq.length > 0 && (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-2 border-b-2 border-paper-border/60 pb-2">
+              <svg className="w-5 h-5 text-maroon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-ink">Deep Dive / FAQ</h3>
+            </div>
+            <div className="flex flex-col gap-4">
+              {poll.faq.map((item: any, idx: number) => (
+                <div key={idx} className="rounded-2xl border border-paper-border/80 bg-[#fdfbf7] p-5 shadow-sm transition-colors hover:bg-white">
+                  <h4 className="font-bold text-[#1f1b18] text-base mb-2 leading-snug">{item.question || item.q}</h4>
+                  <p className="text-base text-[#6b665c] leading-relaxed">{item.answer || item.a}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {!poll.ai_summary && (!poll.faq || poll.faq.length === 0) && (
+          <div className="text-ink-muted italic">No insights available for this poll yet.</div>
+        )}
+      </div>
+    );
+  }
+
   if (isLoading && !poll) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -249,7 +290,7 @@ export function PollDetailClient({ pollId, initialPoll }: PollDetailClientProps)
         )}
 
         <div className="mx-4 mt-4 lg:mt-6 mb-8">
-          <EnhancedPollCard poll={poll} onVoteComplete={handleVoteComplete} />
+          <EnhancedPollCard poll={poll} onVoteComplete={handleVoteComplete} onShowInsights={(poll.ai_summary || (poll.faq && poll.faq.length > 0)) ? () => setShowInsights(true) : undefined} />
           
           {(poll.ai_summary || (poll.faq && poll.faq.length > 0)) && (
             <button 

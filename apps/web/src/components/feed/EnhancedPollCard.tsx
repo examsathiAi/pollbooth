@@ -36,6 +36,7 @@ interface EnhancedPollCardProps {
   index?: number;
   isFeatured?: boolean;
   onVoteComplete?: (index: number) => void;
+  onShowInsights?: () => void;
 }
 
 interface OpinionRecord {
@@ -85,7 +86,7 @@ function extractCityFromHint(hint: string | null | undefined) {
   return parts[parts.length - 1];
 }
 
-export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteComplete }: EnhancedPollCardProps) {
+export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteComplete, onShowInsights }: EnhancedPollCardProps) {
   const { user } = useAuth();
   const [hasVoted, setHasVoted] = useState(Boolean(poll.has_voted));
   const [hasOpinion, setHasOpinion] = useState(Boolean(poll.has_opinion));
@@ -459,9 +460,36 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
             {poll.ai_context}
           </div>
         )}
-        <Link href={`${pollUrl}`} className="block group">
-          <h3 className="text-xl sm:text-2xl font-sans font-semibold tracking-tight leading-snug text-[#1f1b18] mb-2 break-words group-hover:text-[#7a1f10] transition-colors duration-200">{poll.question}</h3>
-        </Link>
+        <div className="mb-2">
+          <Link href={`${pollUrl}`} className="group inline">
+            <h3 className="text-xl sm:text-2xl font-sans font-semibold tracking-tight leading-snug text-[#1f1b18] break-words group-hover:text-[#7a1f10] transition-colors duration-200 inline">
+              {poll.question}
+            </h3>
+          </Link>
+          {((poll as any).ai_summary || ((poll as any).faq && (poll as any).faq.length > 0)) && (
+            <button
+              onClick={(e) => {
+                if (onShowInsights) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onShowInsights();
+                } else {
+                  // Fallback: If clicked from the feed, navigate directly to the poll
+                  e.preventDefault();
+                  e.stopPropagation();
+                  window.location.href = `${pollUrl}?insights=true`;
+                }
+              }}
+              className="group relative inline-flex h-7 w-7 items-center justify-center rounded-full bg-maroon/10 text-maroon transition-colors hover:bg-maroon/20 ml-2 align-middle -mt-1"
+              aria-label="Read Insights"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-ink px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100 z-10 shadow-sm">
+                Read Insights
+              </span>
+            </button>
+          )}
+        </div>
       </div>
       
 

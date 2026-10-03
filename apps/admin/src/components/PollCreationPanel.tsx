@@ -115,6 +115,16 @@ export function PollCreationPanel() {
     try {
       const response = await api.post<AiContent>("/api/v1/ai/improve-question", { question, category });
       const content = response.data;
+      if (content) {
+        const rawFaq = content.faq || (content as any).faqs || [];
+        content.faq = Array.isArray(rawFaq) ? rawFaq.map((item: any) => {
+          if (Array.isArray(item) && item.length >= 2) return { question: String(item[0]), answer: String(item[1]) };
+          return {
+            question: item.question || item.q || item.Q || "",
+            answer: item.answer || item.a || item.A || ""
+          };
+        }).filter((item: any) => item.question || item.answer) : [];
+      }
       setAiContent(content);
       setQuestion(content.improved_question);
       setTopicTags(content.suggested_topics.slice(0, 4));
