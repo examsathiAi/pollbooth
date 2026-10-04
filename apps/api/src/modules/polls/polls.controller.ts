@@ -86,6 +86,20 @@ router.post("/:id/predict", authGuard, validateParams(PollIdSchema), validateBod
   }
 });
 
+router.post("/:id/react", authGuard, validateParams(PollIdSchema), async (req, res, next) => {
+  try {
+    const { emoji } = req.body;
+    if (!['😂', '🤯', '🤔', '👏'].includes(emoji)) {
+      return res.status(400).json({ error: "Invalid emoji reaction" });
+    }
+    const result = await pollsService.togglePollReaction(req.user!.id, req.params.id, emoji);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+
 // --- VIRAL LOOP ROUTES (Corrected for Express) ---
 router.post("/:id/share", authGuard, validateParams(PollIdSchema), async (req, res, next) => {
   try {

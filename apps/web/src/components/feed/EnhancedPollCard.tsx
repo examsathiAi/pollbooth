@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckCircle2, MessageCircle, Share2, Sparkles, ThumbsDown, ThumbsUp, Lock, CornerDownRight } from "lucide-react";
+import { CheckCircle2, MessageCircle, Share2, Sparkles, ThumbsDown, ThumbsUp, Lock, Smile, Heart, CornerDownRight } from "lucide-react";
 import { ProgressiveGateModal } from "./ProgressiveGateModal";
 import { ShareCardGenerator } from "./ShareCardGenerator";
 
@@ -115,6 +116,44 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(Date.now());
   const [showGate, setShowGate] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [userReaction, setUserReaction] = useState<string | null>((poll as any).user_reaction || null);
+  const [reactionCounts, setReactionCounts] = useState<Record<string, number>>((poll as any).reaction_counts || {});
+  const [showEmojis, setShowEmojis] = useState(false);
+
+  const handlePollReaction = async (emoji: string) => {
+    if (!user) {
+      window.location.href = `/auth/login?mode=login&redirect=${pollUrl}`;
+      return;
+    }
+
+    const prevReaction = userReaction;
+    const prevCounts = { ...reactionCounts };
+    const isRemoving = prevReaction === emoji;
+    const nextReaction = isRemoving ? null : emoji;
+
+    // Optimistic UI update: instantly show the emoji without waiting for the network
+    setUserReaction(nextReaction);
+    setReactionCounts(prev => {
+      const next = { ...prev };
+      if (prevReaction) {
+        next[prevReaction] = Math.max(0, (next[prevReaction] || 1) - 1);
+      }
+      if (!isRemoving) {
+        next[emoji] = (next[emoji] || 0) + 1;
+      }
+      return next;
+    });
+    setShowEmojis(false);
+
+    try {
+      await api.post(`/api/v1/polls/${poll.id}/react`, { emoji });
+    } catch (err) {
+      // Rollback if the network request fails
+      setUserReaction(prevReaction);
+      setReactionCounts(prevCounts);
+    }
+  };
   const [gateMessage, setGateMessage] = useState<string | null>(null);
   const [liveTick, setLiveTick] = useState(Date.now());
   const [barRevealReady, setBarRevealReady] = useState(false);
@@ -157,6 +196,8 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
     setTotalOpinions(poll.total_opinions || 0);
     setAnimatedVotes(poll.total_votes || 0);
     setAnimatedOpinions(poll.total_opinions || 0);
+    setUserReaction((poll as any).user_reaction || null);
+    setReactionCounts((poll as any).reaction_counts || {});
   }, [poll]);
 
   useEffect(() => {
@@ -311,6 +352,8 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         setTotalVotes(serverTotal);
       }
       setTotalOpinions(pollRes.data.total_opinions || 0);
+      setUserReaction(pollRes.data.user_reaction || null);
+      setReactionCounts(pollRes.data.reaction_counts || {});
       setLastUpdatedAt(Date.now());
 
       try {
@@ -426,10 +469,10 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
     <article
       ref={rootRef}
       id={`poll-card-${poll.id}`}
-      className={`relative mb-6 overflow-hidden rounded-3xl border border-paper-border bg-transparent transition-all duration-400 ease-out ${visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"} hover:border-ink/10 shadow-sm`}
+      className={`relative mb-6 rounded-3xl border border-paper-border bg-transparent transition-all duration-400 ease-out ${visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"} hover:border-ink/10 shadow-sm`}
     >
       {poll.image_url && (
-        <Link href={pollUrl} className="block">
+        <Link href={pollUrl} className="block overflow-hidden rounded-t-3xl">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={poll.image_url}
@@ -447,7 +490,17 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
           <span className="opacity-40">•</span>
           <div className="text-xs font-sans font-medium">{relativeTime}</div>
         </div>
-            {poll.is_commercial && <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-amber-800 border border-amber-300 shadow-sm">Sponsored</span>} {((poll as any).status === "CLOSED" || (poll as any).is_active === false) && <span className="text-[10px] font-bold uppercase tracking-wider text-ink/60 bg-ink/5 px-2 py-0.5 rounded-full border border-ink/10">Voting Closed</span>}
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 shadow-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              {animatedVotes > 0 ? `${animatedVotes.toLocaleString()} VOTED` : 'BE THE FIRST TO VOTE!'}
+            </span>
+              {poll.is_commercial && <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-amber-800 border border-amber-300 shadow-sm">Sponsored</span>}
+              {((poll as any).status === "CLOSED" || (poll as any).is_active === false) && <span className="text-[10px] font-bold uppercase tracking-wider text-ink/60 bg-ink/5 px-2 py-0.5 rounded-full border border-ink/10">Voting Closed</span>}
+            </div>
       </div>
 
       <div className="px-5 pb-4">
@@ -576,11 +629,51 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       )}
       <div className="flex items-center justify-between gap-2 border-t border-paper-border/60 px-5 py-3 bg-transparent">
         <div className="flex items-center gap-4">
-          <div className="text-xs font-medium text-ink-muted flex items-center gap-1.5">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-            {animatedVotes.toLocaleString()} votes
+          <div
+            className="relative flex items-center group"
+            onMouseEnter={() => setShowEmojis(true)}
+            onMouseLeave={() => setShowEmojis(false)}
+          >
+            {/* Floating Emoji Menu - FIXED GAP & STYLING */}
+            <div className={`absolute bottom-full left-1/2 -translate-x-1/2 pb-3 z-20 transition-all duration-300 ease-out origin-bottom ${showEmojis ? 'translate-y-0 opacity-100 pointer-events-auto scale-100' : 'translate-y-2 opacity-0 pointer-events-none scale-95'}`}>
+              <div className="flex items-center gap-1 rounded-full border border-paper-border/80 bg-paper-bg px-2 py-1.5 shadow-[0_10px_40px_rgba(0,0,0,0.15)] backdrop-blur-md">
+                {['😂', '🤯', '🤔', '👏'].map(emoji => (
+                  <button
+                    key={emoji}
+                    onClick={(e) => { e.stopPropagation(); handlePollReaction(emoji); }}
+                    className={`flex h-9 w-9 items-center justify-center rounded-full text-xl transition-all duration-200 hover:scale-125 hover:bg-ink/5 active:scale-95 ${userReaction === emoji ? 'bg-ink/10 scale-110 shadow-sm' : ''}`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowEmojis(!showEmojis); }}
+              className={`text-xs font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-200 ${userReaction ? 'text-ink bg-ink/5 border border-ink/10 shadow-sm' : 'text-ink-muted hover:text-ink hover:bg-ink/5 border border-transparent'}`}
+            >
+              {userReaction ? (
+                <span className="text-sm scale-110 animate-in zoom-in duration-200">{userReaction}</span>
+              ) : (
+                <Smile className="w-4 h-4 opacity-80" />
+              )}
+              <span>{userReaction ? 'Reacted' : 'React'}</span>
+              {Object.values(reactionCounts).reduce((a, b) => a + b, 0) > 0 && (
+                 <span className="opacity-70 ml-0.5 font-medium">
+                   • {Object.values(reactionCounts).reduce((a, b) => a + b, 0)}
+                 </span>
+              )}
+            </button>
           </div>
-          <button onClick={() => setShowComments(!showComments)} className="text-xs font-medium text-ink-muted hover:text-ink flex items-center gap-1.5 transition-colors">
+          <button onClick={(e) => {
+            if (!user) {
+              e.preventDefault();
+              window.location.href = `/auth/login?mode=login&reason=comment&redirect=${pollUrl}`;
+              return;
+            }
+            setShowComments(!showComments);
+          }} className="text-xs font-medium text-ink-muted hover:text-ink flex items-center gap-1.5 transition-colors">
             <MessageCircle className="w-4 h-4" />
             {opinionsTotal.toLocaleString()} {opinionsTotal === 1 ? 'comment' : 'comments'}
           </button>
@@ -733,6 +826,22 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       )}
 
       <ProgressiveGateModal isOpen={showGate} onClose={() => setShowGate(false)} onSelect={(value) => { if (typeof window !== "undefined") window.localStorage.setItem(`pollbooth-cohort:${poll.id}`, value); setShowGate(false); }} />
+    
+      {showAuthModal && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/60 backdrop-blur-sm px-4">
+          <div className="w-full max-w-sm rounded-3xl bg-paper-bg p-6 shadow-2xl text-center border border-paper-border animate-in zoom-in-95 duration-200">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#7a1f10]/10 text-[#7a1f10]">
+              <MessageCircle className="h-6 w-6" />
+            </div>
+            <h3 className="mb-2 text-lg font-bold text-ink">Comment karne ke liye sign up karein</h3>
+            <p className="mb-6 text-sm text-ink-muted">You need to sign up to comment on this poll. It takes under a minute.</p>
+            <div className="flex flex-col gap-3">
+              <button onClick={() => window.location.href = `/auth/login?mode=signup&redirect=${pollUrl}`} className="w-full rounded-xl bg-ink py-3 text-sm font-semibold text-paper-bg transition-transform active:scale-95">Sign up to comment</button>
+              <button onClick={() => setShowAuthModal(false)} className="w-full rounded-xl py-3 text-sm font-semibold text-ink-muted hover:text-ink hover:bg-ink/5 transition-colors">Cancel</button>
+            </div>
+          </div>
+        </div>
+      , document.body)}
     </article>
   );
 }

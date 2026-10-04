@@ -47,6 +47,7 @@ export default function FeedPage() {
   const [todayStr, setTodayStr] = useState("");
   const [organicPolls, setOrganicPolls] = useState<PollSummary[]>([]);
   const [sponsoredPolls, setSponsoredPolls] = useState<PollSummary[]>([]);
+  const [orderedPolls, setOrderedPolls] = useState<PollSummary[]>([]);
   const [activeCategory, setActiveCategory] = useState("for-you");
   const [categoryFilter, setCategoryFilter] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState(true);
@@ -177,6 +178,9 @@ export default function FeedPage() {
       const basePolls = (res.data.polls || []) as PollSummary[];
       const hydratedPolls = await Promise.all(
         basePolls.map(async (poll) => {
+          // ANTI-DDoS FIX: Only fetch heavy stats if the user actually needs to see the results
+          if (!poll.has_voted) return poll;
+
           try {
             const detailRes = await api.get(`/api/v1/polls/${poll.id}`);
             return {
@@ -201,6 +205,7 @@ export default function FeedPage() {
 
       setOrganicPolls((current) => (reset ? nextOrganic : [...current, ...nextOrganic]));
       setSponsoredPolls((current) => (reset ? nextSponsored : [...current, ...nextSponsored]));
+      setOrderedPolls((current) => (reset ? hydratedPolls : [...current, ...hydratedPolls]));
       setHasMore(nextPage < (res.data.pagination?.total_pages || 1));
       setPage(nextPage);
     } catch (err: any) {
@@ -257,7 +262,7 @@ export default function FeedPage() {
                   ) : error ? (
                     <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>
                   ) : (organicPolls.length > 0 || sponsoredPolls.length > 0) ? (
-                    Array.from(new Map([...sponsoredPolls, ...organicPolls].map(p => [p.id, p])).values()).map((poll, idx) => (
+                    Array.from(new Map(orderedPolls.map(p => [p.id, p])).values()).map((poll, idx) => (
                       <EnhancedPollCard
                         key={poll.id}
                         poll={poll}

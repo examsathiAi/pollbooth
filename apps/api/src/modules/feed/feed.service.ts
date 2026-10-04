@@ -24,7 +24,28 @@ export class FeedService {
       whatsapp_share_text: poll.whatsapp_share_text || null,
       x_caption: poll.x_caption || null,
       facebook_caption: poll.facebook_caption || null,
+      ai_context: poll.ai_context || null,
+      ai_summary: poll.ai_summary || null,
+      faq: poll.faq || [],
+      image_url: poll.image_url || null,
     };
+  }
+
+
+  private interlaceFeed(organic: any[], sponsored: any[]) {
+    const result = [];
+    let oIdx = 0;
+    let sIdx = 0;
+    while (oIdx < organic.length || sIdx < sponsored.length) {
+      // 2 Organic
+      if (oIdx < organic.length) result.push(organic[oIdx++]);
+      if (oIdx < organic.length) result.push(organic[oIdx++]);
+      // 1 Sponsored
+      if (sIdx < sponsored.length) {
+        result.push(sponsored[sIdx++]);
+      }
+    }
+    return result;
   }
 
   private dedupePolls(polls: any[]) {
@@ -147,8 +168,10 @@ export class FeedService {
     const votedPollIds = new Set(userVotes.map((v) => v.poll_id));
 
     return {
-      organic: organicPolls.map((poll) => this.mapPollSummary(poll, votedPollIds.has(poll.id))),
-      sponsored: sponsoredPolls.map((poll) => this.mapPollSummary(poll, votedPollIds.has(poll.id))),
+      polls: this.interlaceFeed(
+        organicPolls.map((poll) => this.mapPollSummary(poll, votedPollIds.has(poll.id))),
+        sponsoredPolls.map((poll) => this.mapPollSummary(poll, votedPollIds.has(poll.id)))
+      ),
       pagination: {
         page,
         limit,
@@ -182,6 +205,10 @@ export class FeedService {
       ]);
 
       return {
+        polls: this.interlaceFeed(
+          organicPolls.map((poll) => this.mapPollSummary(poll)),
+          sponsoredPolls.map((poll) => this.mapPollSummary(poll))
+        ),
         organic: organicPolls.map((poll) => this.mapPollSummary(poll)),
         sponsored: sponsoredPolls.map((poll) => this.mapPollSummary(poll)),
         pagination: { page, limit, total: organicPolls.length + sponsoredPolls.length },

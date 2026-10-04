@@ -18,6 +18,7 @@ enum UserRole {
 }
 
 model User {
+  reactions PollReaction[]
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   phone_hash      String?   @unique
   phone_number    String?   @db.VarChar(20)
@@ -92,6 +93,7 @@ model Profile {
 // POLLS
 // ============================================
 model Poll {
+  reactions PollReaction[]
   id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   question            String    @db.Text
   options             String[]
@@ -667,4 +669,17 @@ model UserBlock {
   @@unique([blocker_id, blocked_id])
   @@index([blocker_id])
   @@map("user_blocks")
+}
+
+model PollReaction {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  poll_id    String   @db.Uuid
+  user_id    String   @db.Uuid
+  emoji      String   @db.VarChar(10) // e.g. "😂", "🤯", "🤔", "👏"
+  created_at DateTime @default(now()) @db.Timestamp(6)
+
+  poll Poll @relation(fields: [poll_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([poll_id, user_id, emoji])
 }

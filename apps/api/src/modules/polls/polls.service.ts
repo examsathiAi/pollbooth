@@ -167,6 +167,7 @@ export class PollsService {
       where: { id: pollId },
       include: {
         _count: { select: { votes: true, opinions: true } },
+        reactions: { select: { emoji: true, user_id: true } },
       },
     });
 
@@ -218,10 +219,21 @@ export class PollsService {
       guestVoteIndex = guestVote?.option_index ?? null;
     }
 
+    const { reactions: rawReactions, ...pollRest } = poll as any;
+    const reactionList: Array<{ emoji: string; user_id: string }> = rawReactions || [];
+    const reactionCounts = reactionList.reduce((acc: Record<string, number>, r) => {
+      acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    const userReaction = userId ? reactionList.find((r) => r.user_id === userId)?.emoji ?? null : null;
+
     return {
-      ...poll,
+      ...pollRest,
       is_commercial: poll.is_commercial ?? false,
       total_votes: totalVotes,
+      reaction_counts: reactionCounts,
+      user_reaction: userReaction,
+      ai_context: (poll as any).ai_context ?? null,
       total_opinions: poll._count.opinions,
       results,
       has_voted: !!userVote || guestVoteIndex !== null,
@@ -336,18 +348,40 @@ export class PollsService {
       }
     }
 
-    const [polls, total] = await Promise.all([
-      prisma.poll.findMany({
-        where,
-        orderBy: { created_at: "desc" },
-        skip: (Number(query.page || 1) - 1) * Number(query.limit || 10),
-        take: Number(query.limit || 10),
-        include: {
-          _count: { select: { votes: true, opinions: true } },
-        },
-      }),
-      prisma.poll.count({ where }),
-    ]);
+    // One global order for the whole feed: the newest sponsored poll first, then
+    // two organic polls, then the next sponsored poll, and so on. Every page takes
+    // its slice of this one sequence, so pages never repeat or skip a poll.
+    const page = Math.max(1, Number(query.page || 1));
+    const limit = Math.max(1, Number(query.limit || 10));
+    const idRows = await prisma.poll.findMany({
+      where,
+      orderBy: { created_at: "desc" },
+      select: { id: true, is_commercial: true },
+    });
+    const sponsoredIds = idRows.filter((r) => r.is_commercial).map((r) => r.id);
+    const organicIds = idRows.filter((r) => !r.is_commercial).map((r) => r.id);
+    const orderedIds: string[] = [];
+    let sIdx = 0;
+    let oIdx = 0;
+    while (sIdx < sponsoredIds.length || oIdx < organicIds.length) {
+      const sponsoredSlot = orderedIds.length % 3 === 0;
+      if (sponsoredSlot && sIdx < sponsoredIds.length) orderedIds.push(sponsoredIds[sIdx++]);
+      else if (oIdx < organicIds.length) orderedIds.push(organicIds[oIdx++]);
+      else orderedIds.push(sponsoredIds[sIdx++]);
+    }
+    const total = orderedIds.length;
+    const pageIds = orderedIds.slice((page - 1) * limit, page * limit);
+    const pollRows = await prisma.poll.findMany({
+      where: { id: { in: pageIds } },
+      include: {
+        _count: { select: { votes: true, opinions: true } },
+        reactions: { select: { emoji: true, user_id: true } },
+      },
+    });
+    const rowById = new Map(pollRows.map((r) => [r.id, r] as const));
+    const polls = pageIds
+      .map((id) => rowById.get(id))
+      .filter((r): r is NonNullable<typeof r> => Boolean(r));
 
     const pollIds = polls.map((poll) => poll.id);
     const [voteDistribution, guestVoteDistribution] = await Promise.all([
@@ -404,11 +438,20 @@ export class PollsService {
         const totalVotes = poll._count.votes + (guestCountMap.get(poll.id) || 0);
         const results = this.computePollResults(poll.options, voteDistributionByPoll.get(poll.id) || [], totalVotes);
         const userVoteIndex = userVoteMap.has(poll.id) ? userVoteMap.get(poll.id) ?? null : null;
+        const reactionCounts = poll.reactions.reduce((acc: Record<string, number>, r) => {
+          acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        const userReaction = userId ? poll.reactions.find((r) => r.user_id === userId)?.emoji ?? null : null;
 
         return {
           id: poll.id,
           question: poll.question,
           options: poll.options,
+          reaction_counts: reactionCounts,
+          user_reaction: userReaction,
+          ai_context: (poll as any).ai_context ?? null,
+          ai_summary: poll.ai_summary ?? null,
           category: poll.category,
           status: poll.status,
           is_commercial: poll.is_commercial ?? false,
@@ -555,6 +598,18 @@ export class PollsService {
       where: { user_id_poll_id: { user_id: userId, poll_id: pollId } }
     });
     return { unlocked: !!unlock };
+  }
+  async togglePollReaction(userId: string, pollId: string, emoji: string) {
+    const existing = await prisma.pollReaction.findUnique({
+      where: { poll_id_user_id_emoji: { poll_id: pollId, user_id: userId, emoji } }
+    });
+    if (existing) {
+      await prisma.pollReaction.delete({ where: { id: existing.id } });
+      return { action: "removed", emoji };
+    }
+    await prisma.pollReaction.deleteMany({ where: { poll_id: pollId, user_id: userId } });
+    await prisma.pollReaction.create({ data: { poll_id: pollId, user_id: userId, emoji } });
+    return { action: "added", emoji };
   }
 }
 export const pollsService = new PollsService();
