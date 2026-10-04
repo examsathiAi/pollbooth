@@ -267,3 +267,46 @@ body .shadow-md {
     transform: scale(1);
   }
 }
+
+/* pollbooth: slim scrollbars in pop-ups */
+.fixed.inset-0,
+.fixed.inset-0 *,
+[role="dialog"],
+[role="dialog"] * {
+  --pb-thumb: rgba(0, 0, 0, 0.22);
+}
+.fixed.inset-0::-webkit-scrollbar,
+.fixed.inset-0 *::-webkit-scrollbar,
+[role="dialog"]::-webkit-scrollbar,
+[role="dialog"] *::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.fixed.inset-0::-webkit-scrollbar-track,
+.fixed.inset-0 *::-webkit-scrollbar-track,
+[role="dialog"]::-webkit-scrollbar-track,
+[role="dialog"] *::-webkit-scrollbar-track {
+  background: transparent;
+}
+.fixed.inset-0::-webkit-scrollbar-thumb,
+.fixed.inset-0 *::-webkit-scrollbar-thumb,
+[role="dialog"]::-webkit-scrollbar-thumb,
+[role="dialog"] *::-webkit-scrollbar-thumb {
+  background: var(--pb-thumb);
+  border-radius: 999px;
+}
+.fixed.inset-0::-webkit-scrollbar-thumb:hover,
+.fixed.inset-0 *::-webkit-scrollbar-thumb:hover,
+[role="dialog"]::-webkit-scrollbar-thumb:hover,
+[role="dialog"] *::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+@supports not selector(::-webkit-scrollbar) {
+  .fixed.inset-0,
+  .fixed.inset-0 *,
+  [role="dialog"],
+  [role="dialog"] * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
+  }
+}

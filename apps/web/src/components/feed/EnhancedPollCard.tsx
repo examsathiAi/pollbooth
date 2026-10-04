@@ -123,7 +123,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
 
   const handlePollReaction = async (emoji: string) => {
     if (!user) {
-      window.location.href = `/auth/login?mode=login&redirect=${pollUrl}`;
+      window.location.href = `/auth/login?mode=login&reason=react&redirect=${pollUrl}`;
       return;
     }
 

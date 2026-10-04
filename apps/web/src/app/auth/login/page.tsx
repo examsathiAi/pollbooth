@@ -37,7 +37,7 @@ export default function LoginPage() {
       if (sp) {
         setMode(sp.get("mode") === "signup" ? "signup" : "login");
         setRedirectPath(sp.get("redirect") || "/feed");
-        if (sp.get("reason") === "comment") setLoginNotice("comment");
+        if (sp.get("reason") === "comment" || sp.get("reason") === "react") setLoginNotice(sp.get("reason"));
       }
     } catch (e) {}
   }, []);
@@ -253,7 +253,7 @@ export default function LoginPage() {
 
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-[#1f1b18]">
-              {loginNotice === "comment" ? "Please sign in to comment" : mode === "signup" ? "Create an account" : "Welcome back"}
+              {loginNotice === "comment" ? "Please sign in to comment" : loginNotice === "react" ? "Please sign in to react" : mode === "signup" ? "Create an account" : "Welcome back"}
             </h1>
             <p className="mt-2 text-sm text-[#625a50]">
               {mode === "signup" ? "Sign up with Google, or use your email below." : "Sign in with Google, or use your email below."}
