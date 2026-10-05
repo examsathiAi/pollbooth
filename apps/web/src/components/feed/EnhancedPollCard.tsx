@@ -238,14 +238,6 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
   }, [animatedVotes, totalVotes]);
 
   useEffect(() => {
-    if (user && poll.id) {
-      api.get(`/api/v1/polls/${poll.id}/unlock-status`)
-        .then(res => setIsUnlocked(res.data.unlocked))
-        .catch(() => {});
-    }
-  }, [user, poll.id]);
-
-  useEffect(() => {
     if (!showComments) return;
     const loadOpinions = async () => {
       setIsLoadingOpinions(true);
@@ -264,38 +256,12 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
     void loadOpinions();
   }, [poll.id, poll.total_opinions, showComments]);
 
-  const handleReplyClick = async (opinionId: string) => {
+  const handleReplyClick = (opinionId: string) => {
     if (!user) {
-      window.location.href = `/auth/login?mode=login&redirect=${pollUrl}`;
+      window.location.href = `/auth/login?mode=login&reason=reply&redirect=${pollUrl}`;
       return;
     }
-    if (isUnlocked) {
-      setActiveReplyId(activeReplyId === opinionId ? null : opinionId);
-      return;
-    }
-
-    try {
-      const shareData = {
-        title: poll.question,
-        text: "Join the debate on PollBooth!",
-        url: `${window.location.origin}${pollUrl}?ref=${user.id}`,
-      };
-
-      if (navigator.share) {
-        await navigator.share(shareData);
-        await api.post(`/api/v1/polls/${poll.id}/share`);
-        setIsUnlocked(true);
-        setActiveReplyId(opinionId);
-      } else {
-        await navigator.clipboard.writeText(shareData.url);
-        alert("Link copied! Share it with a friend to unlock all replies.");
-        await api.post(`/api/v1/polls/${poll.id}/share`);
-        setIsUnlocked(true);
-        setActiveReplyId(opinionId);
-      }
-    } catch (err) {
-      console.log("Share cancelled", err);
-    }
+    setActiveReplyId(activeReplyId === opinionId ? null : opinionId);
   };
 
   const handleVote = async (index: number) => {
@@ -752,7 +718,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
                         </button>
                         
                         <button onClick={() => void handleReplyClick(opinion.id)} className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-ink-muted hover:bg-ink/5 transition-all ml-auto">
-                          {!isUnlocked ? <><Lock className="h-3.5 w-3.5" /> Unlock Reply</> : <><MessageCircle className="h-3.5 w-3.5" /> Reply</>}
+                          <><MessageCircle className="h-3.5 w-3.5" /> Reply</>
                         </button>
                       </div>
 
