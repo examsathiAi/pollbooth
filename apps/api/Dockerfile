@@ -25,4 +25,4 @@ RUN pnpm --filter @pollbooth/api build
 ENV NODE_ENV=production
 WORKDIR /app/apps/api
 EXPOSE 3001
-CMD ["node", "dist/server.js"]
+CMD ["sh", "-c", "pnpm --filter @pollbooth/prisma exec prisma migrate deploy && exec node dist/server.js"]
