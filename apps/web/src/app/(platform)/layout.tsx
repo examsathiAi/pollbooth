@@ -183,7 +183,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
           </main>
 
           {/* FROZEN RIGHT SIDEBAR */}
-          <div className="block w-full lg:w-[300px] shrink-0 lg:sticky transition-all duration-300" style={{ top: `${headerHeight + 16}px` }}>
+          <div className="hidden lg:block lg:w-[300px] shrink-0 lg:sticky transition-all duration-300" style={{ top: `${headerHeight + 16}px` }}>
             <FeedRightRail />
           </div>
 
