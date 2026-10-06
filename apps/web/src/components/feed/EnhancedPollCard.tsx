@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
+import HintTip from "./HintTip";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { CheckCircle2, MessageCircle, Share2, Sparkles, ThumbsDown, ThumbsUp, Lock, Smile, Heart, CornerDownRight } from "lucide-react";
@@ -117,6 +118,12 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
   const [lastUpdatedAt, setLastUpdatedAt] = useState(Date.now());
   const [showGate, setShowGate] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showVoteFirst, setShowVoteFirst] = useState(false);
+  useEffect(() => {
+    if (!showVoteFirst) return;
+    const t = setTimeout(() => setShowVoteFirst(false), 4000);
+    return () => clearTimeout(t);
+  }, [showVoteFirst]);
   const [userReaction, setUserReaction] = useState<string | null>((poll as any).user_reaction || null);
   const [reactionCounts, setReactionCounts] = useState<Record<string, number>>((poll as any).reaction_counts || {});
   const [showEmojis, setShowEmojis] = useState(false);
@@ -349,7 +356,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       return;
     }
     if (!hasVoted) {
-      setOpinionFeedback("Vote on this poll first to add your opinion.");
+      setShowVoteFirst(true);
       return;
     }
     if (!parentId && hasOpinion) {
@@ -615,6 +622,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
               </div>
             </div>
 
+            <HintTip side="bottom" text={userReaction ? "Change your reaction" : "Pick an emoji to react to this poll"}>
             <button
               onClick={(e) => { e.stopPropagation(); setShowEmojis(!showEmojis); }}
               className={`text-xs font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-200 ${userReaction ? 'text-ink bg-ink/5 border border-ink/10 shadow-sm' : 'text-ink-muted hover:text-ink hover:bg-ink/5 border border-transparent'}`}
@@ -631,23 +639,23 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
                  </span>
               )}
             </button>
+            </HintTip>
           </div>
+          <HintTip text={showComments ? "Hide the comments" : "Read what others are saying"}>
           <button onClick={(e) => {
-            if (!user) {
-              e.preventDefault();
-              window.location.href = `/auth/login?mode=login&reason=comment&redirect=${pollUrl}`;
-              return;
-            }
             setShowComments(!showComments);
           }} className="text-xs font-medium text-ink-muted hover:text-ink flex items-center gap-1.5 transition-colors">
             <MessageCircle className="w-4 h-4" />
             {opinionsTotal.toLocaleString()} {opinionsTotal === 1 ? 'comment' : 'comments'}
           </button>
+          </HintTip>
           <div className="relative flex items-center">
+            <HintTip text="Share this poll on WhatsApp, X, Facebook and more">
             <button onClick={() => setShowShareMenu(!showShareMenu)} className="text-xs font-medium text-ink-muted hover:text-ink flex items-center gap-1.5 transition-colors">
               <Share2 className="w-4 h-4" />
               Share
             </button>
+            </HintTip>
             
           </div>
         </div>
@@ -673,7 +681,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       )}
       </div>
 
-      {(hasVoted || (poll as any).status === "CLOSED" || (poll as any).is_active === false) && showComments && (
+      {showComments && (
       <div className="border-t border-paper-border/60 bg-transparent px-5 py-5 animate-in fade-in slide-in-from-top-2 duration-300">
         <div className="mb-4 flex items-center justify-between">
           <p className="text-sm font-semibold tracking-tight text-ink">Discussion</p>
@@ -735,7 +743,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
                                disabled={isPostingOpinion}
                                className="w-full resize-none rounded-xl border border-paper-border bg-transparent px-3 py-2 text-sm text-ink placeholder:text-ink-muted/50 outline-none transition-all focus:border-ink focus:ring-1 focus:ring-ink min-h-[38px]"
                              />
-                             <button onClick={() => void handleOpinionSubmit(opinion.id)} disabled={!replyText.trim() || isPostingOpinion} className="rounded-xl bg-ink px-3 py-2 text-sm font-medium text-paper-bg transition-all hover:bg-ink/90 shrink-0">Post</button>
+                             <HintTip tapShow={!hasVoted} text={!hasVoted ? "Vote on the options above first, then reply" : !replyText.trim() ? "Type your reply to post" : "Post your reply"}><button onClick={() => void handleOpinionSubmit(opinion.id)} disabled={(hasVoted && !replyText.trim()) || isPostingOpinion} className="rounded-xl bg-ink px-3 py-2 text-sm font-medium text-paper-bg transition-all hover:bg-ink/90 shrink-0 disabled:opacity-40 disabled:pointer-events-none">Post</button></HintTip>
                            </div>
                          </div>
                       )}
@@ -765,13 +773,25 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
               This poll is closed. Comments are locked.
             </div>
           ) : !user ? (
-            <div className="rounded-2xl border border-paper-border bg-transparent p-4 text-sm transition-all">
-              <p className="font-semibold text-ink">Join the conversation</p>
-              <p className="mt-1 text-ink-muted mb-4">Sign in to share your view.</p>
-              <div className="flex flex-wrap gap-2.5">
-                <Link href={`/auth/login?mode=login&redirect=${pollUrl}`} className="rounded-xl border border-paper-border bg-transparent px-4 py-2.5 text-sm font-medium text-ink hover:bg-ink/5 transition-all duration-200">Sign in</Link>
-                <Link href={`/auth/login?mode=login&redirect=${pollUrl}`} className="rounded-xl bg-ink px-4 py-2.5 text-sm font-medium text-paper-bg hover:bg-ink/90 transition-all duration-200">Create account</Link>
-              </div>
+            <div className="relative flex gap-2 items-start" data-guest-comment="true">
+              <HintTip className="flex min-w-0 flex-1" text="Sign in to write a comment. Reading is free.">
+              <textarea
+                readOnly
+                rows={1}
+                placeholder="Share your view..."
+                aria-label="Sign in to comment"
+                onFocus={() => { window.location.href = `/auth/login?mode=login&reason=comment&redirect=${pollUrl}`; }}
+                className="w-full cursor-pointer resize-none overflow-hidden rounded-2xl border border-paper-border bg-transparent px-4 py-3 text-sm text-ink placeholder:text-ink-muted/50 outline-none min-h-[46px]"
+              />
+              </HintTip>
+              <HintTip text="Sign in to post your comment">
+              <button
+                onClick={() => { window.location.href = `/auth/login?mode=login&reason=comment&redirect=${pollUrl}`; }}
+                className="rounded-2xl bg-ink px-4 py-3 text-sm font-medium text-paper-bg transition-all duration-200 hover:bg-ink/90 shrink-0 h-[46px]"
+              >
+                Post
+              </button>
+              </HintTip>
             </div>
           ) : (
             <div className="relative flex gap-2 items-start">
@@ -784,7 +804,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
                 disabled={isPostingOpinion}
                 className={`w-full resize-none rounded-2xl border border-paper-border bg-transparent px-4 py-3 text-sm text-ink placeholder:text-ink-muted/50 outline-none transition-all duration-200 focus:border-ink focus:ring-1 focus:ring-ink disabled:opacity-60 overflow-hidden min-h-[46px]`}
               />
-              <button onClick={() => void handleOpinionSubmit()} disabled={!opinionText.trim() || isPostingOpinion} className="rounded-2xl bg-ink px-4 py-3 text-sm font-medium text-paper-bg transition-all duration-200 hover:bg-ink/90 active:scale-[0.97] disabled:opacity-40 shrink-0 h-[46px]">Post</button>
+              <HintTip open={showVoteFirst} text={(poll as any).status === "CLOSED" || (poll as any).is_active === false ? "Voting is closed for this poll" : !hasVoted ? "Vote on the options above first, then share your view" : !opinionText.trim() ? "Type your view to post" : "Post your comment"}><button onClick={() => void handleOpinionSubmit()} disabled={(hasVoted && !opinionText.trim()) || isPostingOpinion} className="rounded-2xl bg-ink px-4 py-3 text-sm font-medium text-paper-bg transition-all duration-200 hover:bg-ink/90 active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none shrink-0 h-[46px]">Post</button></HintTip>
             </div>
           )}
         </div>
