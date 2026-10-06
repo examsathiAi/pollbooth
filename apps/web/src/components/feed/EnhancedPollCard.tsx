@@ -442,10 +442,10 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
     <article
       ref={rootRef}
       id={`poll-card-${poll.id}`}
-      className={`relative mb-6 rounded-3xl border border-paper-border bg-transparent transition-all duration-400 ease-out ${visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"} hover:border-ink/10 shadow-sm`}
+      className={`relative mb-4 rounded-2xl border border-paper-border bg-transparent transition-all duration-400 ease-out ${visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"} hover:border-ink/10 shadow-sm`}
     >
       {poll.image_url && (
-        <Link href={pollUrl} className="block overflow-hidden rounded-t-3xl">
+        <Link href={pollUrl} className="block overflow-hidden rounded-t-2xl">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={poll.image_url}
@@ -453,11 +453,11 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
             width={1200}
             height={630}
             loading={index < 2 ? "eager" : "lazy"}
-            className="block h-auto max-h-[420px] w-full bg-paper-border/20 object-contain"
+            className="block h-auto max-h-[260px] sm:max-h-[300px] w-full bg-paper-border/20 object-contain"
           />
         </Link>
       )}
-      <div className="flex items-center justify-between gap-3 px-5 pt-5 pb-3">
+      <div className="flex items-center justify-between gap-3 px-4 pt-3 pb-2">
         <div className="min-w-0 flex items-center gap-2 text-ink-muted">
           <div className="text-xs font-sans font-semibold uppercase tracking-wider">{poll.category.replace(/_/g, " ")}</div>
           <span className="opacity-40">•</span>
@@ -476,7 +476,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
             </div>
       </div>
 
-      <div className="px-5 pb-4">
+      <div className="px-4 pb-4">
         {poll.ai_context && (
           <div className="mb-3 flex items-center gap-2 text-xs font-semibold tracking-wide text-[#7a1f10] bg-[#7a1f10]/10 w-fit px-3 py-1.5 rounded-full border border-[#7a1f10]/20">
             <span className="relative flex h-2 w-2">
@@ -488,7 +488,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         )}
         <div className="mb-2">
           <Link href={`${pollUrl}`} className="group inline">
-            <h3 className="text-xl sm:text-2xl font-sans font-semibold tracking-tight leading-snug text-[#1f1b18] break-words group-hover:text-[#7a1f10] transition-colors duration-200 inline">
+            <h3 className="text-[17px] sm:text-lg font-sans font-semibold tracking-tight leading-snug text-[#1f1b18] break-words group-hover:text-[#7a1f10] transition-colors duration-200 inline">
               {poll.question}
             </h3>
           </Link>
@@ -520,14 +520,14 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       
 
       {!hasVoted && (poll as any).status !== "CLOSED" && (poll as any).is_active !== false ? (
-        <div className="px-5 pb-5">
-          <div className="mt-3 flex w-full flex-col gap-3">
+        <div className="px-4 pb-4">
+          <div className="mt-2 flex w-full flex-col gap-2">
             {poll.options.map((option, idx) => (
               <button
                 key={idx}
                 onClick={() => void handleVote(idx)}
                 disabled={isVoting}
-                className={`group relative flex w-full items-center gap-4 rounded-2xl border px-5 py-4 text-left text-sm font-semibold transition-all duration-300 ease-out transform hover:-translate-y-1 active:scale-95 cursor-pointer ${
+                className={`group relative flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm font-semibold transition-all duration-300 ease-out transform hover:-translate-y-0.5 active:scale-[0.98] cursor-pointer ${
                   selectedOptionIndex === idx || userVoteIndex === idx
                     ? 'border-maroon bg-maroon/5 text-maroon shadow-md ring-1 ring-maroon/20'
                     : 'border-paper-border/80 bg-transparent text-ink hover:border-ink/30 hover:bg-ink/5 hover:shadow-sm'
@@ -536,13 +536,13 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
                 <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-300 ${selectedOptionIndex === idx || userVoteIndex === idx ? 'border-maroon' : 'border-ink/20 group-hover:border-maroon/50'}`}>
                   <span className={`inline-block h-2.5 w-2.5 rounded-full transition-transform duration-300 ${selectedOptionIndex === idx || userVoteIndex === idx ? 'bg-maroon scale-100' : 'bg-transparent scale-0'}`} />
                 </span>
-                <span className="truncate flex-1">{option}</span>
+                <span className="flex-1 leading-snug">{option}</span>
               </button>
             ))}
           </div>
         </div>
       ) : (
-        <div className="px-5 pb-5">
+        <div className="px-4 pb-4">
           <div className="mt-2 flex w-full flex-col">
             {results.map((r, idx) => {
               const pct = Math.max(0, Math.min(100, r.percentage || 0));
@@ -550,7 +550,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
               const barColor = isUserChoice ? 'bg-maroon' : 'bg-[#10b981]';
 
               return (
-                <div key={r.index} className="mb-4 last:mb-0">
+                <div key={r.index} className="mb-3 last:mb-0">
                   <div className="flex justify-between items-end mb-1.5 px-1">
                     <span className={`text-sm font-medium flex items-center gap-2 ${isUserChoice ? 'text-ink font-bold' : 'text-ink/90'}`}>
                       {r.option}
@@ -574,7 +574,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       )}
 
       {showSharePrompt && hasVoted && (
-        <div className="mx-5 mb-4 rounded-2xl border border-paper-border bg-paper-bg p-4">
+        <div className="mx-4 mb-3 rounded-xl border border-paper-border bg-paper-bg p-3">
           <div className="flex items-start justify-between gap-3">
             <p className="text-sm font-semibold text-ink">Vote record ho gaya. Ab ek dost ko bhejo.</p>
             <button onClick={() => setShowSharePrompt(false)} aria-label="Dismiss" className="text-ink-muted hover:text-ink">&times;</button>
@@ -600,7 +600,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
           </div>
         </div>
       )}
-      <div className="flex items-center justify-between gap-2 border-t border-paper-border/60 px-5 py-3 bg-transparent">
+      <div className="flex items-center justify-between gap-2 border-t border-paper-border/60 px-4 py-3 bg-transparent">
         <div className="flex items-center gap-4">
           <div
             className="relative flex items-center group"
@@ -662,7 +662,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
 
       {/* Facebook-style Bottom Share Menu */}
       {showShareMenu && (
-        <div className="px-5 pb-4 animate-in fade-in duration-300">
+        <div className="px-4 pb-4 animate-in fade-in duration-300">
           <ShareCardGenerator
             title={poll.question}
             onClose={() => setShowShareMenu(false)}
@@ -682,7 +682,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       </div>
 
       {showComments && (
-      <div className="border-t border-paper-border/60 bg-transparent px-5 py-5 animate-in fade-in slide-in-from-top-2 duration-300">
+      <div className="border-t border-paper-border/60 bg-transparent px-4 py-5 animate-in fade-in slide-in-from-top-2 duration-300">
         <div className="mb-4 flex items-center justify-between">
           <p className="text-sm font-semibold tracking-tight text-ink">Discussion</p>
         </div>

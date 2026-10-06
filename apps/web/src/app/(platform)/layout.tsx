@@ -65,8 +65,8 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
           <div className="flex items-center justify-between py-2">
             
             {/* BRANDING LOCKUP - Aligned exactly to the 260px sidebar on desktop, shrinks on mobile */}
-            <Link href="/feed" className="flex items-center shrink-0 group active:scale-95 transition-transform w-[140px] sm:w-[200px] lg:w-[260px] pr-2 sm:pr-4">
-              <img src="/icon.png" alt="PollBooth Logo" className="h-[40px] sm:h-[52px] lg:h-[68px] w-full object-contain object-left" />
+            <Link href="/feed" className="flex items-center shrink-0 group active:scale-95 transition-transform w-[120px] sm:w-[160px] lg:w-[220px] pr-2 sm:pr-4">
+              <img src="/icon.png" alt="PollBooth Logo" className="h-[30px] sm:h-[38px] lg:h-[46px] w-full object-contain object-left" />
             </Link>
 
             {/* CENTRAL SEARCH */}
@@ -169,11 +169,11 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
       </div>
 
       {/* FACEBOOK-STYLE SPA GRID */}
-      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 transition-all duration-300" style={{ paddingTop: `${headerHeight + 24}px` }}>
-        <div className="flex flex-col lg:flex-row gap-10 pb-12 relative items-start">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 transition-all duration-300" style={{ paddingTop: `${headerHeight + 16}px` }}>
+        <div className="flex flex-col lg:flex-row gap-6 pb-12 relative items-start">
           
           {/* FROZEN LEFT SIDEBAR */}
-          <div className="hidden lg:block w-[260px] shrink-0 sticky transition-all duration-300" style={{ top: `${headerHeight + 24}px` }}>
+          <div className="hidden lg:block w-[220px] shrink-0 sticky transition-all duration-300" style={{ top: `${headerHeight + 16}px` }}>
             <FeedSidebar />
           </div>
 
@@ -183,7 +183,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
           </main>
 
           {/* FROZEN RIGHT SIDEBAR */}
-          <div className="block w-full lg:w-[340px] shrink-0 lg:sticky transition-all duration-300" style={{ top: `${headerHeight + 24}px` }}>
+          <div className="block w-full lg:w-[300px] shrink-0 lg:sticky transition-all duration-300" style={{ top: `${headerHeight + 16}px` }}>
             <FeedRightRail />
           </div>
 
