@@ -310,3 +310,10 @@ body .shadow-md {
     scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
   }
 }
+
+/* pollbooth: side-column scrollbars stay invisible until hovered */
+.scrollbar-auto-hide, .scrollbar-paper { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.scrollbar-auto-hide:hover, .scrollbar-paper:hover { scrollbar-color: rgba(31, 27, 24, 0.28) transparent; }
+.scrollbar-auto-hide::-webkit-scrollbar, .scrollbar-paper::-webkit-scrollbar { width: 6px; height: 6px; background: transparent; }
+.scrollbar-auto-hide::-webkit-scrollbar-thumb, .scrollbar-paper::-webkit-scrollbar-thumb { background: transparent; border-radius: 9999px; }
+.scrollbar-auto-hide:hover::-webkit-scrollbar-thumb, .scrollbar-paper:hover::-webkit-scrollbar-thumb { background: rgba(31, 27, 24, 0.28); }

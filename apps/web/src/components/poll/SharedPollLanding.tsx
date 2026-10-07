@@ -156,11 +156,6 @@ export function SharedPollLanding({ poll, insights }: { poll: AnyPoll; insights:
             </button>
           </div>
         )}
-        <div className="mt-8 text-center">
-          <Link href="/feed" className="text-sm font-semibold text-maroon hover:underline">
-            Poora feed dekho
-          </Link>
-        </div>
       </div>
 
       {showInsights && (

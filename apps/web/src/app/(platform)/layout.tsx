@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,19 +9,95 @@ import { FeedRightRail } from "@/components/layout/FeedRightRail";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { Search, Menu, X } from "lucide-react";
 
+function initialOf(user: any): string {
+  return String(user?.name || user?.username || user?.email || "U").charAt(0).toUpperCase();
+}
+
+function Logo({ variant }: { variant: "full" | "compact" }) {
+  return (
+    <Link href="/feed" aria-label="PollBooth home" className={"inline-flex shrink-0 items-center transition-transform active:scale-95 " + (variant === "full" ? "mb-4" : "")}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {variant === "full" ? (
+        <img src="/pollbooth-logo.png" alt="PollBooth" className="h-24 w-auto max-w-full object-contain object-left" />
+      ) : (
+        <span className="inline-flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/pollbooth-mark.png" alt="PollBooth" className="h-9 w-auto" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/pollbooth-wordmark.png" alt="" className="h-5 w-auto" />
+        </span>
+      )}
+    </Link>
+  );
+}
+
+function AccountMenu({ user, logout }: { user: any; logout: () => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  const name = String(user?.username || user?.name || user?.email || "");
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Account menu"
+        aria-expanded={open}
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-maroon text-sm font-semibold text-paper-bg transition-opacity hover:opacity-90"
+      >
+        {initialOf(user)}
+      </button>
+      {open && (
+        <div className="absolute right-0 z-50 mt-2 w-52 rounded-xl border border-paper-border bg-paper-bg p-1.5 shadow-xl">
+          {name && <p className="truncate px-3 py-2 text-[13px] text-ink-muted">{name}</p>}
+          <Link href="/profile" onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2 text-[14px] font-medium text-ink transition-colors hover:bg-paper-card">My profile</Link>
+          <button type="button" onClick={logout} className="block w-full rounded-lg px-3 py-2 text-left text-[14px] font-medium text-ink transition-colors hover:bg-paper-card">Log out</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AccountControls({ user, logout, compact }: { user: any; logout: () => void; compact?: boolean }) {
+  if (!user) {
+    return (
+      <div className="flex items-center gap-1">
+        <Link href="/auth/login?mode=login" className="whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium text-ink-muted transition-colors hover:text-ink">Log in</Link>
+        <Link href="/auth/login?mode=signup" className="whitespace-nowrap rounded-full bg-maroon px-4 py-1.5 text-sm font-semibold text-paper-bg transition-colors hover:bg-maroon-dark">Sign up</Link>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <NotificationBell />
+      <AccountMenu user={user} logout={logout} />
+    </div>
+  );
+}
+
 export default function PlatformLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
-  const headerRef = useRef<HTMLElement | null>(null);
-  const [headerHeight, setHeaderHeight] = useState(80);
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Close the mobile drawer whenever the route changes
   useEffect(() => {
     setDrawerOpen(false);
   }, [pathname]);
 
-  // While the drawer is open: lock page scroll, close on Escape, close if viewport grows to desktop width
   useEffect(() => {
     if (!drawerOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -41,101 +117,42 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
     };
   }, [drawerOpen]);
 
-  useEffect(() => {
-    if (!headerRef.current) return;
-    const updateHeight = () => setHeaderHeight(headerRef.current?.getBoundingClientRect().height || 80);
-    updateHeight();
-    const resizeObserver = new ResizeObserver(() => updateHeight());
-    resizeObserver.observe(headerRef.current);
-    window.addEventListener("resize", updateHeight);
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener("resize", updateHeight);
-    };
-  }, []);
-
   return (
     <div className="min-h-screen bg-paper-bg">
-      {/* ENTERPRISE MASTER HEADER */}
-      <header
-        ref={headerRef}
-        className="fixed top-0 inset-x-0 z-50 bg-[#e8e1cc]/95 backdrop-blur-md border-b border-paper-border/60 shadow-sm"
-      >
-        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-2">
-            
-            {/* BRANDING LOCKUP - Aligned exactly to the 260px sidebar on desktop, shrinks on mobile */}
-            <Link href="/feed" className="flex items-center shrink-0 group active:scale-95 transition-transform w-[120px] sm:w-[160px] lg:w-[220px] pr-2 sm:pr-4">
-              <img src="/icon.png" alt="PollBooth Logo" className="h-[30px] sm:h-[38px] lg:h-[46px] w-full object-contain object-left" />
-            </Link>
-
-            {/* CENTRAL SEARCH */}
-            <div className="flex-1 mx-8 hidden md:flex items-center gap-5 min-w-0">
-              <div className="h-9 w-px bg-paper-border/70 shrink-0" />
-              <p
-                title="Your vote isn't just a number — aggregated results reach the departments, representatives, and media who can act on them."
-                className="text-sm font-medium text-maroon/80 italic tracking-wide whitespace-nowrap mt-1"
-              >
-                Not just a vote — a voice that reaches decision-makers.
-              </p>
-              <div className="flex-1 min-w-4" />
-              <div className="relative group w-64 shrink-0">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-muted group-focus-within:text-maroon transition-colors" />
-                <input
-                  type="text"
-                  placeholder="Search polls..."
-                  onChange={(e) => window.dispatchEvent(new CustomEvent("globalSearch", { detail: { query: e.target.value } }))}
-                  className="w-full bg-paper-card border border-paper-border/50 text-ink text-sm rounded-full pl-10 pr-4 py-2.5 focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon/30 transition-all shadow-inner"
-                />
-              </div>
-            </div>
-
-            {/* USER CONTROLS */}
-            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-              {!user ? (
-                <>
-                  <Link href="/auth/login?mode=login" className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-bold text-ink-muted hover:text-ink uppercase tracking-widest transition-colors whitespace-nowrap">Log In</Link>
-                  <Link href="/auth/login?mode=signup" className="px-3 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold bg-maroon text-paper-bg rounded-full uppercase tracking-widest hover:bg-maroon-dark transition-all shadow-sm whitespace-nowrap">Sign Up</Link>
-                </>
-              ) : (
-                <>
-                  <Link href="/profile" className="px-3 py-2 text-sm font-bold text-ink-muted hover:text-ink uppercase tracking-widest hidden sm:block transition-colors">USER</Link>
-                  <div className="px-2">
-                    <NotificationBell />
-                  </div>
-                  <button onClick={logout} className="px-3 py-2 text-sm font-bold text-ink-muted hover:text-ink uppercase tracking-widest transition-colors">Logout</button>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* MOBILE / TABLET SECOND ROW: menu trigger + search (below lg) */}
-          <div className="lg:hidden flex items-center gap-3 pb-2">
-            <button
-              type="button"
-              onClick={() => setDrawerOpen(true)}
-              aria-label="Open navigation menu"
-              aria-expanded={drawerOpen}
-              className="shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-full text-ink hover:bg-ink/10 transition-colors"
-            >
-              <Menu className="h-6 w-6" />
-            </button>
-            <div className="relative group flex-1 min-w-0 md:hidden">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-muted group-focus-within:text-maroon transition-colors" />
-              <input
-                type="text"
-                placeholder="Search polls..."
-                onChange={(e) => window.dispatchEvent(new CustomEvent("globalSearch", { detail: { query: e.target.value } }))}
-                className="w-full bg-paper-card border border-paper-border/50 text-ink text-base rounded-full pl-10 pr-4 h-10 focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon/30 transition-all shadow-inner"
-              />
-            </div>
-          </div>
+      {/* PHONE / TABLET TOP BAR (desktop has no top bar) */}
+      <header className="sticky top-0 z-50 border-b border-paper-border/60 bg-[#e8e1cc]/95 backdrop-blur-md lg:hidden">
+        <div className="flex items-center gap-2 px-3 py-2">
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Open navigation menu"
+            aria-expanded={drawerOpen}
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink transition-colors hover:bg-ink/10"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+          <Logo variant="compact" />
+          <div className="flex-1" />
+          <AccountControls user={user} logout={logout} compact />
         </div>
       </header>
 
+        <div className="px-3 pt-3 lg:hidden">
+          <div className="group relative">
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted transition-colors group-focus-within:text-maroon" />
+            <input
+              type="text"
+              placeholder="Search polls"
+              aria-label="Search polls"
+              onChange={(e) => window.dispatchEvent(new CustomEvent("globalSearch", { detail: { query: e.target.value } }))}
+              className="h-10 w-full rounded-full border border-paper-border/50 bg-paper-card pl-10 pr-4 text-base text-ink focus:border-maroon focus:outline-none focus:ring-1 focus:ring-maroon/30"
+            />
+          </div>
+        </div>
+
       {/* MOBILE NAVIGATION DRAWER (below lg) */}
       <div
-        className={`lg:hidden fixed inset-0 z-[60] ${drawerOpen ? "visible" : "invisible pointer-events-none transition-[visibility] delay-300"}`}
+        className={`fixed inset-0 z-[60] lg:hidden ${drawerOpen ? "visible" : "invisible pointer-events-none transition-[visibility] delay-300"}`}
         aria-hidden={!drawerOpen}
       >
         <div
@@ -152,41 +169,41 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
           className={`absolute inset-y-0 left-0 w-[85%] max-w-[320px] overflow-y-auto border-r border-paper-border/60 bg-paper-bg shadow-xl transition-transform duration-300 ease-out ${drawerOpen ? "translate-x-0" : "-translate-x-full"}`}
         >
           <div className="flex items-center justify-between border-b border-paper-border/40 px-4 py-3">
-            <span className="text-sm font-bold uppercase tracking-widest text-maroon">Menu</span>
+            <span className="text-sm font-semibold text-maroon">Menu</span>
             <button
               type="button"
               onClick={() => setDrawerOpen(false)}
               aria-label="Close navigation menu"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted hover:bg-paper-card hover:text-ink transition-colors"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-paper-card hover:text-ink"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
           <div className="p-3">
             <FeedSidebar forceVisible />
+            {user && (
+              <button onClick={logout} className="mt-2 w-full rounded-lg px-3 py-2 text-left text-[14px] font-medium text-ink-muted transition-colors hover:bg-paper-card hover:text-ink">Log out</button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* FACEBOOK-STYLE SPA GRID */}
-      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 transition-all duration-300" style={{ paddingTop: `${headerHeight + 16}px` }}>
-        <div className="flex flex-col lg:flex-row gap-6 pb-12 relative items-start">
-          
-          {/* FROZEN LEFT SIDEBAR */}
-          <div className="hidden lg:block w-[220px] shrink-0 sticky transition-all duration-300" style={{ top: `${headerHeight + 16}px` }}>
+      {/* DESKTOP: left column (logo + topics), centre feed, right column (account + rail) */}
+      <div className="mx-auto flex max-w-[1500px] items-start gap-6 px-4 sm:px-6 lg:px-8">
+        <div className="sticky top-0 hidden h-screen w-[220px] shrink-0 flex-col py-4 lg:flex">
+          <Logo variant="full" />
+          <div className="min-h-0 flex-1 overflow-y-auto scrollbar-auto-hide">
             <FeedSidebar />
           </div>
+        </div>
 
-          {/* DYNAMIC CENTER CONTENT */}
-          <main className="flex-1 min-w-0 w-full transition-all duration-300">
-            {children}
-          </main>
+        <main className="w-full min-w-0 flex-1 py-4 lg:py-6">{children}</main>
 
-          {/* FROZEN RIGHT SIDEBAR */}
-          <div className="hidden lg:block lg:w-[300px] shrink-0 lg:sticky transition-all duration-300" style={{ top: `${headerHeight + 16}px` }}>
-            <FeedRightRail />
+        <div className="sticky top-0 hidden max-h-screen w-[300px] shrink-0 flex-col gap-3 overflow-y-auto py-4 scrollbar-auto-hide lg:flex">
+          <div className="flex justify-end">
+            <AccountControls user={user} logout={logout} />
           </div>
-
+          <FeedRightRail />
         </div>
       </div>
     </div>

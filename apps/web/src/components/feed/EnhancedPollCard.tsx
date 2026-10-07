@@ -457,22 +457,22 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
           />
         </Link>
       )}
-      <div className="flex items-center justify-between gap-3 px-4 pt-3 pb-2">
-        <div className="min-w-0 flex items-center gap-2 text-ink-muted">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 px-4 pt-3 pb-2">
+        <div className="min-w-0 flex items-center gap-2 whitespace-nowrap text-ink-muted">
           <div className="text-xs font-sans font-semibold uppercase tracking-wider">{poll.category.replace(/_/g, " ")}</div>
           <span className="opacity-40">•</span>
           <div className="text-xs font-sans font-medium">{relativeTime}</div>
         </div>
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 shadow-sm">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+              <span className="flex items-center gap-1.5 whitespace-nowrap text-[11px] font-bold tracking-wide text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 shadow-sm">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
               {animatedVotes > 0 ? `${animatedVotes.toLocaleString()} VOTED` : 'BE THE FIRST TO VOTE!'}
             </span>
-              {poll.is_commercial && <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-amber-800 border border-amber-300 shadow-sm">Sponsored</span>}
-              {((poll as any).status === "CLOSED" || (poll as any).is_active === false) && <span className="text-[10px] font-bold uppercase tracking-wider text-ink/60 bg-ink/5 px-2 py-0.5 rounded-full border border-ink/10">Voting Closed</span>}
+              {poll.is_commercial && <span className="whitespace-nowrap rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-amber-800 border border-amber-300 shadow-sm">Sponsored</span>}
+              {((poll as any).status === "CLOSED" || (poll as any).is_active === false) && <span className="whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-ink/60 bg-ink/5 px-2 py-0.5 rounded-full border border-ink/10">Voting Closed</span>}
             </div>
       </div>
 

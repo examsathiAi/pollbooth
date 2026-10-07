@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useSocket } from "@/providers/SocketProvider";
@@ -27,6 +27,23 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
 
   const load = async () => {
     try {
@@ -115,23 +132,24 @@ export function NotificationBell() {
   }, [socket, isConnected, user?.id]);
 
   return (
-    <div className="relative">
+    <div ref={wrapRef} className="relative">
       <button
         onClick={() => {
           setOpen((value) => !value);
           void load();
         }}
-        className="relative rounded-sm border border-paper-border bg-paper-card p-2 text-ink shadow-sm"
+        aria-label="Notifications"
+        className="relative flex h-9 w-9 items-center justify-center rounded-full border border-paper-border/60 bg-paper-card text-ink transition-colors hover:bg-ink/5"
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 ? (
-          <span className="absolute -right-1 -top-1 rounded-full bg-maroon px-1.5 py-0.5 text-[10px] font-semibold text-white">
-            {unreadCount}
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-maroon px-1 text-[10px] font-semibold leading-none text-white">
+            {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         ) : null}
       </button>
       {open ? (
-        <div className="absolute right-0 mt-2 w-80 rounded-sm border border-paper-border bg-paper-card p-3 shadow-xl z-50">
+        <div className="fixed inset-x-3 top-14 z-50 rounded-xl border border-paper-border bg-paper-bg p-3 shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80">
           <div className="mb-2 flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-slate-800">Notifications</p>

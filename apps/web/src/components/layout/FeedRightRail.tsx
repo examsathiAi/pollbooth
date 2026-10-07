@@ -102,7 +102,7 @@ export function FeedRightRail() {
 
         {trending.length > 0 && (
           <section className={cardCls}>
-            <p className={headCls}>Trending now</p>
+            <p className={headCls}>Latest polls</p>
             {trending.map((p) => <PollLink key={p.id} poll={p} />)}
           </section>
         )}

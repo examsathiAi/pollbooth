@@ -58,7 +58,6 @@ export function InsightsSlider() {
           <Sparkles className="h-4 w-4 text-maroon" />
           <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-ink">PollBooth Intelligence & Exit Polls</h3>
         </div>
-        <span className="text-[11px] uppercase tracking-wider text-ink-muted">3-min reads</span>
       </div>
 
       <div className="overflow-x-auto pb-3 scrollbar-auto-hide">

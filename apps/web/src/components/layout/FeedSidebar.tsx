@@ -5,17 +5,16 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
-  Home, Flame, Landmark, Newspaper, Tv, Trophy, MapPin, Shield, HelpCircle, AlertTriangle,
+  Home, Landmark, Newspaper, Tv, Trophy, MapPin, Shield, HelpCircle, AlertTriangle,
   Vote, Users, GraduationCap, HeartPulse, Cpu, Utensils, Plane, Shirt, Car, Building2,
-  Rocket, Briefcase, Leaf, Layers, Banknote, ChevronDown, User,
+  Rocket, Briefcase, Leaf, Layers, Banknote, ChevronDown, User, Search,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 interface NavItem { id: string; label: string; icon: LucideIcon; category?: string }
 
 const BROWSE: NavItem[] = [
-  { id: "for-you", label: "For You", icon: Home },
-  { id: "trending", label: "Trending", icon: Flame },
+  { id: "for-you", label: "Home", icon: Home },
 ];
 
 const TOPICS: NavItem[] = [
@@ -97,6 +96,19 @@ export function FeedSidebar({ activeCategory: propActive, onCategoryChange, forc
 
   return (
     <aside className={forceVisible ? "block w-full space-y-5 pr-1" : "hidden w-full space-y-5 pr-1 lg:block lg:max-h-full lg:overflow-y-auto scrollbar-auto-hide"}>
+      {!forceVisible && (
+        <div className="relative px-1">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+          <input
+            type="text"
+            placeholder="Search polls"
+            aria-label="Search polls"
+            onChange={(e) => window.dispatchEvent(new CustomEvent("globalSearch", { detail: { query: e.target.value } }))}
+            className="h-9 w-full rounded-full border border-paper-border/60 bg-paper-card pl-9 pr-3 text-[14px] text-ink placeholder:text-ink-muted/70 focus:border-maroon focus:outline-none focus:ring-1 focus:ring-maroon/30"
+          />
+        </div>
+      )}
+
       <nav className="space-y-0.5">
         <p className={headCls}>Browse</p>
         {BROWSE.map(renderRow)}
