@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { FeedSidebar } from "@/components/layout/FeedSidebar";
 import { FeedRightRail } from "@/components/layout/FeedRightRail";
 import { NotificationBell } from "@/components/layout/NotificationBell";
-import { Search, Menu, X } from "lucide-react";
+import { Search, Menu, X, User } from "lucide-react";
 
 function initialOf(user: any): string {
   return String(user?.name || user?.username || user?.email || "U").charAt(0).toUpperCase();
@@ -75,10 +75,15 @@ function AccountMenu({ user, logout }: { user: any; logout: () => void }) {
 function AccountControls({ user, logout, compact }: { user: any; logout: () => void; compact?: boolean }) {
   if (!user) {
     return (
-      <div className="flex items-center gap-1">
+      <>
+      <Link href="/auth/login?mode=login" aria-label="Log in or sign up" className="flex h-9 w-9 items-center justify-center rounded-full bg-maroon text-paper-bg transition-opacity hover:opacity-90 sm:hidden">
+        <User className="h-[18px] w-[18px]" />
+      </Link>
+      <div className="hidden items-center gap-1 sm:flex">
         <Link href="/auth/login?mode=login" className="whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium text-ink-muted transition-colors hover:text-ink">Log in</Link>
         <Link href="/auth/login?mode=signup" className="whitespace-nowrap rounded-full bg-maroon px-4 py-1.5 text-sm font-semibold text-paper-bg transition-colors hover:bg-maroon-dark">Sign up</Link>
       </div>
+      </>
     );
   }
   return (
