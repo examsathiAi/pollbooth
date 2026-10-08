@@ -133,6 +133,7 @@ export default async function PollDetailPage({ params }: { params: { id: string 
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLD).replace(/</g, "\\u003c") }}
       />
+      <h1 className="sr-only">{poll.question}</h1>
       <SharedPollLanding
       poll={poll as any}
       insights={<PollDetailClient pollId={params.id} initialPoll={poll} isModalView={true} />}

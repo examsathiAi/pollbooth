@@ -32,6 +32,14 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
     });
   }
 
+  if (err.code === "P2023") {
+    return res.status(400).json({
+      error: "Bad Request",
+      message: "Invalid identifier",
+      requestId,
+    });
+  }
+
   logger.error({
     requestId,
     error: err.message,

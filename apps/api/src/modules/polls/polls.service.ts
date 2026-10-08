@@ -1,4 +1,4 @@
-﻿import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { logger } from "../../common/interceptors/logger";
 import { topicsService } from "../topics/topics.service";
 import type { CreatePollInput } from "./polls.types";
@@ -172,7 +172,9 @@ export class PollsService {
     });
 
     if (!poll) {
-      throw new Error("Poll not found");
+      const error: any = new Error("Poll not found");
+      error.status = 404;
+      throw error;
     }
 
     // Get vote distribution

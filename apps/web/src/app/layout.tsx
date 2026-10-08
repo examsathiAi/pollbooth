@@ -16,7 +16,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "pollbooth.in",
+  title: "PollBooth",
   description: "Vote, share opinions, and see what India thinks.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   icons: {
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     apple: "/favicon.png",
   },
   openGraph: {
-    title: "pollbooth.in",
+    title: "PollBooth",
     description: "Vote, share opinions, and see what India thinks.",
     type: "website",
     images: ["/og-card.png"],
