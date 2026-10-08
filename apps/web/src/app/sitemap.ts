@@ -1,3 +1,5 @@
+import { getPollSlug } from "@/lib/poll-slug";
+
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://pollbooth.in";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -11,15 +13,6 @@ type PollEntry = {
   created_at?: string | null;
 };
 
-function getPollSlug(poll: PollEntry): string {
-  if (poll.slug) return poll.slug;
-  if (poll.hashtags && poll.hashtags.length > 0) {
-    return poll.hashtags.map(h => h.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()).filter(Boolean).join("-");
-  }
-  const q = (poll.question || "").replace(/\b(will|is|are|the|to|a|an|in|on|of|for|with|and|or|do|does|what|how|why|can)\b/gi, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
-  return `${(poll.category || "poll").toLowerCase().replace(/_/g, "-")}-${q}`.slice(0, 75).replace(/-$/, "");
-}
-
 export default async function sitemap() {
   const staticEntries = [
     { url: SITE_URL, lastModified: new Date() },
@@ -28,6 +21,8 @@ export default async function sitemap() {
     { url: `${SITE_URL}/topics`, lastModified: new Date() },
     { url: `${SITE_URL}/privacy`, lastModified: new Date() },
     { url: `${SITE_URL}/terms`, lastModified: new Date() },
+    { url: `${SITE_URL}/about`, lastModified: new Date() },
+    { url: `${SITE_URL}/grievance`, lastModified: new Date() },
   ];
 
   try {
@@ -35,11 +30,25 @@ export default async function sitemap() {
     if (topicRes.ok) {
       const topics = (await topicRes.json()) as TopicEntry[];
       if (Array.isArray(topics)) {
+        const counts = await Promise.all(
+          topics.map(async (topic) => {
+            try {
+              const r = await fetch(`${API_URL}/api/v1/topics/${topic.slug}/polls?limit=1`, { cache: "no-store" });
+              if (!r.ok) return 0;
+              const d = (await r.json()) as { polls?: unknown[] };
+              return Array.isArray(d.polls) ? d.polls.length : 0;
+            } catch {
+              return 0;
+            }
+          })
+        );
         staticEntries.push(
-          ...topics.map((topic) => ({
-            url: `${SITE_URL}/topics/${topic.slug}`,
-            lastModified: new Date(),
-          }))
+          ...topics
+            .filter((_, i) => counts[i] > 0)
+            .map((topic) => ({
+              url: `${SITE_URL}/topics/${topic.slug}`,
+              lastModified: new Date(),
+            }))
         );
       }
     }
