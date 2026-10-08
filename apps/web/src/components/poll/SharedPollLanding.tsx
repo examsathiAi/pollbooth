@@ -135,7 +135,7 @@ export function SharedPollLanding({ poll, insights }: { poll: AnyPoll; insights:
       
 
       <div ref={moreRef} className="scroll-mt-24">
-        <h2 className="mb-4 text-lg font-semibold tracking-tight text-ink">Aur polls mein vote karo</h2>
+        <h2 className="mb-4 text-lg font-semibold tracking-tight text-ink">Give your voice on more topics</h2>
         <div className="space-y-4">
           {others.map((p, i) => (
             <EnhancedPollCard key={p.id} poll={p as any} index={i} />

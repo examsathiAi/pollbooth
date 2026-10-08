@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -113,7 +113,8 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
   const [pressedReaction, setPressedReaction] = useState<string | null>(null);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
   const [showVoteToast, setShowVoteToast] = useState(false);
-  const [showSharePrompt, setShowSharePrompt] = useState(false);
+  const [shareGlow, setShareGlow] = useState(false);
+  const [toastErr, setToastErr] = useState<string | null>(null);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(Date.now());
   const [showGate, setShowGate] = useState(false);
@@ -315,8 +316,9 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       setUserVoteIndex(pollRes.data.user_vote_index ?? index);
       setFeedback("✓ Your vote is recorded");
       setShowVoteToast(true);
-      setShowSharePrompt(true);
-      window.setTimeout(() => setShowVoteToast(false), 1400);
+      setShareGlow(true);
+      window.setTimeout(() => setShowVoteToast(false), 2000);
+        window.setTimeout(() => setShareGlow(false), 8000);
       onVoteComplete?.(index);
 
       const serverTotal = pollRes.data.total_votes || 0;
@@ -339,7 +341,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         }
       } catch (err) {}
     } catch (err: any) {
-      alert(err.response?.data?.message || "Failed to vote");
+      setToastErr(err.response?.data?.message || "Could not record your vote. Please try again."); window.setTimeout(() => setToastErr(null), 3500);
       setResults(prevResults);
       setTotalVotes(prevTotalVotes);
       setAnimatedVotes(prevTotalVotes);
@@ -391,7 +393,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
       setOpinions(res.data.opinions || []);
       setOpinionsTotal(res.data.pagination?.total || 0);
     } catch (err: any) {
-      alert(err.response?.data?.message || "Failed to post opinion");
+      setToastErr(err.response?.data?.message || "Could not post your comment. Please try again."); window.setTimeout(() => setToastErr(null), 3500);
     } finally {
       setIsPostingOpinion(false);
     }
@@ -434,8 +436,6 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
     }
   };
 
-  const myChoice = userVoteIndex !== null && userVoteIndex !== undefined ? poll.options[userVoteIndex] : null;
-  const friendText = `${myChoice ? `Maine "${myChoice}" ko vote kiya. ` : ""}Tum kya chunoge? ${typeof window !== "undefined" ? window.location.origin : ""}${pollUrl}`;
   const relativeTime = poll.created_at ? formatRelativeTime(poll.created_at) : "just now";
 
   return (
@@ -573,33 +573,6 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         </div>
       )}
 
-      {showSharePrompt && hasVoted && (
-        <div className="mx-4 mb-3 rounded-xl border border-paper-border bg-paper-bg p-3">
-          <div className="flex items-start justify-between gap-3">
-            <p className="text-sm font-semibold text-ink">Vote record ho gaya. Ab ek dost ko bhejo.</p>
-            <button onClick={() => setShowSharePrompt(false)} aria-label="Dismiss" className="text-ink-muted hover:text-ink">&times;</button>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              onClick={() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(friendText)}`, "_blank", "noopener,noreferrer")}
-              className="rounded-xl bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-            >
-              Send to a friend on WhatsApp
-            </button>
-            <button
-              onClick={() => setShowShareMenu(true)}
-              className="rounded-xl border border-paper-border px-4 py-2.5 text-sm font-medium text-ink transition-all hover:bg-ink/5"
-            >
-              More ways to share
-            </button>
-            {!user && (
-              <Link href={`/auth/login?mode=signup&redirect=${pollUrl}`} className="rounded-xl bg-ink px-4 py-2.5 text-sm font-medium text-paper-bg transition-all hover:bg-ink/90">
-                Sign up free to share your opinion
-              </Link>
-            )}
-          </div>
-        </div>
-      )}
       <div className="flex items-center justify-between gap-2 border-t border-paper-border/60 px-4 py-3 bg-transparent">
         <div className="flex items-center gap-4">
           <div
@@ -651,7 +624,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
           </HintTip>
           <div className="relative flex items-center">
             <HintTip text="Share this poll on WhatsApp, X, Facebook and more">
-            <button onClick={() => setShowShareMenu(!showShareMenu)} className="text-xs font-medium text-ink-muted hover:text-ink flex items-center gap-1.5 transition-colors">
+            <button onClick={() => { setShareGlow(false); setShowShareMenu(!showShareMenu); }} className={"text-xs font-medium flex items-center gap-1.5 transition-colors " + (shareGlow ? "rounded-full bg-maroon/10 px-3 py-1.5 font-semibold text-maroon ring-2 ring-maroon/30 animate-pulse" : "text-ink-muted hover:text-ink")}>
               <Share2 className="w-4 h-4" />
               Share
             </button>
@@ -683,18 +656,10 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
 
       {showComments && (
       <div className="border-t border-paper-border/60 bg-transparent px-4 py-5 animate-in fade-in slide-in-from-top-2 duration-300">
-        <div className="mb-4 flex items-center justify-between">
-          <p className="text-sm font-semibold tracking-tight text-ink">Discussion</p>
-        </div>
-
         {isLoadingOpinions ? (
           <p className="text-sm text-ink-muted animate-pollbooth">Loading comments…</p>
         ) : opinions.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-paper-border bg-transparent px-4 py-3 text-sm text-ink-muted text-center font-medium">
-            {poll.end_date && new Date(poll.end_date) < new Date()
-              ? "No comments were posted on this poll."
-              : "Be the first to share your thoughts."}
-          </div>
+          poll.end_date && new Date(poll.end_date) < new Date() ? <p className="text-center text-sm text-ink-muted">No comments were posted on this poll.</p> : null
         ) : (
           <div className="space-y-3">
             {/* Render Only Parent Opinions */}
@@ -810,6 +775,13 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         </div>
       </div>
       )}
+
+      {(showVoteToast || toastErr) && typeof document !== "undefined" && createPortal(
+        <div role="status" className="pointer-events-none fixed inset-0 z-[110] flex items-center justify-center px-4 pb-[16vh]">
+          <div className="max-w-xs rounded-2xl bg-white px-6 py-4 text-center shadow-[0_14px_44px_rgba(31,27,24,0.2)] ring-1 ring-[#d8ceb8] animate-in fade-in zoom-in-95 duration-200">
+            {toastErr ? (<span className="text-sm font-semibold text-[#7a1f10]">{toastErr}</span>) : (<><span className="block text-base font-semibold text-[#7a1f10]">Thank you for voting.</span><span className="mt-0.5 block text-sm font-medium text-[#9a6700]">Share your view with your friends.</span></>)}
+          </div>
+        </div>, document.body)}
 
       <ProgressiveGateModal isOpen={showGate} onClose={() => setShowGate(false)} onSelect={(value) => { if (typeof window !== "undefined") window.localStorage.setItem(`pollbooth-cohort:${poll.id}`, value); setShowGate(false); }} />
     

@@ -40,7 +40,18 @@ const TOPICS: NavItem[] = [
   { id: "other", label: "Other", icon: Layers, category: "OTHER" },
 ];
 
-const VISIBLE_TOPICS = 8;
+interface Group { id: string; label: string; icon: LucideIcon; items: string[] }
+
+const GROUPS: Group[] = [
+  { id: "g-news", label: "Politics & News", icon: Newspaper, items: ["politics", "news", "civic", "local"] },
+  { id: "g-fun", label: "Entertainment & Sports", icon: Trophy, items: ["bollywood", "sports"] },
+  { id: "g-money", label: "Money & Careers", icon: Briefcase, items: ["economy", "startups", "real-estate", "work-culture", "education"] },
+  { id: "g-tech", label: "Tech & Auto", icon: Cpu, items: ["tech", "auto"] },
+  { id: "g-society", label: "Society & Health", icon: Users, items: ["social", "health", "environment", "other"] },
+  { id: "g-life", label: "Lifestyle", icon: Utensils, items: ["food", "travel", "fashion"] },
+];
+
+const byId = (id: string) => TOPICS.find((t) => t.id === id) as NavItem;
 
 const rowCls = (active: boolean) =>
   "flex w-full items-center gap-2.5 rounded-lg border-l-2 px-3 py-2 text-left text-[14px] font-medium transition-colors duration-150 " +
@@ -59,12 +70,11 @@ export function FeedSidebar({ activeCategory: propActive, onCategoryChange, forc
   const pathname = usePathname();
   const { user } = useAuth();
   const [localActive, setLocalActive] = useState(propActive || "for-you");
-  const [expanded, setExpanded] = useState(false);
+  const [openGroup, setOpenGroup] = useState<string | null>(
+    GROUPS.find((g) => g.items.includes(propActive || "for-you"))?.id ?? "g-news"
+  );
 
   const currentActive = propActive !== undefined ? propActive : localActive;
-  const hiddenActive = TOPICS.findIndex((t) => t.id === currentActive) >= VISIBLE_TOPICS;
-  const showAll = !!forceVisible || expanded || hiddenActive;
-  const topics = showAll ? TOPICS : TOPICS.slice(0, VISIBLE_TOPICS);
 
   const handleNav = (id: string, category?: string) => {
     if (typeof onCategoryChange === "function") {
@@ -94,6 +104,30 @@ export function FeedSidebar({ activeCategory: propActive, onCategoryChange, forc
     );
   };
 
+  const renderGroup = (g: Group) => {
+    const Icon = g.icon;
+    const isOpen = openGroup === g.id;
+    const hasActive = g.items.includes(currentActive);
+    return (
+      <div key={g.id}>
+        <button
+          onClick={(e) => { e.stopPropagation(); setOpenGroup(isOpen ? null : g.id); }}
+          aria-expanded={isOpen}
+          className={"flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[14px] font-semibold transition-colors duration-150 hover:bg-paper-card " + (hasActive ? "text-maroon" : "text-ink")}
+        >
+          <Icon className={"h-[18px] w-[18px] shrink-0 " + (hasActive ? "text-maroon" : "text-ink-muted")} />
+          <span className="flex-1 truncate">{g.label}</span>
+          <ChevronDown className={"h-4 w-4 shrink-0 text-ink-muted transition-transform duration-200 " + (isOpen ? "rotate-180" : "")} />
+        </button>
+        {isOpen && (
+          <div className="mt-0.5 space-y-0.5 pl-6">
+            {g.items.map((id) => renderRow(byId(id)))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <aside className={forceVisible ? "block w-full space-y-5 pr-1" : "hidden w-full space-y-5 pr-1 lg:block lg:max-h-full lg:overflow-y-auto scrollbar-auto-hide"}>
       {!forceVisible && (
@@ -116,17 +150,7 @@ export function FeedSidebar({ activeCategory: propActive, onCategoryChange, forc
 
       <nav className="space-y-0.5">
         <p className={headCls}>Topics</p>
-        {topics.map(renderRow)}
-        {!forceVisible && !hiddenActive && (
-          <button
-            onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
-            aria-expanded={expanded}
-            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-ink-muted transition-colors hover:text-ink"
-          >
-            <ChevronDown className={"h-[18px] w-[18px] shrink-0 transition-transform duration-200 " + (expanded ? "rotate-180" : "")} />
-            <span>{expanded ? "Fewer topics" : "More topics"}</span>
-          </button>
-        )}
+        {GROUPS.map(renderGroup)}
       </nav>
 
       {user && (
