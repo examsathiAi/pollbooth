@@ -89,7 +89,7 @@ export function PlatformHealth() {
                     {detail.status}
                   </span>
                 </div>
-                <p className="mt-3 text-sm text-[#625a50]">Latency: {detail.latency_ms ?? "n/a"} ms</p>
+                <p className="mt-3 text-sm text-[#625a50]">{(detail as any).latency_ms == null ? ((detail as any).uptime_seconds != null ? "Running for " + Math.floor((detail as any).uptime_seconds / 3600) + " h " + Math.floor(((detail as any).uptime_seconds % 3600) / 60) + " min" : "Not measured") : "Response time: " + (detail as any).latency_ms + " ms"}</p>
               </div>
             ))}
           </div>

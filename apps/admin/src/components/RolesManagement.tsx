@@ -1,138 +1,153 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ShieldCheck, Key, UserPlus, Trash2, History, Loader2, AlertCircle } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Loader2, UserPlus } from "lucide-react";
 import { api } from "@/lib/api";
+import { BTN_DANGER, BTN_PRIMARY, CARD, ConfirmDialog, INPUT, Notice, PageHeader, SearchBox, Spinner, errText, fmtDate } from "@/components/ui";
 
-interface StaffMember {
-  id: string;
-  phone?: string;
-  role: string;
-}
-
-const AVAILABLE_ROLES = [
-  { id: "MODERATOR", label: "Moderator", desc: "Can manage civic issues and content flags." },
-  { id: "ADMIN", label: "Administrator", desc: "Can manage polls, surveys, and standard users." },
-  { id: "SUPER_ADMIN", label: "Super Admin", desc: "Full system access, including billing and roles." },
+const ROLES = [
+  { id: "MODERATOR", label: "Moderator", desc: "Reviews comments, reports and civic issues." },
+  { id: "ADMIN", label: "Admin", desc: "Everything a Moderator does, plus create, edit, approve and control polls, and view members." },
+  { id: "SUPER_ADMIN", label: "Super Admin", desc: "Full control, including the team, activity log, compliance and system health." },
 ];
 
-export function RolesManagement() {
-  const [staff, setStaff] = useState<StaffMember[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-  
-  const [invitePhone, setInvitePhone] = useState("");
-  const [inviteRole, setInviteRole] = useState("MODERATOR");
-  const [isProcessing, setIsProcessing] = useState(false);
+const roleLabel = (r: string) => ROLES.find((x) => x.id === r)?.label || r;
 
-  useEffect(() => {
-    const fetchStaffRoles = async () => {
-      try {
-        const res = await api.get("/api/v1/admin/roles");
-        setStaff(res.data?.users || []);
-      } catch (err: any) {
-        setError("Failed to load role assignments.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchStaffRoles();
+export function RolesManagement() {
+  const [team, setTeam] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [q, setQ] = useState("");
+  const [roleFilter, setRoleFilter] = useState("ALL");
+  const [email, setEmail] = useState("");
+  const [newRole, setNewRole] = useState("MODERATOR");
+  const [adding, setAdding] = useState(false);
+  const [confirm, setConfirm] = useState<{ m: any; kind: "role" | "remove"; role?: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await api.get("/api/v1/admin/team");
+      setTeam(res.data.team || []);
+    } catch (err: any) {
+      setNotice({ kind: "err", text: errText(err, "Could not load the team.") });
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const handleGrantAccess = async (e: React.FormEvent) => {
+  useEffect(() => { load(); }, [load]);
+
+  const add = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!invitePhone.trim()) return;
-    
-    setIsProcessing(true);
+    if (!email.trim()) return;
+    setAdding(true);
     try {
-      const userRes = await api.get("/api/v1/admin/users", { params: { search: invitePhone, limit: 1 } });
-      const user = userRes.data?.users?.[0] || (Array.isArray(userRes.data) ? userRes.data[0] : null);
-      
-      if (!user) {
-        throw new Error("User not found on platform. They must register first.");
-      }
-      
-      await api.patch("/api/v1/admin/roles/" + user.id, { role: inviteRole });
-      
-      setStaff(prev => [...prev, { id: user.id, phone: invitePhone, role: inviteRole }]);
-      setInvitePhone("");
-      alert("Successfully provisioned access.");
+      await api.post("/api/v1/admin/team/add", { email: email.trim(), role: newRole });
+      setNotice({ kind: "ok", text: "Added to the team. They can sign in at admin.pollbooth.in with their email." });
+      setEmail("");
+      await load();
     } catch (err: any) {
-      alert(err.message || "Failed to grant access.");
+      setNotice({ kind: "err", text: errText(err, "Could not add this person.") });
     } finally {
-      setIsProcessing(false);
+      setAdding(false);
     }
   };
 
-  const handleRevokeAccess = async (id: string) => {
-    if (!confirm("Are you sure you want to completely revoke admin access for this user?")) return;
+  const run = async (reason: string) => {
+    if (!confirm) return;
+    setBusy(true);
     try {
-      await api.patch("/api/v1/admin/roles/" + id, { role: "USER" });
-      setStaff(prev => prev.filter(s => s.id !== id));
-    } catch (err) {
-      alert("Failed to revoke access.");
+      if (confirm.kind === "role") await api.patch(`/api/v1/admin/team/${confirm.m.id}`, { role: confirm.role, reason: reason || undefined });
+      else await api.post(`/api/v1/admin/team/${confirm.m.id}/remove`, { reason: reason || undefined });
+      setNotice({ kind: "ok", text: "Done. It is recorded in the activity log and takes effect immediately." });
+      setConfirm(null);
+      await load();
+    } catch (err: any) {
+      setNotice({ kind: "err", text: errText(err, "That change failed. Nothing was changed.") });
+      setConfirm(null);
+    } finally {
+      setBusy(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-      </div>
-    );
-  }
+  const shown = team.filter((m) => {
+    if (roleFilter !== "ALL" && m.role !== roleFilter) return false;
+    const hay = `${m.username || ""} ${m.name || ""} ${m.email || ""}`.toLowerCase();
+    return hay.includes(q.trim().toLowerCase());
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Enterprise Access & Roles</h2>
-          <p className="mt-1 text-sm text-slate-500">Manage zero-trust staff permissions, invite team members, and audit system actions.</p>
-        </div>
-        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
-          <Key className="h-4 w-4"/> RBAC Enforced
-        </div>
+    <section className="space-y-5">
+      <PageHeader eyebrow="Team & roles" title="Who can run PollBooth" hint="Add employees by email, change what they can do, or remove their access in one click." />
+      {notice ? <Notice kind={notice.kind} text={notice.text} onClose={() => setNotice(null)} /> : null}
+
+      <div className={CARD + " p-5"}>
+        <h3 className="flex items-center gap-2 text-base font-semibold"><UserPlus className="h-4 w-4 text-[#7a1f10]" /> Add a team member</h3>
+        <p className="mt-1 text-xs text-[#625a50]">They must first sign up on pollbooth.in with the same email. Then add them here and choose a role.</p>
+        <form onSubmit={add} className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="employee@example.com" className={INPUT} />
+          <select value={newRole} onChange={(e) => setNewRole(e.target.value)} className={INPUT + " sm:max-w-[180px]"}>
+            {ROLES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+          </select>
+          <button type="submit" disabled={adding} className={BTN_PRIMARY + " whitespace-nowrap"}>
+            {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Add to team
+          </button>
+        </form>
+        <ul className="mt-4 space-y-1 text-xs text-[#625a50]">
+          {ROLES.map((r) => <li key={r.id}><span className="font-semibold text-[#1f1b18]">{r.label}:</span> {r.desc}</li>)}
+        </ul>
       </div>
-      {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</div>}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2 mb-4">
-              <UserPlus className="h-5 w-5 text-indigo-600" /> Provision Staff Access
-            </h3>
-            <form onSubmit={handleGrantAccess} className="flex flex-col sm:flex-row gap-3">
-              <input type="text" placeholder="User Phone Number" value={invitePhone} onChange={(e) => setInvitePhone(e.target.value)} required className="flex-1 rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:bg-white focus:ring-1 focus:ring-indigo-500" />
-              <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:bg-white focus:ring-1 focus:ring-indigo-500">
-                {AVAILABLE_ROLES.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
-              </select>
-              <button type="submit" disabled={isProcessing} className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60">
-                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Grant Access"}
-              </button>
-            </form>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="border-b border-slate-100 p-5 bg-slate-50/50">
-              <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-emerald-600" /> Active System Administrators
-              </h3>
-            </div>
-            <div className="divide-y divide-slate-100">
-              {staff.length > 0 ? staff.map((member) => (
-                <div key={member.id} className="flex items-center justify-between p-5 hover:bg-slate-50 transition-colors">
-                  <div>
-                    <div className="font-semibold text-slate-900">{member.phone || "Hidden"}</div>
-                    <div className="text-[10px] text-slate-400 font-mono mt-0.5">ID: {member.id}</div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700">{member.role.replace('_', ' ')}</span>
-                    <button onClick={() => handleRevokeAccess(member.id)} className="text-slate-400 hover:text-rose-600 transition-colors"><Trash2 className="h-4 w-4" /></button>
-                  </div>
+
+      <div className={CARD + " space-y-4 p-4"}>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <SearchBox value={q} onChange={setQ} placeholder="Search name or email" />
+          <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className={INPUT + " sm:max-w-[200px]"}>
+            <option value="ALL">All roles</option>
+            {ROLES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+          </select>
+        </div>
+
+        {loading ? <Spinner /> : shown.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-[#d8ceb8] p-8 text-center text-sm text-[#625a50]">No team members match.</div>
+        ) : (
+          <div className="space-y-3">
+            {shown.map((m) => (
+              <article key={m.id} className="flex flex-col gap-3 rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-4 md:flex-row md:items-center md:justify-between">
+                <div className="min-w-0">
+                  <p className="font-semibold text-[#1f1b18]">{m.name || m.username || "Staff member"}{m.is_you ? <span className="ml-2 rounded-full bg-[#7a1f10] px-2 py-0.5 text-[10px] font-bold text-white">You</span> : null}</p>
+                  <p className="text-xs text-[#625a50]">{m.email || "No email on this account"}</p>
+                  <p className="mt-1 text-xs text-[#625a50]">Last active {fmtDate(m.last_active_at)}{!m.is_active ? " \u2022 Inactive" : ""}{m.is_banned ? " \u2022 Banned" : ""}</p>
                 </div>
-              )) : <div className="p-8 text-center text-sm text-slate-500">No elevated roles found.</div>}
-            </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={m.role}
+                    disabled={m.is_you}
+                    onChange={(e) => setConfirm({ m, kind: "role", role: e.target.value })}
+                    className={INPUT + " w-auto"}
+                  >
+                    {ROLES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+                  </select>
+                  {!m.is_you ? <button type="button" className={BTN_DANGER} onClick={() => setConfirm({ m, kind: "remove" })}>Remove access</button> : null}
+                </div>
+              </article>
+            ))}
           </div>
-        </div>
+        )}
       </div>
-    </div>
+
+      {confirm ? (
+        <ConfirmDialog
+          title={confirm.kind === "role" ? `Change role to ${roleLabel(confirm.role || "")}?` : "Remove staff access?"}
+          body={confirm.kind === "role" ? `${confirm.m.name || confirm.m.username || "This person"} will be ${roleLabel(confirm.role || "")} from their next click.` : `${confirm.m.name || confirm.m.username || "This person"} becomes an ordinary member and loses all admin access immediately.`}
+          confirmLabel={confirm.kind === "role" ? "Change role" : "Remove access"}
+          danger={confirm.kind === "remove"}
+          askReason
+          busy={busy}
+          onCancel={() => setConfirm(null)}
+          onConfirm={run}
+        />
+      ) : null}
+    </section>
   );
 }

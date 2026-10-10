@@ -1,155 +1,158 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Shield, Search, Loader2, UserX, Activity, Ban } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
-
-interface PlatformUser {
-  id: string;
-  phone_number?: string;
-  state?: string;
-  is_active: boolean;
-  is_banned: boolean;
-  created_at: string;
-  stats: { votes: number; opinions: number };
-}
+import { BTN, BTN_DANGER, CARD, ConfirmDialog, INPUT, Notice, PageHeader, Pager, SearchBox, Spinner, Tabs, errText, fmtDate, useDebounced } from "@/components/ui";
 
 export function UserManagement() {
-  const [users, setUsers] = useState<PlatformUser[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [status, setStatus] = useState("ALL");
+  const [q, setQ] = useState("");
+  const dq = useDebounced(q);
+  const [page, setPage] = useState(1);
+  const [rows, setRows] = useState<any[]>([]);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [dlg, setDlg] = useState<{ m: any; kind: "ban" | "unban" } | null>(null);
+  const [banKind, setBanKind] = useState("COMMENTS");
+  const [days, setDays] = useState(7);
+  const [reason, setReason] = useState("");
+  const [formErr, setFormErr] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await api.get("/api/v1/admin/users", { params: { search: searchQuery, limit: 50 } });
-        setUsers(res.data.users || []);
-      } catch (err: any) {
-        setError("Failed to load user database");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    // Fetch immediately on load, and setup debounce for search
-    const delayDebounceFn = setTimeout(() => {
-      fetchUsers();
-    }, 500);
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
-
-  const handleBanUser = async (id: string) => {
-    if (!confirm("Are you sure you want to ban this user?")) return;
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      await api.post("/api/v1/moderation/users/" + id + "/ban", { reason: "Admin dashboard intervention" });
-      setUsers(prev => prev.map(u => u.id === id ? { ...u, is_banned: true } : u));
+      const res = await api.get("/api/v1/admin/members", { params: { status, q: dq, page, limit: 20 } });
+      setRows(res.data.members || []);
+      setCounts(res.data.counts || {});
+      setTotalPages(res.data.pagination?.total_pages || 1);
     } catch (err: any) {
-      alert(err.response?.data?.message || "Failed to ban user. Check payload schema.");
+      setNotice({ kind: "err", text: errText(err, "Could not load members.") });
+    } finally {
+      setLoading(false);
+    }
+  }, [status, dq, page]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const open = (m: any, kind: "ban" | "unban") => {
+    setDlg({ m, kind });
+    setBanKind("COMMENTS");
+    setDays(7);
+    setReason("");
+    setFormErr("");
+  };
+
+  const run = async () => {
+    if (!dlg) return;
+    if (dlg.kind === "ban" && reason.trim().length < 3) { setFormErr("Please write a short reason (at least 3 characters)."); return; }
+    setBusy(true);
+    try {
+      if (dlg.kind === "ban") {
+        await api.post(`/api/v1/admin/members/${dlg.m.id}/ban`, { kind: banKind, days: banKind === "COMMENTS" ? days : undefined, reason: reason.trim() });
+      } else {
+        await api.post(`/api/v1/admin/members/${dlg.m.id}/unban`, { reason: reason.trim() || undefined });
+      }
+      setNotice({ kind: "ok", text: "Done and recorded in the activity log." });
+      setDlg(null);
+      await load();
+    } catch (err: any) {
+      setNotice({ kind: "err", text: errText(err, "That action failed. Nothing was changed.") });
+      setDlg(null);
+    } finally {
+      setBusy(false);
     }
   };
 
-  if (isLoading && users.length === 0) {
-    return (
-      <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-      </div>
-    );
-  }
+  const restricted = (m: any) => m.is_banned || (m.comment_banned_until && new Date(m.comment_banned_until) > new Date());
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Community Directory & Governance</h2>
-          <p className="mt-1 text-sm text-slate-500">Reflecting 100% real database metrics. Showing verified user engagement and ban status.</p>
-        </div>
+    <section className="space-y-5">
+      <PageHeader eyebrow="Members" title="Everyone on the platform" hint="Search members, see how active they are, and restrict or restore accounts. Emails and phone numbers are partly hidden to protect privacy." />
+      {notice ? <Notice kind={notice.kind} text={notice.text} onClose={() => setNotice(null)} /> : null}
+
+      <div className={CARD + " space-y-4 p-4"}>
+        <Tabs
+          active={status}
+          onChange={(s) => { setStatus(s); setPage(1); }}
+          items={[
+            { id: "ALL", label: "All members", count: counts.ALL },
+            { id: "ACTIVE", label: "Not banned", count: counts.ACTIVE },
+            { id: "WARNED", label: "Warned or restricted", count: counts.WARNED },
+            { id: "BANNED", label: "Banned", count: counts.BANNED },
+          ]}
+        />
+        <SearchBox value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="Search name, username, email or city" />
+
+        {loading ? <Spinner /> : rows.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-[#d8ceb8] p-8 text-center text-sm text-[#625a50]">No members match.</div>
+        ) : (
+          <div className="space-y-3">
+            {rows.map((m) => (
+              <article key={m.id} className="flex flex-col gap-3 rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-4 md:flex-row md:items-center md:justify-between">
+                <div className="min-w-0">
+                  <p className="font-semibold text-[#1f1b18]">
+                    {m.name || m.username || "Member"}
+                    {m.role !== "USER" ? <span className="ml-2 rounded-full bg-[#7a1f10] px-2 py-0.5 text-[10px] font-bold text-white">{m.role.replace("_", " ")}</span> : null}
+                    {m.is_banned ? <span className="ml-2 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">Banned</span> : null}
+                    {!m.is_banned && m.comment_banned_until && new Date(m.comment_banned_until) > new Date() ? <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">No comments until {fmtDate(m.comment_banned_until)}</span> : null}
+                  </p>
+                  <p className="text-xs text-[#625a50]">@{m.username || "-"} {"•"} {m.email || m.phone || "no contact on file"} {"•"} {[m.city, m.state].filter(Boolean).join(", ") || "location unknown"}</p>
+                  <p className="mt-1 text-xs text-[#625a50]">{m.votes} votes {"•"} {m.comments} comments {"•"} {m.warnings} warnings {"•"} joined {fmtDate(m.created_at)} {"•"} last active {fmtDate(m.last_active_at)}</p>
+                  {m.is_banned && m.ban_reason ? <p className="mt-1 text-xs text-rose-700">Reason: {m.ban_reason}</p> : null}
+                </div>
+                <div className="flex gap-2">
+                  {m.role === "USER" ? (
+                    restricted(m)
+                      ? <button type="button" className={BTN} onClick={() => open(m, "unban")}>Restore</button>
+                      : <button type="button" className={BTN_DANGER} onClick={() => open(m, "ban")}>Restrict</button>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+        <Pager page={page} totalPages={totalPages} onPage={setPage} />
       </div>
 
-      {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</div>}
-
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="border-b border-slate-100 p-4 bg-slate-50/50 flex flex-col sm:flex-row gap-4 justify-between items-center">
-          <div className="relative w-full max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="Search by phone or username..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-4 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-            />
-          </div>
-          <div className="flex gap-2 text-xs font-medium text-slate-500">
-            <span className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 shadow-sm">Loaded: {users.length}</span>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600">
-            <thead className="bg-slate-50 text-xs uppercase text-slate-500 border-b border-slate-200">
-              <tr>
-                <th className="px-6 py-4 font-semibold">User Identity</th>
-                <th className="px-6 py-4 font-semibold">Location</th>
-                <th className="px-6 py-4 font-semibold">Real Engagement</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
-                <th className="px-6 py-4 font-semibold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {users.length > 0 ? (
-                users.map((user) => (
-                  <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-slate-900">{user.phone_number || "Hidden (Privacy)"}</div>
-                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">ID: {user.id.substring(0, 12)}...</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
-                        {user.state || "Unknown"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-xs text-slate-600 font-semibold">
-                        <span className="text-indigo-600">{user.stats?.votes ?? 0}</span> Votes • <span className="text-emerald-600">{user.stats?.opinions ?? 0}</span> Opinions
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {user.is_banned ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-100 px-2 py-1 rounded">
-                          <UserX className="h-3 w-3" /> Banned
-                        </span>
-                      ) : !user.is_active ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-600 bg-slate-200 px-2 py-1 rounded">
-                          <Shield className="h-3 w-3" /> Inactive
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-1 rounded">
-                          <Activity className="h-3 w-3" /> Active
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button 
-                        onClick={() => handleBanUser(user.id)}
-                        className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                        title="Ban / Suspend"
-                      >
-                        <Ban className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                    No users found matching query.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+      {dlg ? (
+        <ConfirmDialog
+          title={dlg.kind === "ban" ? "Restrict this member" : "Remove all restrictions?"}
+          body={dlg.kind === "ban" ? `${dlg.m.name || dlg.m.username || "This member"} will be restricted as chosen below.` : `${dlg.m.name || dlg.m.username || "This member"} can vote and comment again.`}
+          confirmLabel={dlg.kind === "ban" ? "Restrict" : "Restore access"}
+          danger={dlg.kind === "ban"}
+          busy={busy}
+          onCancel={() => setDlg(null)}
+          onConfirm={run}
+        >
+          {dlg.kind === "ban" ? (
+            <div className="space-y-3">
+              <label className="block text-sm"><span className="mb-1 block font-medium">What to restrict</span>
+                <select value={banKind} onChange={(e) => setBanKind(e.target.value)} className={INPUT}>
+                  <option value="COMMENTS">Comments only (they can still vote)</option>
+                  <option value="ACCOUNT">Whole account (they are signed out)</option>
+                </select>
+              </label>
+              {banKind === "COMMENTS" ? (
+                <label className="block text-sm"><span className="mb-1 block font-medium">For how long</span>
+                  <select value={days} onChange={(e) => setDays(Number(e.target.value))} className={INPUT}>
+                    <option value={7}>7 days</option>
+                    <option value={30}>30 days</option>
+                    <option value={90}>90 days</option>
+                    <option value={365}>1 year</option>
+                  </select>
+                </label>
+              ) : null}
+            </div>
+          ) : null}
+          <label className="mt-3 block text-sm"><span className="mb-1 block font-medium">Reason {dlg.kind === "ban" ? "(required)" : "(optional)"}</span>
+            <input value={reason} onChange={(e) => { setReason(e.target.value); setFormErr(""); }} maxLength={300} className={INPUT} />
+          </label>
+          {formErr ? <p className="mt-2 text-sm text-rose-600">{formErr}</p> : null}
+        </ConfirmDialog>
+      ) : null}
+    </section>
   );
 }

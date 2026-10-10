@@ -83,7 +83,7 @@ export function PollCreationPanel() {
     }, 10);
   }, [aiContent, question, options]);
 
-  const optionSummary = useMemo(() => options.filter(Boolean).join(" â€¢ "), [options]);
+  const optionSummary = useMemo(() => options.filter(Boolean).join(" • "), [options]);
   const canGenerate = Boolean(question.trim()) && Boolean(category.trim());
 
   const updateOption = (index: number, value: string) => {
@@ -225,7 +225,7 @@ export function PollCreationPanel() {
       };
 
       await api.post("/api/v1/polls", payload);
-      setMessage("Poll created successfully with state and demographic targeting applied.");
+      setMessage("Poll saved for review. Open Polls → Review to approve it and make it live.");
       setQuestion("");
       setOptions(["Yes", "No"]);
       setCategory("CIVIC");
@@ -247,9 +247,9 @@ export function PollCreationPanel() {
     <section className="rounded-3xl border border-[#d8ceb8] bg-[#fffdf9] p-6 shadow-sm">
       <div className="mb-5 flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.25em] text-[#7a2e2e]">Poll creation</p>
-          <h2 className="text-xl font-semibold text-[#1f1b18]">Create a new admin-authored poll</h2>
-          <p className="mt-2 text-sm text-[#625a50]">Build organic polls or highly targeted commercial surveys by state & demographics.</p>
+          <p className="text-sm font-medium uppercase tracking-[0.25em] text-[#7a1f10]">Poll creation</p>
+          <h2 className="text-xl font-semibold text-[#1f1b18]">Create a new poll</h2>
+          <p className="mt-2 text-sm text-[#625a50]">Fill in the question and options, then save it. It goes to the review queue before anyone sees it.</p>
         </div>
       </div>
 
@@ -272,9 +272,9 @@ export function PollCreationPanel() {
         <div className="flex items-center justify-between gap-3">
           <label className="block flex-1">
             <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Question</span>
-            <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={question} onChange={(e) => setQuestion(e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-3 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" placeholder="What should the community weigh in on?" required />
+            <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={question} onChange={(e) => setQuestion(e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-3 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]" placeholder="What should the community weigh in on?" required />
           </label>
-          <button type="button" onClick={handleGenerate} disabled={isGenerating || !canGenerate} className="inline-flex items-center gap-2 rounded-2xl bg-[#7a2e2e] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#7a2e2e]-dark disabled:opacity-60">
+          <button type="button" onClick={handleGenerate} disabled={isGenerating || !canGenerate} className="inline-flex items-center gap-2 rounded-2xl bg-[#7a1f10] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#5c1709] disabled:opacity-60">
             {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Generate AI Content
           </button>
         </div>
@@ -282,7 +282,7 @@ export function PollCreationPanel() {
         <div className="grid gap-4 md:grid-cols-2">
           <label className="block">
             <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Poll Duration</span>
-            <select value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-3 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]">
+            <select value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-3 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]">
               <option value={1}>24 Hours</option>
               <option value={3}>3 Days</option>
               <option value={7}>1 Week</option>
@@ -292,7 +292,7 @@ export function PollCreationPanel() {
 
           <label className="block">
             <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Category</span>
-            <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-3 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]">
+            <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-3 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]">
               {CATEGORY_OPTIONS.map((value) => <option key={value} value={value}>{value}</option>)}
             </select>
           </label>
@@ -301,7 +301,7 @@ export function PollCreationPanel() {
         {/* Commercial Audience Targeting Suite */}
         <div className="rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-4">
           <button type="button" onClick={() => setShowTargeting(!showTargeting)} className="flex w-full items-center justify-between text-sm font-medium text-[#1f1b18]">
-            <span className="flex items-center gap-2"><Users className="h-4 w-4 text-[#7a2e2e]" /> Advanced Audience Targeting (States & Demographics)</span>
+            <span className="flex items-center gap-2"><Users className="h-4 w-4 text-[#7a1f10]" /> Advanced Audience Targeting (States & Demographics)</span>
             {showTargeting ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
           
@@ -322,8 +322,8 @@ export function PollCreationPanel() {
                           onClick={() => toggleFilter(filterKey, opt)}
                           className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
                             isSelected 
-                              ? "bg-[#7a2e2e] text-white border-transparent shadow-sm" 
-                              : "bg-white border border-[#d8ceb8] text-[#625a50] hover:border-[#7a2e2e]/50 hover:text-[#1f1b18]"
+                              ? "bg-[#7a1f10] text-white border-transparent shadow-sm" 
+                              : "bg-white border border-[#d8ceb8] text-[#625a50] hover:border-[#7a1f10]/50 hover:text-[#1f1b18]"
                           }`}
                         >
                           {opt}
@@ -339,7 +339,7 @@ export function PollCreationPanel() {
                   <input 
                     type="text" 
                     placeholder="e.g. Ranchi, Mumbai, Patna (comma separated)" 
-                    className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]"
+                    className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]"
                     onChange={(e) => {
                       const cityArray = e.target.value.split(',').map(c => c.trim()).filter(Boolean);
                       setFilters(prev => ({ ...prev, cities: cityArray }));
@@ -348,7 +348,7 @@ export function PollCreationPanel() {
                   <p className="text-xs text-[#625a50]">Leave blank to target all cities in the selected states/tiers.</p>
                 </div>
 
-                <label className="flex items-center gap-3 mt-4 rounded-xl border border-[#7a2e2e]/20 bg-[#7a2e2e]/5 px-4 py-3 text-sm text-[#7a2e2e]">
+                <label className="flex items-center gap-3 mt-4 rounded-xl border border-[#7a1f10]/20 bg-[#7a1f10]/5 px-4 py-3 text-sm text-[#7a1f10]">
                 <input type="checkbox" checked={isCommercial} onChange={(e) => setIsCommercial(e.target.checked)} className="h-4 w-4 rounded border-[#d8ceb8] bg-white accent-maroon" />
                 Mark this poll as a paid commercial survey
               </label>
@@ -359,14 +359,14 @@ export function PollCreationPanel() {
         <div>
           <div className="mb-2 flex items-center justify-between">
             <span className="text-sm font-medium text-[#1f1b18]">Options</span>
-            <button type="button" onClick={addOption} className="flex items-center gap-2 text-sm text-[#7a2e2e]">
+            <button type="button" onClick={addOption} className="flex items-center gap-2 text-sm text-[#7a1f10]">
               <Plus className="h-4 w-4" /> Add option
             </button>
           </div>
           <div className="space-y-2">
             {options.map((option, index) => (
               <div key={index} className="flex items-center gap-2">
-                <input value={option} onChange={(e) => updateOption(index, e.target.value)} className="flex-1 rounded-2xl border border-[#d8ceb8] bg-white px-3 py-3 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" placeholder={`Option ${index + 1}`} />
+                <input value={option} onChange={(e) => updateOption(index, e.target.value)} className="flex-1 rounded-2xl border border-[#d8ceb8] bg-white px-3 py-3 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]" placeholder={`Option ${index + 1}`} />
                 {options.length > 2 && (
                   <button type="button" onClick={() => removeOption(index)} className="rounded-xl border border-[#d8ceb8] px-3 py-2 text-sm text-[#625a50] hover:bg-[#f4efe7]">Remove</button>
                 )}
@@ -376,13 +376,13 @@ export function PollCreationPanel() {
         </div>
 
         {aiContent ? (
-          <div className="space-y-4 rounded-2xl border border-[#7a2e2e]/20 bg-[#7a2e2e]/5 p-4">
+          <div className="space-y-4 rounded-2xl border border-[#7a1f10]/20 bg-[#7a1f10]/5 p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-[#7a2e2e]">AI content preview</p>
+                <p className="text-sm font-semibold text-[#7a1f10]">AI content preview</p>
                 <p className="text-sm text-[#625a50]">Edit any generated field before you create the poll.</p>
               </div>
-              <button type="button" onClick={handleGenerate} disabled={isGenerating || !canGenerate} className="inline-flex items-center gap-2 rounded-2xl border border-[#7a2e2e] px-3 py-2 text-sm font-semibold text-[#7a2e2e] transition hover:bg-[#7a2e2e]/10 disabled:opacity-60">
+              <button type="button" onClick={handleGenerate} disabled={isGenerating || !canGenerate} className="inline-flex items-center gap-2 rounded-2xl border border-[#7a1f10] px-3 py-2 text-sm font-semibold text-[#7a1f10] transition hover:bg-[#7a1f10]/10 disabled:opacity-60">
                 {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Regenerate
               </button>
             </div>
@@ -390,75 +390,75 @@ export function PollCreationPanel() {
             <div className="grid gap-4">
               <label className="block">
                 <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Improved question</span>
-                <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.improved_question} onChange={(e) => updateAiField("improved_question", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.improved_question} onChange={(e) => updateAiField("improved_question", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]" />
               </label>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">SEO title</span>
-                  <input value={aiContent.seo_title} onChange={(e) => updateAiField("seo_title", e.target.value)} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <input value={aiContent.seo_title} onChange={(e) => updateAiField("seo_title", e.target.value)} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]" />
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Meta description</span>
-                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.meta_description} onChange={(e) => updateAiField("meta_description", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.meta_description} onChange={(e) => updateAiField("meta_description", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]" />
                 </label>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Slug</span>
-                  <input value={aiContent.slug} onChange={(e) => updateAiField("slug", e.target.value)} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <input value={aiContent.slug} onChange={(e) => updateAiField("slug", e.target.value)} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]" />
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Keywords</span>
-                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.keywords.join(", ")} onChange={(e) => updateAiField("keywords", e.target.value.split(",").map(i => i.trim()))} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.keywords.join(", ")} onChange={(e) => updateAiField("keywords", e.target.value.split(",").map(i => i.trim()))} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]" />
                 </label>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Hashtags</span>
-                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.hashtags.join(", ")} onChange={(e) => updateAiField("hashtags", e.target.value.split(",").map(i => i.trim()))} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.hashtags.join(", ")} onChange={(e) => updateAiField("hashtags", e.target.value.split(",").map(i => i.trim()))} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]" />
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">AI summary</span>
-                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.ai_summary} onChange={(e) => updateAiField("ai_summary", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.ai_summary} onChange={(e) => updateAiField("ai_summary", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]" />
                 </label>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Facebook caption</span>
-                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.facebook_caption} onChange={(e) => updateAiField("facebook_caption", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.facebook_caption} onChange={(e) => updateAiField("facebook_caption", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]" />
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Instagram caption</span>
-                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.instagram_caption} onChange={(e) => updateAiField("instagram_caption", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.instagram_caption} onChange={(e) => updateAiField("instagram_caption", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]" />
                 </label>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">X caption</span>
-                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.x_caption} onChange={(e) => updateAiField("x_caption", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.x_caption} onChange={(e) => updateAiField("x_caption", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]" />
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">WhatsApp share text</span>
-                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.whatsapp_share_text} onChange={(e) => updateAiField("whatsapp_share_text", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.whatsapp_share_text} onChange={(e) => updateAiField("whatsapp_share_text", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]" />
                 </label>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Open Graph title</span>
-                  <input value={aiContent.og_title} onChange={(e) => updateAiField("og_title", e.target.value)} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <input value={aiContent.og_title} onChange={(e) => updateAiField("og_title", e.target.value)} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]" />
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Open Graph description</span>
-                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.og_description} onChange={(e) => updateAiField("og_description", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" />
+                  <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={aiContent.og_description} onChange={(e) => updateAiField("og_description", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]" />
                 </label>
               </div>
               <div className="space-y-2">
                 <span className="text-sm font-medium text-[#1f1b18]">FAQ</span>
                 {aiContent.faq.map((item, index) => (
                   <div key={index} className="space-y-2 rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-3">
-                    <input value={item.question} onChange={(e) => updateFaqItem(index, "question", e.target.value)} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" placeholder="Question" />
-                    <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={item.answer} onChange={(e) => updateFaqItem(index, "answer", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" placeholder="Answer" />
+                    <input value={item.question} onChange={(e) => updateFaqItem(index, "question", e.target.value)} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]" placeholder="Question" />
+                    <textarea onInput={(e) => { e.currentTarget.style.height = 'auto'; e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px'; }} value={item.answer} onChange={(e) => updateFaqItem(index, "answer", e.target.value)} rows={1} className="w-full rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]" placeholder="Answer" />
                   </div>
                 ))}
               </div>
@@ -466,26 +466,26 @@ export function PollCreationPanel() {
                 <span className="text-sm font-medium text-[#1f1b18]">Suggested topics</span>
                 <div className="flex flex-wrap gap-2">
                   {topicTags.map((topic) => (
-                    <div key={topic} className="inline-flex items-center gap-2 rounded-full border border-[#7a2e2e]/20 bg-[#7a2e2e]/5 px-3 py-1 text-sm text-[#7a2e2e]">
-                      <input value={topic} onChange={(e) => setTopicTags((prev) => prev.map((item) => (item === topic ? e.target.value : item)))} className="w-24 bg-transparent text-sm text-[#7a2e2e] outline-none" />
-                      <button type="button" onClick={() => removeTopicTag(topic)} className="text-[#7a2e2e]"><X className="h-3.5 w-3.5" /></button>
+                    <div key={topic} className="inline-flex items-center gap-2 rounded-full border border-[#7a1f10]/20 bg-[#7a1f10]/5 px-3 py-1 text-sm text-[#7a1f10]">
+                      <input value={topic} onChange={(e) => setTopicTags((prev) => prev.map((item) => (item === topic ? e.target.value : item)))} className="w-24 bg-transparent text-sm text-[#7a1f10] outline-none" />
+                      <button type="button" onClick={() => removeTopicTag(topic)} className="text-[#7a1f10]"><X className="h-3.5 w-3.5" /></button>
                     </div>
                   ))}
                 </div>
                 <div className="flex gap-2">
-                  <input value={topicDraft} onChange={(e) => setTopicDraft(e.target.value)} className="flex-1 rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a2e2e] focus:ring-1 focus:ring-[#7a2e2e]" placeholder="Add a topic" />
-                  <button type="button" onClick={addTopicTag} className="rounded-2xl border border-[#7a2e2e] px-3 py-2 text-sm font-semibold text-[#7a2e2e]">Add</button>
+                  <input value={topicDraft} onChange={(e) => setTopicDraft(e.target.value)} className="flex-1 rounded-2xl border border-[#d8ceb8] bg-white px-3 py-2 text-sm text-[#1f1b18] outline-none focus:border-[#7a1f10] focus:ring-1 focus:ring-[#7a1f10]" placeholder="Add a topic" />
+                  <button type="button" onClick={addTopicTag} className="rounded-2xl border border-[#7a1f10] px-3 py-2 text-sm font-semibold text-[#7a1f10]">Add</button>
                 </div>
               </div>
 
               {aiContent.sources && aiContent.sources.length > 0 && (
-                <div className="mt-4 border-t border-[#7a2e2e]/20 pt-4">
+                <div className="mt-4 border-t border-[#7a1f10]/20 pt-4">
                   <span className="mb-2 block text-sm font-medium text-[#1f1b18]">Verified Sources (Click to audit)</span>
                   <div className="grid gap-2">
                     {aiContent.sources.map((source, idx) => (
-                      <a key={idx} href={source.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-[#7a2e2e] hover:text-[#7a2e2e]-dark hover:underline">
+                      <a key={idx} href={source.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-[#7a1f10] hover:text-[#5c1709] hover:underline">
                         <LinkIcon className="h-3 w-3" />
-                        <span className="truncate">{source.title} {source.publisher ? `â€” ${source.publisher}` : ""}</span>
+                        <span className="truncate">{source.title} {source.publisher ? `— ${source.publisher}` : ""}</span>
                       </a>
                     ))}
                   </div>
@@ -502,8 +502,8 @@ export function PollCreationPanel() {
         </div>
 
         <div className="flex items-center gap-3 pt-4">
-          <button type="submit" disabled={isSubmitting || !question.trim() || options.filter(Boolean).length < 2} className="inline-flex items-center gap-2 rounded-2xl bg-[#7a2e2e] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#7a2e2e]-dark disabled:opacity-60">
-            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Launch Poll
+          <button type="submit" disabled={isSubmitting || !question.trim() || options.filter(Boolean).length < 2} className="inline-flex items-center gap-2 rounded-2xl bg-[#7a1f10] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#5c1709] disabled:opacity-60">
+            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Save for review
           </button>
           {message ? <span className="text-sm font-medium text-emerald-600">Success: {message}</span> : null}
           {error ? <span className="text-sm font-medium text-rose-600">Error: {error}</span> : null}

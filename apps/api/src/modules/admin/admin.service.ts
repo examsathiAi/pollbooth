@@ -137,16 +137,21 @@ export class AdminService {
       prisma.opinion.count({ where: { is_hidden: true, moderation_status: "FLAGGED" } }),
     ]);
 
-    const startedAt = Date.now();
-    await redis.ping();
-    const latency = Date.now() - startedAt;
+    const dbStart = Date.now();
+      let dbOk = true;
+      try { await prisma.$queryRaw`SELECT 1`; } catch (e) { dbOk = false; }
+      const dbMs = Date.now() - dbStart;
+      const redisStart = Date.now();
+      let redisOk = true;
+      try { await redis.ping(); } catch (e) { redisOk = false; }
+      const redisMs = Date.now() - redisStart;
 
     return {
       timestamp: new Date().toISOString(),
       services: {
-        api: { status: "ok", latency_ms: 0 },
-        database: { status: "ok", latency_ms: 0 },
-        workers: { status: "ok", latency_ms: latency },
+        api: { status: "ok", latency_ms: null, uptime_seconds: Math.round(process.uptime()) },
+          database: { status: dbOk ? "ok" : "down", latency_ms: dbMs },
+          redis: { status: redisOk ? "ok" : "down", latency_ms: redisMs },
       },
       counts: {
         users,

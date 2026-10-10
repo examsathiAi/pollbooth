@@ -66,10 +66,10 @@ export class AuthService {
 
   private async dispatchWhatsAppOtp(phone_number: string, otp: string) {
     if (config.isDevelopment) {
-      logger.info(`[WhatsApp Dispatch] OTP sent to ${phone_number}: ${otp}`);
+      logger.info(`[WhatsApp Dispatch] OTP sent to ${phone_number.slice(0, 5)}xxxxx`);
     } else {
       // Stub ready for Meta WhatsApp Cloud API Integration
-      logger.info(`[WhatsApp Dispatch] OTP generated for ${phone_number}: ${otp}`);
+      logger.info(`[WhatsApp Dispatch] OTP generated for ${phone_number.slice(0, 5)}xxxxx (code not logged)`);
     }
   }
 

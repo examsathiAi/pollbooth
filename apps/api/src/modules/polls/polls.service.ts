@@ -498,7 +498,9 @@ export class PollsService {
       where: {
         active: true,
         blackout_starts: { lte: now },
-        polling_date: { gte: now },
+        // polling_date is stored as midnight UTC of the polling day (05:30 IST).
+        // Keep the blackout on until the end of that day in IST (18h30m later).
+        polling_date: { gte: new Date(now.getTime() - 18.5 * 60 * 60 * 1000) },
         OR: [{ region }, { region: "ALL" }],
       },
     });

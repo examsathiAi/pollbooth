@@ -64,17 +64,9 @@ export async function runModerationWorker(_job?: Job) {
 
   for (const opinion of pendingQueue) {
     await prisma.opinion.update({
-      where: { id: opinion.id },
-      data: { moderation_status: "FLAGGED", is_hidden: true },
-    });
-    await prisma.report.create({
-      data: {
-        opinion_id: opinion.id,
-        reporter_id: opinion.user_id,
-        reason: "Pending queue cleanup",
-        status: "PENDING",
-      },
-    });
+        where: { id: opinion.id },
+        data: { moderation_status: "APPROVED" },
+      });
   }
 
   const recentModActions = await prisma.moderationAction.count({

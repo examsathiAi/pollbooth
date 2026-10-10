@@ -4,14 +4,11 @@ import { config } from "../../config";
 
 export async function runAutoModerator() {
   try {
-    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
-    
-    // 1. Fetch pending opinions created in the last 2 hours
+        // 1. Fetch pending opinions created in the last 2 hours
     const pendingOpinions = await prisma.opinion.findMany({
-      where: {
-        created_at: { gte: twoHoursAgo },
-        moderation_status: "PENDING",
-      },
+      where: { moderation_status: "PENDING", is_hidden: false },
+      orderBy: { created_at: "asc" },
+      take: 60,
       select: { id: true, content: true, user_id: true }
     });
 
@@ -55,7 +52,7 @@ Input: ${JSON.stringify(batch)}`;
       return;
     }
 
-    if (!Array.isArray(flaggedIds) || flaggedIds.length === 0) return;
+    if (!Array.isArray(flaggedIds)) return;
 
     // 4. Enforce Moderation & Issue Strikes
     const flaggedOpinions = pendingOpinions.filter(o => flaggedIds.includes(o.id));
