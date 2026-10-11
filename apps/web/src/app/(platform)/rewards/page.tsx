@@ -57,10 +57,10 @@ export default function RewardsPage() {
         </div>
         <p className="mt-3 text-sm leading-7 text-blue-50">Share your favorite poll with WhatsApp or Telegram and keep the loop moving with a referral parameter attached.</p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <a href="https://wa.me/?text=Join%20PollBooth%20and%20vote%20with%20me%3A%20https%3A//pollbooth.app%2Ffeed%3Fref%3Dyou" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-2xl bg-white/15 px-4 py-2 text-sm font-semibold backdrop-blur">
+          <a href="https://wa.me/?text=Join%20PollBooth%20and%20vote%20with%20me%3A%20https%3A//pollbooth.in%2Ffeed%3Fsrc%3Dreferral" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-2xl bg-white/15 px-4 py-2 text-sm font-semibold backdrop-blur">
             <Share2 className="h-4 w-4" /> WhatsApp
           </a>
-          <a href="https://t.me/share/url?url=https%3A//pollbooth.app%2Ffeed%3Fref%3Dyou&text=Join%20PollBooth%20and%20vote%20with%20me" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-2xl bg-white/15 px-4 py-2 text-sm font-semibold backdrop-blur">
+          <a href="https://t.me/share/url?url=https%3A//pollbooth.in%2Ffeed%3Fsrc%3Dreferral&text=Join%20PollBooth%20and%20vote%20with%20me" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-2xl bg-white/15 px-4 py-2 text-sm font-semibold backdrop-blur">
             <Share2 className="h-4 w-4" /> Telegram
           </a>
         </div>

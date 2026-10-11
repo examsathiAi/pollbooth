@@ -18,6 +18,8 @@ import { badgeRouter } from "./modules/badges/badges.controller";
 import { civicRouter } from "./modules/civic/civic.controller";
 import { surveyRouter } from "./modules/surveys/surveys.controller";
 import { consentRouter } from "./modules/consent/consent.controller";
+import { trackRouter } from "./modules/track/track.controller";
+import { grievanceRouter } from "./modules/grievances/grievances.controller";
 import { adminRouter } from "./modules/admin/admin.controller";
 import { notificationRouter } from "./modules/notifications/notifications.controller";
 import { paymentRouter } from "./modules/payments/payments.controller";
@@ -78,6 +80,8 @@ export function createApp(): Application {
   app.use("/api/v1/civic", civicRouter);
   app.use("/api/v1/surveys", surveyRouter);
   app.use("/api/v1/consent", consentRouter);
+  app.use("/api/v1/track", trackRouter);
+  app.use("/api/v1/grievances", grievanceRouter);
   app.use("/api/v1/admin", adminRouter);
   app.use("/api/v1/notifications", notificationRouter);
   app.use("/api/v1/payments", paymentRouter);

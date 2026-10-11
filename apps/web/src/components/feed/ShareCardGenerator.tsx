@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toBlob } from "html-to-image";
 import { Download, Share2, Sparkles, MessageCircle, Copy, Check, Instagram, X } from "lucide-react";
 
@@ -16,6 +16,7 @@ interface ShareCardGeneratorProps {
   captions?: { whatsapp?: string; x?: string; facebook?: string; instagram?: string; };
   hashtags?: string[];
   onClose?: () => void;
+  imageUrl?: string | null;
 }
 
 const formatData = (data?: Array<{ label: string; value: number }>) => {
@@ -23,7 +24,7 @@ const formatData = (data?: Array<{ label: string; value: number }>) => {
   return [...data].sort((a, b) => b.value - a.value).slice(0, 4);
 };
 
-export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, captions, hashtags = [], onClose }: ShareCardGeneratorProps) {
+export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, captions, hashtags = [], onClose, imageUrl }: ShareCardGeneratorProps) {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -34,7 +35,19 @@ export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, cap
     if (onClose) onClose();
   };
 
-  const shareLink = useMemo(() => (shareUrl || (typeof window !== "undefined" ? window.location.href : "")).replace("/insight/", "/poll/"), [shareUrl]);
+  const baseLink = (shareUrl || (typeof window !== "undefined" ? window.location.href : "")).replace("/insight/", "/poll/");
+  const cardKind = resultData && resultData.length > 0 ? "result" : "question";
+  const tag = (channel: string): string => {
+    try {
+      const u = new URL(baseLink, typeof window !== "undefined" ? window.location.origin : "https://pollbooth.in");
+      u.searchParams.set("src", channel);
+      u.searchParams.set("card", cardKind);
+      return u.toString();
+    } catch {
+      return baseLink;
+    }
+  };
+  const shareLink = tag("share");
   const chartItems = useMemo(() => formatData(resultData), [resultData]);
   const optionItems = useMemo(() => (resultData || []).slice(0, 4), [resultData]);
 
@@ -56,7 +69,7 @@ export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, cap
       .replace(/[ \t]+\n/g, "\n")
       .replace(/\n{3,}/g, "\n\n")
       .trim();
-    return `${cleaned}\n\n${shareLink}`;
+    return `${cleaned}\n\n${tag("whatsapp")}`;
   }, [captions, title, shareLink]);
 
   const xText = useMemo(() => {
@@ -75,31 +88,72 @@ export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, cap
     return base.length > 220 ? base.slice(0, 217).trimEnd() + "..." : base;
   }, [captions, title]);
 
+  // The share image is prepared in the background as soon as the menu opens,
+  // so tapping Share is instant and the phone's share sheet opens without a wait.
+  // Poll photo for the share image. Fetched with CORS (R2 allows pollbooth.in) and
+  // embedded as data, so the picture can be drawn into the PNG. Falls back silently.
+  const [cardImage, setCardImage] = useState<string | null>(null);
+  const imageReady = useRef<Promise<string | null> | null>(null);
+  useEffect(() => {
+    if (!imageUrl) return;
+    let cancelled = false;
+    const p = (async () => {
+      try {
+        const res = await fetch(imageUrl, { mode: "cors", cache: "reload" });
+        if (!res.ok) return null;
+        const b = await res.blob();
+        return await new Promise<string | null>((resolve) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(typeof fr.result === "string" ? fr.result : null);
+          fr.onerror = () => resolve(null);
+          fr.readAsDataURL(b);
+        });
+      } catch {
+        return null;
+      }
+    })().then((d) => { if (!cancelled && d) setCardImage(d); return d; });
+    imageReady.current = p;
+    return () => { cancelled = true; };
+  }, [imageUrl]);
+
+  const blobCache = useRef<Blob | null>(null);
   const generateCardBlob = async (): Promise<Blob | null> => {
+    if (blobCache.current) return blobCache.current;
     if (!cardRef.current) return null;
+    if (imageUrl && imageReady.current) {
+      await imageReady.current;
+      await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+    }
     try {
-      return await toBlob(cardRef.current, {
+      const made = await toBlob(cardRef.current, {
         cacheBust: true,
         quality: 1.0,
         pixelRatio: 2,
         skipFonts: true,
         style: { transform: 'scale(1)', margin: '0' }
       });
+      if (made) blobCache.current = made;
+      return made;
     } catch {
       return null;
     }
   };
+  useEffect(() => {
+    const timer = setTimeout(() => { void generateCardBlob(); }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleNativeShare = async () => {
     setIsGenerating(true);
     try {
       const blob = await generateCardBlob();
-      const shareText = whatsappMessage;
+      const shareText = whatsappMessage.split(tag("whatsapp")).join(tag("native"));
 
       if (blob && navigator.canShare && navigator.canShare({ files: [new File([blob], "pollbooth.png", { type: "image/png" })] })) {
-        await navigator.share({ title, text: shareText, url: shareLink, files: [new File([blob], "pollbooth.png", { type: "image/png" })] });
+        await navigator.share({ title, text: shareText, url: tag("native"), files: [new File([blob], "pollbooth.png", { type: "image/png" })] });
       } else if (navigator.share) {
-        await navigator.share({ title, text: shareText, url: shareLink });
+        await navigator.share({ title, text: shareText, url: tag("native") });
       } else {
         await downloadCard();
       }
@@ -110,7 +164,7 @@ export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, cap
   };
 
   const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(shareLink);
+    await navigator.clipboard.writeText(tag("copy"));
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
@@ -133,7 +187,7 @@ export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, cap
     }
   };
   const handleInstagramShare = async () => {
-    const igText = captions?.instagram || `${title}\n\nCast your verified vote on PollBooth: ${shareLink}\n\n${completeHashtags.join(" ")}`;
+    const igText = captions?.instagram || `${title}\n\nCast your verified vote on PollBooth: ${tag("instagram")}\n\n${completeHashtags.join(" ")}`;
     await navigator.clipboard.writeText(igText);
     await downloadCard();
     setIgCopied(true);
@@ -169,42 +223,60 @@ export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, cap
           <div
             ref={cardRef}
             style={{
-              width: "540px", height: "675px", boxSizing: "border-box", padding: "36px",
+              width: "540px", height: "675px", boxSizing: "border-box",
               display: "flex", flexDirection: "column", overflow: "hidden", color: "#ffffff",
               background: "radial-gradient(circle at 78% 18%, #5A1530 0%, #2B0A1B 55%, #14050E 100%)",
               fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: "28px", fontWeight: 700 }}>PollBooth</div>
-              <div style={{ background: "#E2283C", borderRadius: "999px", padding: "6px 14px", fontSize: "14px", fontWeight: 700 }}>Aaj ka poll</div>
-            </div>
-            <div style={{ marginTop: "30px", fontSize: `${title.length > 90 ? 27 : title.length > 60 ? 31 : 36}px`, fontWeight: 800, lineHeight: 1.15, maxHeight: "170px", overflow: "hidden" }}>
-              {title}
-            </div>
-            <div style={{ marginTop: "26px", display: "flex", flexDirection: "column", gap: "10px" }}>
-              {optionItems.map((item, i) => {
-                const col = OPTION_COLORS[i % OPTION_COLORS.length];
-                return (
-                  <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "14px", border: `2.5px solid ${col}`, borderRadius: "22px", padding: "11px 18px", background: "rgba(255,255,255,0.08)" }}>
-                    <div style={{ width: "20px", height: "20px", borderRadius: "999px", border: `3px solid ${col}`, flexShrink: 0 }} />
-                    <div style={{ fontSize: "20px", fontWeight: 700, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{item.label}</div>
-                  </div>
-                );
-              })}
-            </div>
-            {(voteCount ?? 0) >= 25 && chartItems.length > 0 && (
-              <div style={{ marginTop: "14px", fontSize: "15px", fontWeight: 700, color: "#FFB534" }}>
-                Abhi tak: {chartItems[0].label} aage hai ({Math.round(chartItems[0].value)}%)
+            <div style={{ position: "relative", height: cardImage ? "240px" : "96px", flexShrink: 0, overflow: "hidden" }}>
+              {cardImage && (
+                <img src={cardImage} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+              )}
+              {cardImage && (
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(20,5,14,0.45) 0%, rgba(20,5,14,0) 35%, rgba(20,5,14,0.92) 100%)" }} />
+              )}
+              <div style={{ position: "absolute", left: "28px", right: "28px", top: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: "28px", fontWeight: 700, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>PollBooth</div>
+                <div style={{ background: "#E2283C", borderRadius: "999px", padding: "6px 14px", fontSize: "14px", fontWeight: 700 }}>Aaj ka poll</div>
               </div>
-            )}
-            <div style={{ flex: 1 }} />
-            <div style={{ background: "#FFB534", color: "#2B0A1B", borderRadius: "999px", padding: "15px 0", textAlign: "center", fontSize: "22px", fontWeight: 800 }}>
-              Vote karo, result dekho
+              {cardImage && (
+                <div style={{ position: "absolute", left: "28px", bottom: "14px", fontSize: "15px", fontWeight: 800, color: "#FFB534", letterSpacing: "0.3px" }}>
+                  Aap kya chunenge?
+                </div>
+              )}
             </div>
-            <div style={{ marginTop: "14px", display: "flex", justifyContent: "space-between", fontSize: "14px", fontWeight: 700 }}>
-              <div style={{ color: "#FFB534" }}>pollbooth.in</div>
-              <div style={{ color: "rgba(255,255,255,0.6)" }}>{voteCount ? `${voteCount.toLocaleString()} votes` : "Vote now"}</div>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "18px 28px 22px 28px" }}>
+              <div style={{ fontSize: `${title.length > 90 ? 24 : title.length > 60 ? 28 : 32}px`, fontWeight: 800, lineHeight: 1.15, maxHeight: "100px", overflow: "hidden" }}>
+                {title}
+              </div>
+              <div style={{ marginTop: "14px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                {optionItems.map((item, i) => {
+                  const col = OPTION_COLORS[i % OPTION_COLORS.length];
+                  const showBars = (voteCount ?? 0) >= 25;
+                  const pct = Math.max(0, Math.min(100, Math.round(item.value)));
+                  return (
+                    <div key={item.label} style={{ position: "relative", display: "flex", alignItems: "center", gap: "12px", border: `2.5px solid ${col}`, borderRadius: "20px", padding: "8px 16px", background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                      {showBars && (
+                        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: col, opacity: 0.28 }} />
+                      )}
+                      <div style={{ position: "relative", width: "18px", height: "18px", borderRadius: "999px", border: `3px solid ${col}`, flexShrink: 0 }} />
+                      <div style={{ position: "relative", flex: 1, fontSize: "18px", fontWeight: 700, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{item.label}</div>
+                      {showBars && (
+                        <div style={{ position: "relative", fontSize: "18px", fontWeight: 800, color: col }}>{pct}%</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ flex: 1 }} />
+              <div style={{ background: "#FFB534", color: "#2B0A1B", borderRadius: "999px", padding: "13px 0", textAlign: "center", fontSize: "21px", fontWeight: 800 }}>
+                Vote karo, result dekho
+              </div>
+              <div style={{ marginTop: "12px", display: "flex", justifyContent: "space-between", fontSize: "14px", fontWeight: 700 }}>
+                <div style={{ color: "#FFB534" }}>pollbooth.in</div>
+                <div style={{ color: "rgba(255,255,255,0.6)" }}>{voteCount ? `${voteCount.toLocaleString()} votes` : "Vote now"}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -218,14 +290,14 @@ export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, cap
             <span className="text-[11px] font-semibold text-slate-600">WhatsApp</span>
           </button>
 
-          <button onClick={() => openSocialUrl(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareLink)}&quote=${encodeURIComponent(fbText)}`)} className="group flex flex-col items-center gap-2">
+          <button onClick={() => openSocialUrl(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(tag("facebook"))}&quote=${encodeURIComponent(fbText)}`)} className="group flex flex-col items-center gap-2">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#1877F2] text-white transition-colors group-hover:bg-[#166fe5] border-none group-active:scale-95">
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
             </div>
             <span className="text-[11px] font-semibold text-slate-600">Facebook</span>
           </button>
 
-          <button onClick={() => openSocialUrl(`https://twitter.com/intent/tweet?text=${encodeURIComponent(xText)}&url=${encodeURIComponent(shareLink)}&hashtags=${twitterTagsParam}`)} className="group flex flex-col items-center gap-2">
+          <button onClick={() => openSocialUrl(`https://twitter.com/intent/tweet?text=${encodeURIComponent(xText)}&url=${encodeURIComponent(tag("x"))}&hashtags=${twitterTagsParam}`)} className="group flex flex-col items-center gap-2">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-black text-white transition-colors group-hover:bg-gray-800 border-none group-active:scale-95">
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg>
             </div>
@@ -238,12 +310,6 @@ export function ShareCardGenerator({ title, voteCount, resultData, shareUrl, cap
             </div>
             <span className="text-[11px] font-semibold text-slate-600">{igCopied ? "Saved + copied!" : "Instagram"}</span>
           </button>
-            <button onClick={() => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl || '')}`, '_blank', 'noopener,noreferrer')} className="group flex flex-col items-center gap-2">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#0A66C2] text-white transition-colors group-hover:bg-[#084e96] border-none">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-              </div>
-              <span className="text-[11px] font-semibold text-slate-600">LinkedIn</span>
-            </button>
         </div>
 
         {/* Full width Copy button underneath */}

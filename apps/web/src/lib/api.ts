@@ -1,4 +1,5 @@
 import axios from "axios";
+import { currentSource, sendTrack } from "./track";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -22,8 +23,21 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+
+function recordConversion(response: any) {
+  const url: string = String(response?.config?.url || "");
+  if (String(response?.config?.method || "").toLowerCase() !== "post") return;
+  if (!currentSource().src) return;
+  const v = url.match(/\/api\/v1\/votes\/([^/]+)\/(?:guest-)?vote$/);
+  if (v) { sendTrack("VOTE", v[1]); return; }
+  if (/\/api\/v1\/auth\/(otp|email-otp|google)\/verify$/.test(url)) sendTrack("SIGNIN");
+}
+
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    try { recordConversion(response); } catch {}
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry) {

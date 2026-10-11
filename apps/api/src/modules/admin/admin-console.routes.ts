@@ -53,7 +53,8 @@ router.get("/counts", authGuard, roleGuard("MODERATOR"), async (_req, res, next)
       prisma.report.count({ where: { status: "PENDING" } }),
       prisma.civicIssue.count({ where: { status: "PENDING" } }),
     ]);
-    res.json({ pending_polls: pendingPolls, pending_reports: pendingReports, pending_civic: pendingCivic });
+    const newGrievances = await prisma.grievance.count({ where: { status: "NEW" } }).catch(() => 0);
+    res.json({ pending_polls: pendingPolls, pending_reports: pendingReports, pending_civic: pendingCivic, new_grievances: newGrievances });
   } catch (err) { next(err); }
 });
 

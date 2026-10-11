@@ -2,10 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Activity, FilePlus, History, LayoutDashboard, LogOut, MessageSquareWarning, PencilRuler, Scale, ShieldCheck, Users, Briefcase } from "lucide-react";
+import { Activity, FilePlus, History, LayoutDashboard, LogOut, MessageSquareWarning, PencilRuler, Scale, ShieldCheck, Users, Briefcase, Inbox, Megaphone, TrendingUp } from "lucide-react";
 import { api } from "@/lib/api";
 import { ActivityLog } from "@/components/ActivityLog";
 import { ElectionBlackoutPanel } from "@/components/ElectionBlackoutPanel";
+import { GrievanceInbox } from "@/components/GrievanceInbox";
+import { SponsorsPanel } from "@/components/SponsorsPanel";
+import { TrafficPanel } from "@/components/TrafficPanel";
 import { ExecutiveOverview } from "@/components/ExecutiveOverview";
 import { ModerationInbox } from "@/components/ModerationInbox";
 import { PlatformHealth } from "@/components/PlatformHealth";
@@ -23,6 +26,9 @@ const navItems = [
   { id: "moderation", label: "Moderation", icon: MessageSquareWarning, minimumRole: "MODERATOR", badge: "moderation" },
   { id: "surveys", label: "B2B Campaigns", icon: Briefcase, minimumRole: "ADMIN" },
   { id: "users", label: "Members", icon: Users, minimumRole: "ADMIN" },
+  { id: "sponsors", label: "Sponsors", icon: Megaphone, minimumRole: "ADMIN" },
+  { id: "traffic", label: "Shares & Traffic", icon: TrendingUp, minimumRole: "ADMIN" },
+  { id: "grievances", label: "Grievances", icon: Inbox, minimumRole: "ADMIN", badge: "grievances" },
   { id: "compliance", label: "Compliance", icon: Scale, minimumRole: "SUPER_ADMIN" },
   { id: "roles", label: "Team & Roles", icon: ShieldCheck, minimumRole: "SUPER_ADMIN" },
   { id: "activity", label: "Activity Log", icon: History, minimumRole: "SUPER_ADMIN" },
@@ -35,7 +41,7 @@ export default function AdminPage() {
   const router = useRouter();
   const [activeView, setActiveView] = useState("overview");
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [counts, setCounts] = useState<{ pending_polls: number; pending_reports: number; pending_civic: number } | null>(null);
+  const [counts, setCounts] = useState<{ pending_polls: number; pending_reports: number; pending_civic: number; new_grievances?: number } | null>(null);
 
   const refreshCounts = useCallback(async () => {
     try {
@@ -71,6 +77,7 @@ export default function AdminPage() {
     if (!counts || !key) return 0;
     if (key === "pending_polls") return counts.pending_polls;
     if (key === "moderation") return counts.pending_reports + counts.pending_civic;
+    if (key === "grievances") return counts.new_grievances || 0;
     return 0;
   };
 
@@ -88,6 +95,9 @@ export default function AdminPage() {
       case "moderation": return <ModerationInbox onChanged={refreshCounts} />;
       case "surveys": return <SurveysDashboard />;
       case "users": return <UserManagement />;
+      case "sponsors": return <SponsorsPanel />;
+      case "traffic": return <TrafficPanel />;
+      case "grievances": return <GrievanceInbox />;
       case "compliance": return <ElectionBlackoutPanel />;
       case "roles": return <RolesManagement />;
       case "activity": return <ActivityLog />;

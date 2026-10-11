@@ -9,6 +9,8 @@ import { adminConsoleRouter } from "./admin-console.routes";
 import { adminTeamRouter } from "./admin-team.routes";
 import { adminMembersRouter } from "./admin-members.routes";
 import { adminBlackoutRouter } from "./admin-blackout.routes";
+import { adminGrievancesRouter } from "./admin-grievances.routes";
+import { adminTrafficRouter } from "./admin-traffic.routes";
 
 const router = Router();
 
@@ -180,5 +182,7 @@ router.use(adminConsoleRouter);
 router.use(adminTeamRouter);
 router.use(adminMembersRouter);
 router.use(adminBlackoutRouter);
+router.use(adminGrievancesRouter);
+router.use(adminTrafficRouter);
 
 export { router as adminRouter };

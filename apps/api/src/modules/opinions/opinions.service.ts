@@ -323,8 +323,10 @@ export class OpinionsService {
 
     // 2. Comprehensive Core Blocklist (English + Romanized Hindi/Subcontinent)
     const exactMatches = [
-      "fuck", "shit", "bitch", "asshole", "dick", "cunt", "pussy", "bastard", "slut", "whore", "faggot", "rape",
-      "bhenchod", "behenchod", "madarchod", "chutiya", "randi", "bhosdike", "gandu", "laude", "lode", "chut", "gaand", "mc", "bc"
+      "fuck", "fucker", "motherfucker", "shit", "bitch", "asshole", "dick", "cunt", "pussy", "bastard", "slut", "whore", "faggot",
+      "porn", "blowjob", "handjob", "nigger",
+      "bhenchod", "behenchod", "benchod", "madarchod", "maderchod", "chutiya", "chutiye", "randi", "raand", "bhosdike", "bhosdi", "bhosda",
+      "gandu", "laude", "lode", "lauda", "chut", "gaand", "harami", "haramzada", "haramzadi", "bhadwa", "bhadwe", "bsdk", "bkl"
     ];
 
     const matchedWords: string[] = [];
@@ -338,6 +340,12 @@ export class OpinionsService {
       if (regex.test(normalized)) {
         matchedWords.push(word);
       }
+    }
+
+    // Devanagari spellings (word boundaries do not work for these, so match as plain text)
+    const devanagari = ["चूतिया", "मादरचोद", "भेनचोद", "बहनचोद", "भोसड़ी", "गांडू", "रंडी", "हरामी", "हरामज़ादा", "लौड़ा"];
+    for (const w of devanagari) {
+      if (text.includes(w)) matchedWords.push(w);
     }
 
     return { hasProfanity: matchedWords.length > 0, matchedWords };

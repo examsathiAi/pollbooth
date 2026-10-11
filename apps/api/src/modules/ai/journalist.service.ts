@@ -19,7 +19,8 @@ export async function generatePollInsight(pollId: string) {
           include: { user: { include: { profile: true } } }
         },
         opinions: {
-          orderBy: { agree_count: 'desc' },
+          where: { is_hidden: false, moderation_status: { notIn: ["REJECTED", "FLAGGED"] } },
+            orderBy: { agree_count: 'desc' },
           take: 5,
           include: { user: { include: { profile: true } } }
         }

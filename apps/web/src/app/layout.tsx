@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { SocketProvider } from "../providers/SocketProvider";
+import { TrafficBeacon } from "@/components/TrafficBeacon";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -40,6 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${playfair.variable} ${inter.variable}`} suppressHydrationWarning>
       <body className="min-h-screen bg-[#f4efe7] text-[#1f1b18] antialiased">
+        <TrafficBeacon />
         <SocketProvider>
           {children}
         </SocketProvider>

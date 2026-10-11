@@ -683,3 +683,37 @@ model PollReaction {
 
   @@unique([poll_id, user_id, emoji])
 }
+
+model Grievance {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ticket_no       Int       @unique @default(autoincrement())
+  kind            String    @db.VarChar(30)
+  name            String    @db.VarChar(100)
+  contact         String    @db.VarChar(255)
+  message         String
+  user_id         String?   @db.Uuid
+  status          String    @default("NEW") @db.VarChar(20)
+  due_at          DateTime  @db.Timestamp(6)
+  acknowledged_at DateTime? @db.Timestamp(6)
+  resolution      String?
+  resolved_by     String?   @db.Uuid
+  resolved_at     DateTime? @db.Timestamp(6)
+  created_at      DateTime  @default(now()) @db.Timestamp(6)
+
+  @@index([status, due_at])
+  @@map("grievances")
+}
+
+model TrafficDaily {
+  id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  day      DateTime @db.Date
+  poll_key String   @default("") @db.VarChar(40)
+  kind     String   @db.VarChar(20)
+  src      String   @default("direct") @db.VarChar(30)
+  card     String   @default("") @db.VarChar(30)
+  count    Int      @default(0)
+
+  @@unique([day, poll_key, kind, src, card])
+  @@index([kind, day])
+  @@map("traffic_daily")
+}

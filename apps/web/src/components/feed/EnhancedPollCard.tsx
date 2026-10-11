@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { SponsoredBadge } from "@/components/feed/SponsoredBadge";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import HintTip from "./HintTip";
@@ -471,7 +472,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
               </span>
               {animatedVotes > 0 ? `${animatedVotes.toLocaleString()} VOTED` : 'BE THE FIRST TO VOTE!'}
             </span>
-              {poll.is_commercial && <span className="whitespace-nowrap rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-amber-800 border border-amber-300 shadow-sm">Sponsored</span>}
+              {poll.is_commercial && <SponsoredBadge pollId={poll.id} />}
               {((poll as any).status === "CLOSED" || (poll as any).is_active === false) && <span className="whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-ink/60 bg-ink/5 px-2 py-0.5 rounded-full border border-ink/10">Voting Closed</span>}
             </div>
       </div>
@@ -638,6 +639,7 @@ export function EnhancedPollCard({ poll, index = 0, isFeatured = false, onVoteCo
         <div className="px-4 pb-4 animate-in fade-in duration-300">
           <ShareCardGenerator
             title={poll.question}
+            imageUrl={poll.image_url}
             onClose={() => setShowShareMenu(false)}
             voteCount={animatedVotes}
               resultData={results.map((r) => ({ label: r.option, value: r.percentage || 0 }))}
