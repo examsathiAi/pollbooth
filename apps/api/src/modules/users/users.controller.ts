@@ -34,6 +34,24 @@ router.get("/profile/gate/:category", authGuard, async (req, res, next) => {
   }
 });
 
+router.get("/me/export", authGuard, rateLimiter.api, async (req, res, next) => {
+  try {
+    const data = await usersService.exportMyData(req.user!.id);
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/me/opinions", authGuard, async (req, res, next) => {
+  try {
+    const data = await usersService.getMyOpinions(req.user!.id);
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.delete("/me", authGuard, async (req, res, next) => {
   try {
     const result = await usersService.deleteAccountAndScrubPII(req.user!.id);

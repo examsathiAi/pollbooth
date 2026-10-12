@@ -57,22 +57,66 @@ export default function ProfilePage() {
     shopping_pref: "",
   });
 
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [dataMsg, setDataMsg] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const [opinionsLoading, setOpinionsLoading] = useState(false);
+  const [myOpinions, setMyOpinions] = useState<Array<{
+    id: string; content: string; created_at: string; is_hidden: boolean; moderation_status: string;
+    poll: { id: string; question: string };
+  }> | null>(null);
+
+  const errText = (err: unknown, fallback: string) => {
+    const info = err as { response?: { data?: { message?: string; error?: string } }; message?: string };
+    return info.response?.data?.message || info.response?.data?.error || info.message || fallback;
+  };
+
   const handleDeleteAccount = async () => {
-    const confirmed = window.confirm("DPDP Mandate: This action will permanently scrub your personal identity (PII). Proceed?");
-    if (!confirmed) return;
     setDeleting(true);
+    setDataMsg("");
     try {
       await api.delete("/api/v1/users/me");
-      localStorage.removeItem("pollbooth_token");
+      try { localStorage.removeItem("pollbooth_token"); } catch { /* ignore */ }
       window.location.href = "/auth/login";
     } catch (err: unknown) {
-      const errorInfo = err as {
-        response?: { data?: { message?: string; error?: string } };
-        message?: string;
-      };
-      const errorMessage = errorInfo.response?.data?.message || errorInfo.response?.data?.error || errorInfo.message || "Unknown server error";
-      alert("Server Error Details: " + errorMessage);
+      setDataMsg(errText(err, "Could not delete your account. Please try again."));
       setDeleting(false);
+    }
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    setDataMsg("");
+    try {
+      const res = await api.get("/api/v1/users/me/export");
+      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "pollbooth-my-data.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      setDataMsg("Your data file has been downloaded.");
+    } catch (err: unknown) {
+      setDataMsg(errText(err, "Could not prepare your data. Please try again."));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const toggleMyOpinions = async () => {
+    if (myOpinions !== null) { setMyOpinions(null); return; }
+    setOpinionsLoading(true);
+    setDataMsg("");
+    try {
+      const res = await api.get("/api/v1/users/me/opinions");
+      setMyOpinions(res.data?.opinions || []);
+    } catch (err: unknown) {
+      setDataMsg(errText(err, "Could not load your comments."));
+    } finally {
+      setOpinionsLoading(false);
     }
   };
 
@@ -432,17 +476,81 @@ export default function ProfilePage() {
 
         <section className="rounded-3xl border border-[#d8ceb8] bg-[#fffdf9] p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-[#1f1b18]">Settings & Data Protection</h2>
-          <div className="mt-4 flex flex-col sm:flex-row gap-3">
+          <p className="mt-1 text-sm text-[#625a50]">Your data belongs to you. See it, download it, or erase it.</p>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link href="/consent" className="inline-flex items-center justify-center rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] px-4 py-3 text-sm font-medium text-[#1f1b18] transition hover:border-maroon/40 hover:text-maroon">
               Manage consent settings
             </Link>
-            <button 
-              onClick={() => void handleDeleteAccount()} 
-              disabled={deleting} 
-              className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+            <button
+              onClick={() => void handleExport()}
+              disabled={exporting}
+              className="inline-flex items-center justify-center rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] px-4 py-3 text-sm font-medium text-[#1f1b18] transition hover:border-maroon/40 hover:text-maroon disabled:opacity-50"
             >
-              {deleting ? "Scrubbing Data..." : "Delete Account & Data"}
+              {exporting ? "Preparing file..." : "Download my data"}
             </button>
+            <button
+              onClick={() => void toggleMyOpinions()}
+              disabled={opinionsLoading}
+              className="inline-flex items-center justify-center rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] px-4 py-3 text-sm font-medium text-[#1f1b18] transition hover:border-maroon/40 hover:text-maroon disabled:opacity-50"
+            >
+              {opinionsLoading ? "Loading..." : myOpinions !== null ? "Hide my comments" : "My comments"}
+            </button>
+          </div>
+
+          {myOpinions !== null && (
+            <div className="mt-4 space-y-3">
+              {myOpinions.length === 0 ? (
+                <p className="text-sm text-[#625a50]">You have not posted any comments yet.</p>
+              ) : (
+                myOpinions.map((o) => (
+                  <div key={o.id} className="rounded-2xl border border-[#d8ceb8] bg-[#f4efe7] p-4">
+                    <p className="text-sm text-[#1f1b18]">{o.content}</p>
+                    <p className="mt-2 text-xs text-[#625a50]">
+                      On{" "}
+                      <Link href={`/poll/${o.poll.id}`} className="text-maroon hover:underline">{o.poll.question}</Link>
+                      {" · "}{new Date(o.created_at).toLocaleDateString()}
+                      {o.is_hidden ? " · Hidden" : o.moderation_status === "PENDING" ? " · Waiting for review" : ""}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {dataMsg ? <p className="mt-4 text-sm font-medium text-maroon">{dataMsg}</p> : null}
+
+          <div className="mt-6 border-t border-[#d8ceb8] pt-5">
+            {!confirmDelete ? (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 transition hover:bg-rose-100"
+              >
+                Delete account & data
+              </button>
+            ) : (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                <p className="text-sm font-semibold text-rose-800">Delete your account?</p>
+                <p className="mt-1 text-sm text-rose-700">
+                  Your name, email, phone, city and profile answers are erased and your comments are removed. Your votes stay only as anonymous counts. This cannot be undone.
+                </p>
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <button
+                    onClick={() => void handleDeleteAccount()}
+                    disabled={deleting}
+                    className="inline-flex items-center justify-center rounded-2xl bg-rose-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-800 disabled:opacity-50"
+                  >
+                    {deleting ? "Erasing your data..." : "Yes, delete everything"}
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    disabled={deleting}
+                    className="inline-flex items-center justify-center rounded-2xl border border-[#d8ceb8] bg-white px-4 py-2.5 text-sm font-medium text-[#1f1b18]"
+                  >
+                    Keep my account
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </section>
       </div>
