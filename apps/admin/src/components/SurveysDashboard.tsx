@@ -26,7 +26,7 @@ export function SurveysDashboard() {
     fetchLiveData();
   }, []);
 
-  const openLivePoll = (pollId: string) => window.open(`http://localhost:3000/poll/${pollId}`, "_blank");
+  const openLivePoll = (pollId: string) => window.open(`https://pollbooth.in/poll/${pollId}`, "_blank");
 
   const handleExportCSV = async (pollId: string, question: string) => {
     try {

@@ -127,12 +127,31 @@ export default async function PollDetailPage({ params }: { params: { id: string 
     isAccessibleForFree: true,
   };
 
+  const faqItems: { question: string; answer: string }[] = Array.isArray((poll as any).faq)
+    ? (poll as any).faq.filter((f: any) => f && f.question && f.answer)
+    : [];
+  const faqLD = faqItems.length > 0 ? {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqItems.map((f) => ({
+      "@type": "Question",
+      name: f.question,
+      acceptedAnswer: { "@type": "Answer", text: f.answer },
+    })),
+  } : null;
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLD).replace(/</g, "\\u003c") }}
       />
+      {faqLD && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLD).replace(/</g, "\\u003c") }}
+        />
+      )}
       <h1 className="sr-only">{poll.question}</h1>
       <SharedPollLanding
       poll={poll as any}
