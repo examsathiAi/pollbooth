@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import multer from "multer";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import * as crypto from "crypto";
@@ -127,14 +128,28 @@ router.post("/upload", authGuard, roleGuard("ADMIN"), upload.single("image"), as
       return res.status(400).json({ message: "No image file provided" });
     }
     
-    const ext = req.file.originalname.split('.').pop()?.toLowerCase() || 'webp';
-    const key = `poll-${Date.now()}-${crypto.randomBytes(4).toString("hex")}.${ext}`;
+    // Every uploaded poll image is shrunk before it goes to Cloudflare R2:
+    // max 1200px wide, JPEG, usually 100-300 KB. Keeps the feed fast and lets
+    // WhatsApp / Facebook show the link preview (they ignore very large images).
+    let optimized: Buffer;
+    try {
+      optimized = await sharp(req.file.buffer)
+        .rotate()
+        .resize({ width: 1200, height: 1200, fit: "inside", withoutEnlargement: true })
+        .flatten({ background: "#ffffff" })
+        .jpeg({ quality: 80, mozjpeg: true })
+        .toBuffer();
+    } catch {
+      return res.status(400).json({ message: "That file is not a valid image" });
+    }
+    const key = `poll-${Date.now()}-${crypto.randomBytes(4).toString("hex")}.jpg`;
     
     await s3.send(new PutObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME as string,
       Key: key,
-      Body: req.file.buffer,
-      ContentType: req.file.mimetype,
+      Body: optimized,
+      ContentType: "image/jpeg",
+      CacheControl: "public, max-age=31536000, immutable",
     }));
     
     const url = `https://images.pollbooth.in/${key}`;

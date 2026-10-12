@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useSocket } from "@/providers/SocketProvider";
@@ -28,11 +29,13 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (wrapRef.current && !wrapRef.current.contains(t) && !(panelRef.current && panelRef.current.contains(t))) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
@@ -148,8 +151,8 @@ export function NotificationBell() {
           </span>
         ) : null}
       </button>
-      {open ? (
-        <div className="fixed inset-x-3 top-14 z-50 rounded-xl border border-paper-border bg-paper-bg p-3 shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80">
+      {open && typeof document !== "undefined" ? createPortal(
+        <div ref={panelRef} className="fixed inset-x-3 top-14 z-[300] max-h-[80vh] overflow-y-auto rounded-xl border border-paper-border bg-paper-bg p-3 shadow-2xl sm:inset-x-auto sm:right-4 sm:top-16 sm:w-96">
           <div className="mb-2 flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-slate-800">Notifications</p>
@@ -196,7 +199,8 @@ export function NotificationBell() {
               View all notifications
             </Link>
           </div>
-        </div>
+        </div>,
+        document.body
       ) : null}
     </div>
   );

@@ -4,167 +4,140 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { ArrowLeft, Calendar, Share2, Sparkles, Users, PieChart as PieChartIcon } from "lucide-react";
-import { Loader2 } from "lucide-react";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { ArrowLeft, Calendar, Share2, Users, MessageCircle, Check, Loader2 } from "lucide-react";
 
 interface InsightDetail {
   id: string;
   headline: string;
   content: string;
   created_at: string;
-  demographics_summary?: { key_takeaway?: string; dominant_age_group?: string; };
-  poll: { id: string; question: string; category: string; options: string[]; total_votes: number; total_opinions: number; };
+  demographics_summary?: { key_takeaway?: string; dominant_age_group?: string };
+  poll: { id: string; question: string; category: string; options: string[]; total_votes: number; total_opinions: number };
 }
+interface ResultRow { option: string; count: number; percentage: number }
 
-// Map categories to high-quality editorial images and specific chart colors
-const categoryConfig: Record<string, { image: string, colors: string[] }> = {
-  civic: { image: "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?q=80&w=2070&auto=format&fit=crop", colors: ["#0891b2", "#164e63", "#67e8f9", "#0e7490"] },
-  sports: { image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=2070&auto=format&fit=crop", colors: ["#ea580c", "#7c2d12", "#fdba74", "#c2410c"] },
-  bollywood: { image: "https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?q=80&w=2056&auto=format&fit=crop", colors: ["#c026d3", "#701a75", "#f0abfc", "#a21caf"] },
-  news: { image: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=2070&auto=format&fit=crop", colors: ["#059669", "#064e3b", "#6ee7b7", "#047857"] },
-  default: { image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop", colors: ["#57534e", "#292524", "#d6d3d1", "#44403c"] },
-};
+const BAR_COLORS = ["#7A1E3A", "#D99A1E", "#1F8A70", "#C2415B", "#4B5FBF", "#8A6D3B"];
 
 export default function InsightArticlePage() {
   const params = useParams();
   const id = params?.id as string;
   const [insight, setInsight] = useState<InsightDetail | null>(null);
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [results, setResults] = useState<ResultRow[]>([]);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!id) return;
-    
-    const loadData = async () => {
+    (async () => {
       try {
         const insightRes = await api.get(`/api/v1/feed/insights/${id}`);
-        const insightData = insightRes.data;
-        setInsight(insightData);
-
+        const data = insightRes.data;
+        setInsight(data);
         try {
-          const pollRes = await api.get(`/api/v1/polls/${insightData.poll.id}`);
-          if (pollRes.data?.results) {
-            const formattedData = pollRes.data.results.map((r: any) => ({
-              name: r.option.length > 20 ? r.option.substring(0, 20) + "..." : r.option,
-              fullOption: r.option,
-              value: r.count,
-              percentage: r.percentage
-            }));
-            setChartData(formattedData);
-          }
-        } catch (pollErr) {
-          console.warn("Could not load secondary poll data for charts");
+          const pollRes = await api.get(`/api/v1/polls/${data.poll.id}`);
+          if (Array.isArray(pollRes.data?.results)) setResults(pollRes.data.results);
+          if (pollRes.data?.image_url) setImageUrl(pollRes.data.image_url);
+        } catch {
+          /* results are optional; the article still shows */
         }
       } catch (err: any) {
         setError(err.response?.data?.message || "Failed to load report");
       } finally {
         setIsLoading(false);
       }
-    };
-    
-    loadData();
+    })();
   }, [id]);
 
   if (isLoading) return <div className="flex min-h-screen items-center justify-center bg-paper-bg"><Loader2 className="h-8 w-8 animate-spin text-maroon" /></div>;
   if (error || !insight) return <div className="p-10 text-center font-semibold text-ink">{error || "Report not found"}</div>;
 
-  const config = categoryConfig[insight.poll.category?.toLowerCase()] || categoryConfig.default;
+  const pollLink = `/poll/${insight.poll.id}`;
+  const maxPct = Math.max(0, ...results.map((r) => r.percentage || 0));
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}${pollLink}?src=copy&card=result`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    } catch {
+      /* clipboard blocked: nothing to show */
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-paper-bg pb-20 font-sans">
-      <header className="border-b border-paper-border/30 bg-paper-bg/80 backdrop-blur-md p-4 sticky top-0 z-40">
-        <div className="max-w-5xl mx-auto flex justify-between items-center">
-          <Link href="/feed" className="inline-flex items-center gap-2 text-sm text-ink font-bold hover:text-maroon transition-colors"><ArrowLeft className="h-4 w-4"/> Back to Feed</Link>
-          <button onClick={() => { navigator.clipboard.writeText(window.location.href); alert("Link copied!"); }} className="p-2 text-ink-muted hover:text-ink"><Share2 className="h-4 w-4" /></button>
+    <div className="min-h-screen bg-paper-bg pb-24 font-sans">
+      <header className="sticky top-0 z-40 border-b border-paper-border/30 bg-paper-bg/90 p-4 backdrop-blur-md">
+        <div className="mx-auto flex max-w-4xl items-center justify-between">
+          <Link href="/feed" className="inline-flex items-center gap-2 text-sm font-bold text-ink hover:text-maroon"><ArrowLeft className="h-4 w-4" /> Back to Feed</Link>
+          <button onClick={copyLink} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold text-ink-muted hover:bg-black/5 hover:text-ink">
+            {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Share2 className="h-4 w-4" />}
+            {copied ? "Link copied" : "Share"}
+          </button>
         </div>
       </header>
-      
-      {/* Editorial Hero Banner */}
-      <div className="w-full h-[40vh] min-h-[300px] relative">
-        <img src={config.image} alt="Article Header" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+
+      <div className="relative h-[38vh] min-h-[260px] w-full overflow-hidden bg-gradient-to-br from-[#5A1530] to-[#14050E]">
+        {imageUrl && <img src={imageUrl} alt="" className="h-full w-full object-cover" />}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
         <div className="absolute bottom-0 left-0 w-full p-6 sm:p-10">
-          <div className="max-w-4xl mx-auto">
-            <span className="inline-block px-3 py-1 mb-4 rounded-sm bg-maroon text-white text-[10px] font-bold uppercase tracking-widest">
-              {insight.poll.category.replace(/_/g, " ")} • Exit Poll Analysis
+          <div className="mx-auto max-w-4xl">
+            <span className="mb-3 inline-block rounded-sm bg-maroon px-3 py-1 text-[11px] font-bold tracking-wide text-white">
+              {insight.poll.category.replace(/_/g, " ")} exit poll
             </span>
-            <h1 className="text-3xl sm:text-5xl md:text-6xl font-black font-headline text-white leading-tight drop-shadow-lg">
-              {insight.headline}
-            </h1>
+            <h1 className="font-headline text-3xl font-black leading-tight text-white drop-shadow-lg sm:text-5xl">{insight.headline}</h1>
           </div>
         </div>
       </div>
-      
-      <main className="mx-auto max-w-4xl p-6 sm:p-10 -mt-8 relative z-20 bg-paper-bg rounded-t-3xl border border-paper-border/20 shadow-sm">
-        
-        <div className="flex flex-wrap gap-6 text-xs font-bold uppercase tracking-widest text-ink-muted mb-10 pb-6 border-b border-paper-border/30">
-          <span className="flex items-center gap-2"><Calendar className="h-4 w-4 text-maroon"/> {new Date(insight.created_at).toLocaleDateString()}</span>
-          <span className="flex items-center gap-2"><Users className="h-4 w-4 text-maroon"/> {insight.poll.total_votes.toLocaleString()} Participants</span>
+
+      <main className="relative z-20 mx-auto -mt-6 max-w-4xl rounded-t-3xl border border-paper-border/20 bg-paper-bg p-6 shadow-sm sm:p-10">
+        <div className="mb-8 flex flex-wrap gap-x-6 gap-y-2 border-b border-paper-border/30 pb-5 text-xs font-bold text-ink-muted">
+          <span className="flex items-center gap-2"><Calendar className="h-4 w-4 text-maroon" /> {new Date(insight.created_at).toLocaleDateString()}</span>
+          <span className="flex items-center gap-2"><Users className="h-4 w-4 text-maroon" /> {insight.poll.total_votes.toLocaleString()} votes</span>
+          <span className="flex items-center gap-2"><MessageCircle className="h-4 w-4 text-maroon" /> {insight.poll.total_opinions.toLocaleString()} comments</span>
         </div>
-        
-        <div className="grid md:grid-cols-12 gap-10">
-          {/* Main Article Content */}
-          <div className="md:col-span-7 lg:col-span-8">
-            <div className="mb-8 p-6 bg-paper-card border-l-4 border-ink rounded-r-xl">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-ink-muted mb-2">The Catalyst Question</p>
-              <p className="text-xl sm:text-2xl font-serif font-semibold text-ink leading-snug">&ldquo;{insight.poll.question}&rdquo;</p>
+
+        <p className="mb-6 font-serif text-xl font-semibold leading-snug text-ink sm:text-2xl">&ldquo;{insight.poll.question}&rdquo;</p>
+
+        {results.length > 0 && (
+          <section className="mb-10 rounded-2xl border border-paper-border/40 bg-paper-card p-5 sm:p-6">
+            <h2 className="mb-4 text-sm font-bold text-ink">What people chose</h2>
+            <div className="space-y-4">
+              {results.map((r, i) => {
+                const col = BAR_COLORS[i % BAR_COLORS.length];
+                const lead = maxPct > 0 && r.percentage === maxPct;
+                return (
+                  <div key={r.option}>
+                    <div className="mb-1.5 flex items-baseline justify-between gap-3">
+                      <span className={`text-[15px] ${lead ? "font-extrabold text-ink" : "font-semibold text-ink/80"}`}>{r.option}</span>
+                      <span className="shrink-0 text-[15px] font-extrabold" style={{ color: col }}>{r.percentage}%<span className="ml-1.5 text-xs font-semibold text-ink-muted">({r.count.toLocaleString()})</span></span>
+                    </div>
+                    <div className="h-3.5 w-full overflow-hidden rounded-full bg-black/5">
+                      <div className="h-full rounded-full" style={{ width: `${Math.max(r.percentage, r.count > 0 ? 2 : 0)}%`, background: col }} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-
-            <div 
-              className="prose prose-lg prose-stone max-w-none text-ink/85 space-y-6 leading-relaxed font-serif" 
-              dangerouslySetInnerHTML={{ __html: insight.content }} 
-            />
-          </div>
-
-          {/* Right Rail Data Visuals */}
-          <div className="md:col-span-5 lg:col-span-4 space-y-6">
-            
             {insight.demographics_summary?.key_takeaway && (
-              <div className="p-6 bg-maroon/5 border border-maroon/20 rounded-2xl">
-                <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-maroon mb-3"><Sparkles className="h-4 w-4"/> AI Insight</span>
-                <p className="font-semibold text-ink leading-relaxed text-sm">{insight.demographics_summary.key_takeaway}</p>
-              </div>
+              <p className="mt-5 border-t border-paper-border/30 pt-4 text-sm leading-relaxed text-ink/80">{insight.demographics_summary.key_takeaway}</p>
             )}
+            {insight.demographics_summary?.dominant_age_group && (
+              <p className="mt-2 text-xs font-semibold text-ink-muted">Most active age group: {insight.demographics_summary.dominant_age_group}</p>
+            )}
+          </section>
+        )}
 
-            {/* Recharts Donut Chart */}
-            {chartData.length > 0 && (
-              <div className="p-6 border border-paper-border/40 rounded-2xl bg-white shadow-sm">
-                <div className="flex items-center gap-2 mb-4 text-xs font-bold uppercase tracking-widest text-ink">
-                  <PieChartIcon className="h-4 w-4 text-maroon" /> Voter Consensus
-                </div>
-                <div className="h-[250px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={chartData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {chartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={config.colors[index % config.colors.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: 'bold' }}
-                        formatter={(value) => [`${Array.isArray(value) ? value.join(", ") : value ?? 0} votes`, 'Count']}
-                        labelFormatter={() => ""}
-                      />
-                      <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: '600' }}/>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
-          </div>
+        <div
+          className="prose prose-lg prose-stone max-w-none space-y-6 font-serif leading-relaxed text-ink/85"
+          dangerouslySetInnerHTML={{ __html: insight.content }}
+        />
+
+        <div className="mt-12 rounded-2xl bg-gradient-to-br from-[#5A1530] to-[#2B0A1B] p-6 text-center text-white">
+          <p className="font-headline text-xl font-bold">Aapka kya kehna hai?</p>
+          <p className="mt-1 text-sm text-white/70">Apna vote do aur dekho baaki kya soch rahe hain.</p>
+          <Link href={pollLink} className="mt-4 inline-block rounded-full bg-[#FFB534] px-7 py-3 text-sm font-extrabold text-[#2B0A1B] active:scale-95">Vote karo</Link>
         </div>
-
       </main>
     </div>
   );
