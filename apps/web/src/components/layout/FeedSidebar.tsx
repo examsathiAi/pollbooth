@@ -144,7 +144,6 @@ export function FeedSidebar({ activeCategory: propActive, onCategoryChange, forc
       )}
 
       <nav className="space-y-0.5">
-        <p className={headCls}>Browse</p>
         {BROWSE.map(renderRow)}
       </nav>
 

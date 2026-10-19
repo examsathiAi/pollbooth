@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { Sparkles, X } from "lucide-react";
 
@@ -68,6 +68,8 @@ export function ProgressiveGateModal({ isOpen, onClose, onSelect }: ProgressiveG
   const [currentField, setCurrentField] = useState<FieldConfig | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [customInput, setCustomInput] = useState("");
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!isOpen) {
@@ -95,17 +97,17 @@ export function ProgressiveGateModal({ isOpen, onClose, onSelect }: ProgressiveG
         if (missingField) {
           setCurrentField(missingField);
         } else {
-          onClose(); // Auto-close if profile is fully complete
+          onCloseRef.current(); // Auto-close if profile is fully complete
         }
       } catch (err) {
-        setCurrentField(FIELD_CONFIGS[0]); // Fallback safely
+        onCloseRef.current(); // On error, close quietly; never re-ask a field
       } finally {
         setLoadingProfile(false);
       }
     };
 
     fetchProfile();
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   const handleSave = async (value: string) => {
     if (!value.trim() || !currentField) return;
