@@ -57,7 +57,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const baseDesc = (poll as any).ai_summary?.substring(0, 140) || poll.meta_description?.trim() || `Vote on this poll and see live results for ${poll.category}.`;
   const description = trimTo(baseDesc, 155);
   const ogRaw = poll.og_title?.trim() || "";
-  const openGraphTitle = ogRaw && ogRaw.length < 60 ? ogRaw : trimTo(poll.question, 72);
+  const openGraphTitle = trimTo(poll.question, 120) || ogRaw;
   const rawOptions: string[] = Array.isArray((poll as any).options)
     ? (poll as any).options
     : Array.isArray((poll as any).results)

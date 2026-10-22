@@ -5,6 +5,12 @@ import { prisma } from "../../config/database";
 
 export interface AuthenticatedRequest extends Request {}
 
+function touchLastActive(user: { id: string; last_active_at?: Date | null }) {
+  const last = user.last_active_at ? new Date(user.last_active_at).getTime() : 0;
+  if (Date.now() - last < 60 * 60 * 1000) return;
+  prisma.user.update({ where: { id: user.id }, data: { last_active_at: new Date() } }).catch(() => {});
+}
+
 export async function authGuard(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   try {
     let token: string | undefined;
@@ -33,7 +39,7 @@ export async function authGuard(req: AuthenticatedRequest, res: Response, next: 
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, phone_hash: true, username: true, role: true, is_banned: true, is_active: true },
+      select: { id: true, phone_hash: true, username: true, role: true, is_banned: true, is_active: true, last_active_at: true },
     });
 
     if (!user || !user.is_active) {
@@ -44,6 +50,7 @@ export async function authGuard(req: AuthenticatedRequest, res: Response, next: 
       return res.status(403).json({ error: "Forbidden", message: "Account banned" });
     }
 
+    touchLastActive(user);
     req.user = user;
     next();
   } catch (err) {
@@ -80,10 +87,11 @@ export async function optionalAuthGuard(req: AuthenticatedRequest, res: Response
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, phone_hash: true, username: true, role: true, is_banned: true, is_active: true },
+      select: { id: true, phone_hash: true, username: true, role: true, is_banned: true, is_active: true, last_active_at: true },
     });
 
     if (user && user.is_active && !user.is_banned) {
+      touchLastActive(user);
       req.user = user; // valid user, attach it
     }
     // whether or not user was found, always proceed
